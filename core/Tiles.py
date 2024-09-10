@@ -1,0 +1,101 @@
+import math
+import datetime
+import requests
+from geojson import Feature, FeatureCollection, Point
+from threading import Thread
+from core.Places import Places
+import multiprocessing as mp
+import app
+import json
+
+
+class Tiles(object):
+    config = {}
+    places = None
+
+    def __init__(self, config):
+        self.config = config
+        self.places = Places(config)
+
+    def num(self, zoom):
+        return math.pow(2, zoom)
+
+    def to_lon(self, x, zoom):
+        return x / self.num(zoom) * 360.0 - 180.0
+
+    def to_bb(self, zoom, x, y):
+        result = {
+            "lon_min": self.to_lon(x, zoom),
+            "lon_max": self.to_lon(x + 1, zoom),
+            "lat_max": self.to_lat(y, zoom),
+            "lat_min": self.to_lat(y + 1, zoom)
+        }
+        return result
+
+    def to_lat(self, y, zoom):
+        n = math.pi * (1 - 2 * y / self.num(zoom))
+        return math.degrees(math.atan(math.sinh(n)))
+
+     # funzione effettuata dal singolo thread
+    def do_stuff(self, prod, params, item):
+        feature = {}
+        country = "it"
+        place = item['id']
+        dateTime = params["date"]
+
+        if place.startswith("euro"):
+            country = var[4:6]
+
+        data = app.meteo_services.modelOutput({"prod": prod, "place": item["id"], "date": dateTime})
+
+        if "ok" in data["result"]:
+            cLon = item['pos']['coordinates'][0]
+            cLat = item['pos']['coordinates'][1]
+            feature = Feature(geometry=Point((cLon, cLat)))
+            feature["properties"] = {"id": item['id'], "name": item['long_name']['it'], "country": country}
+
+            for key in data.keys():
+                feature["properties"][key] = data[key]
+
+        return feature
+
+    # prod : preso in input da url
+    # placeprefix : preso in input da url
+    # params : contiene la data esatta
+    # z : preso in input da url
+    # x : '' ''
+    # y : '' ''
+    def get_weather_ex(self, prod, placeprefix, params, z, x, y):
+        # setto la data esatta della chiamata
+        if params['date'] is None:
+            now = datetime.datetime.now()
+            params['date'] = now.strftime("%Y%m%dZ%H00")
+
+        # print "Date:"+str(params['date'])
+        features = []
+
+        # da coordinata x,y,z calcolo la min,max si long,lat
+        bb = self.to_bb(z, x, y)
+
+        # creo un filtro matematico
+        filter = []
+        for part in placeprefix.split("-"):
+            filter.append(str(part))
+
+        options = {
+            "filter": filter,
+            "zoom": z
+        }
+
+        # ricerco i luoghi con tali coordinate
+        items = self.places.get_places_by_bb(bb['lon_min'], bb['lat_min'], bb['lon_max'], bb['lat_max'], options)
+
+        for i,v in enumerate(items):
+            items[i] = [ prod, params, v ]
+
+
+        with mp.Pool(self.config['NUM_THREADS']) as p:
+            features = p.starmap(self.do_stuff, items)
+
+        result = FeatureCollection(features)
+        return result
