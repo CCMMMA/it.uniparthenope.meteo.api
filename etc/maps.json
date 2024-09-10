@@ -1859,7 +1859,6 @@
                "round": 1,
                "time": 0,
                "var": "DAILY_RAIN",
-               "zero_if_negative": true,
                "unit": "mm",
                "aggregate": [
                   "min",
@@ -2999,7 +2998,7 @@
                }
             },
             "crd": {
-               "title": { "en-US": "Daily cloudness and cumulated pecipitation" },
+               "title": { "en-US": "Cumulated Daily Pecipitation" },
                "wms": {
                   "layers":[
                      {
@@ -3185,7 +3184,7 @@
                }
             },
             "wn1": {
-               "title": { "en-US": "Wind speed at 10m"},
+               "title": { "en-US": "Wind speed at 10m (spectrum scale)"},
                "wms": {
                   "layers": [
                      {
