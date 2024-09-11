@@ -402,6 +402,17 @@
             [231, 78, 56, 255],
             [202, 35, 40, 255]
          ]
+      },
+      "wrf5.rh2": {
+         "clevs": [20, 40, 60, 80, 99],
+         "ccols": [
+            [244, 6, 12, 255],
+            [254, 255, 50, 255],
+            [0, 254, 58, 255], 
+            [0, 254, 254, 255],
+            [0, 120, 217, 255],
+            [255, 12, 251, 255]
+         ]
       }
    },
    "products":{
@@ -1859,6 +1870,7 @@
                "round": 1,
                "time": 0,
                "var": "DAILY_RAIN",
+               "zero_if_negative": true,
                "unit": "mm",
                "aggregate": [
                   "min",
@@ -2909,11 +2921,11 @@
                         "colors": "green"
                      },
                      {
-                     "type": "barbs",
-                     "a": 1.94384,
-                     "var1": "U10M",
-                     "var2": "V10M",
-                     "time": 0
+                        "type": "barbs",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
                      }
                   ]
                }
@@ -3320,6 +3332,47 @@
                         "clev_min": -180,
                         "clev_max": 180,
                         "colors": "green"
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     }
+                  ]
+               }
+            },
+            "rh2": {
+               "title": { "en-US": "Air relative humidity at 2m and Wind Direction at 10m" },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     }
+                  ]
+
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Relative Humidity at 2m [%]"},
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "wrf5.rh2",
+                        "var1": "RH2",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
                      },
                      {
                         "type": "versor",
