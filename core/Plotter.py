@@ -718,6 +718,7 @@ class Plotter(object):
             # Check if the layer type is shaded 
             if "shaded" in layer_type:
                 var = None
+                
                 if var2 is not None:
                     var = np.hypot(var1, var2)
                 else:

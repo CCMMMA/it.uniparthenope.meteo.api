@@ -3358,14 +3358,12 @@
                         "STYLES":"default-arrows/default"
                      }
                   ]
-
                },
                "plot": {
                   "layers": [
                      {
                         "text": { "en-US":"Relative Humidity at 2m [%]"},
                         "type": "shaded",
-                        "a": 1.94384,
                         "colormap": "wrf5.rh2",
                         "var1": "RH2",
                         "time": 0,
