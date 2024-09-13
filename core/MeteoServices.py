@@ -1424,17 +1424,17 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
             
-            log.info("********** items : " + str(items))
+            # log.info("[*][*][*][*] items : " + str(items))
 
             with mp.Pool(self.config['NUM_THREADS']) as p:
                 model_outputs = p.starmap(self.modelOutput, items)
 
-            log.info("********** model_outputs : " + str(model_outputs))
+            # log.info("[*][*][*][*] model_outputs : " + str(model_outputs))
             
             for model_output in model_outputs:
                 forecast[model_output["dateTime"]]=model_output
             
-            log.info("********** forecast : " + str(forecast))
+            # log.info("[*][*][*][*] forecast : " + str(forecast))
 
             keys = sorted(forecast)
             if hours == 0:
@@ -1523,7 +1523,12 @@ class MeteoServices:
 
                                 if field in self.maps["products"][prod]['fields']: 
 
-                                    log.info("------------------------- field : " + str(field))
+                                    # log.info("[*][*][*][*] field : " + str(field))
+
+                                    # if field == "mcape":
+                                    #    log.info("[*][*][*][*] mcape type : " + str(type(self.maps["products"][prod]['fields'][field])))
+
+
 
                                     if 'aggregate' in self.maps["products"][prod]['fields'][field]:
                                         aggregateList = self.maps["products"][prod]['fields'][field]['aggregate']
@@ -1575,6 +1580,7 @@ class MeteoServices:
 
                             # save
                             retval["timeseries"].append(aggregated)
+                            log.info("[*][*][*][*] aggregated : " + str(aggregated))
                             if autostep > 0:
                                 autostep = autostep + 1
                                 step = self.maps["products"][prod]['autosteps'][autostep - 1]
@@ -1662,8 +1668,6 @@ class MeteoServices:
     
     # funziona aggiunta dalle vecchie API 
     def modelmapurl_or_image(self, use_diskcached=True, params = None):
-        log.info("-- start modelmapurl_or_image")
-
         retval = {}
 
         # places = Places(app.application.config)

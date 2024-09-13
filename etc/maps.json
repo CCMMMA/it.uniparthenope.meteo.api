@@ -413,6 +413,46 @@
             [0, 120, 217, 255],
             [255, 12, 251, 255]
          ]
+      },
+      "wrf5.mcape": {
+         "clevs": [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000],
+         "ccols": [
+            [255, 255, 255, 255],
+            [47, 255, 255, 255],
+            [48, 255, 195, 255],
+            [49, 255, 85, 255],
+            [123, 255, 85, 255],
+            [161, 255, 86, 255],
+            [190, 255, 86, 255],
+            [255, 255, 87, 255],
+            [255, 224, 82, 255],
+            [255, 160, 74, 255],
+            [255, 97, 68, 255],
+            [255, 35, 65, 255],
+            [255, 97, 189, 255],
+            [255, 160, 252, 255],
+            [255, 224, 251, 255]
+         ]
+      },
+      "wrf5.uh": {
+         "clevs": [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195],
+         "ccols": [
+            [255, 255, 255, 255],
+            [47, 255, 255, 255],
+            [48, 255, 195, 255],
+            [49, 255, 85, 255],
+            [123, 255, 85, 255],
+            [161, 255, 86, 255],
+            [190, 255, 86, 255],
+            [255, 255, 87, 255],
+            [255, 224, 82, 255],
+            [255, 160, 74, 255],
+            [255, 97, 68, 255],
+            [255, 35, 65, 255],
+            [255, 97, 189, 255],
+            [255, 160, 252, 255],
+            [255, 224, 251, 255]
+         ]
       }
    },
    "products":{
@@ -494,8 +534,8 @@
          "outputs": {
             "gen": {
                "title": {
-                  "en-US": "Mussel Contamination Index",
-                  "it-IT": "Indice di contaminazione molluschi"
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
                },
                "wms": {
                   "layers": [
@@ -509,7 +549,7 @@
                         "BGCOLOR": "extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "default-scalar/mciBars",
+                        "STYLES": "mciBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -530,6 +570,13 @@
                         "position": "left",
                         "ticks_position": "left",
                         "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
                      }
                   ]
                }
@@ -551,7 +598,7 @@
                         "BGCOLOR": "extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "default-scalar/mciBars",
+                        "STYLES": "mciBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -743,7 +790,7 @@
                         "BGCOLOR": "extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "default-scalar/concBars",
+                        "STYLES": "concBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -763,6 +810,13 @@
                         "pad": "13%",
                         "position": "left",
                         "ticks_position": "left"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
                      }
                   ]
                }
@@ -784,7 +838,7 @@
                         "BGCOLOR" :"extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "default-scalar/concBars",
+                        "STYLES": "concBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -1102,7 +1156,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"default-scalar/curBars",
+                           "STYLES":"curBars",
                            "LEGEND":"right"
                      },
                      {
@@ -1172,7 +1226,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"default-scalar/curBars",
+                           "STYLES":"curBars",
                            "LEGEND":"right"
                      },
                      {
@@ -1242,7 +1296,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"default-scalar/saltBars",
+                           "STYLES":"saltBars",
                            "LEGEND":"right"
                      }
                   ]
@@ -1291,7 +1345,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"default-scalar/tempBars",
+                           "STYLES":"tempBars",
                            "LEGEND":"right"
                      }
                   ]
@@ -1339,7 +1393,7 @@
                { "ge": 480,            "values": { "skip": 16, "scale": 10 }}
             ],
             "d03": [
-               { "ge":   0, "lt":  30, "values": { "skip":  1, "scale":  1  }},
+	       { "ge":   0, "lt":  30, "values": { "skip":  1, "scale":  1  }},
                { "ge":  30, "lt":  60, "values": { "skip":  2, "scale":  5  }},
                { "ge":  60, "lt": 120, "values": { "skip":  6, "scale":  7  }},
                { "ge": 120, "lt": 240, "values": { "skip":  8, "scale":  5  }},
@@ -2744,6 +2798,25 @@
                   "ave"
                ]
             },
+            "uh": {
+               "title": {
+                  "it-IT": "Elicità della corrente ascensionale",
+                  "en-US": "Updraft Helicity"
+               },
+               "label": {
+                  "it-IT": "Elicità della corrente ascensionale",
+                  "en-US": "Updraft Helicity"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "UH",
+               "unit": " m2 s-2",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
             "winds": {
                "title": {
                   "it-IT": "Vento",
@@ -2823,7 +2896,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/tcldBars",
+                        "STYLES":"tcldBars",
                         "LEGEND":"right"
                      },
                      {
@@ -2834,7 +2907,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/crhBars",
+                        "STYLES":"crhBars",
                         "LEGEND":"left"
                      },
                      {
@@ -2845,7 +2918,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/sweBars"
+                        "STYLES":"sweBars"
                      },
                      {
                         "LAYERS":"U10M:V10M-dir",
@@ -2945,7 +3018,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/tcldBars",
+                        "STYLES":"tcldBars",
                         "LEGEND":"right"
                      },
                      {
@@ -2956,7 +3029,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"default-scalar/crhBars",
+                        "STYLES":"crhBars",
                         "LEGEND":"left"
                      },
                      {
@@ -2967,7 +3040,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/seq-BkYl",
+                        "STYLES":"uhBars",
                         "LEGEND":"top"
                      }
                   ]
@@ -3021,7 +3094,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"default-scalar/crdBars",
+                        "STYLES":"crdBars",
                         "LEGEND":"left"
                      }
                   ]
@@ -3054,7 +3127,7 @@
                      "BELOWMINCOLOR":"extend",
                      "BGCOLOR":"extend",
                      "LOGSCALE":"false",
-                     "STYLES":"default-scalar/tspBars",
+                     "STYLES":"tspBars",
                      "LEGEND":"right"
                   },
                   {
@@ -3207,7 +3280,7 @@
                         "BELOWMINCOLOR":"extend",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"default-scalar/wndBars",
+                        "STYLES":"wndBars",
                         "LEGEND":"right"
                      },
                      {
@@ -3286,7 +3359,7 @@
                         "BELOWMINCOLOR":"extend",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"default-scalar/dws10Bars",
+                        "STYLES":"dws10Bars",
                         "LEGEND":"right"
                      },
                      {
@@ -3378,6 +3451,49 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     }
+                  ]
+               }
+            },
+            "mcape": {
+               "title": { "en-US": "MUCAPE"},
+               "wms": {
+
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Most unstable convective available potential energy [J/kg-1]"},
+                        "type": "shaded",
+                        "colormap":  "wrf5.mcape",
+                        "var1": "MCAPE",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     }
+                  ]
+               }
+            },
+            "uh": {
+               "title": { "en-US": "Updraft Helicity"},
+               "wms": {
+
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Updraft Helicity [m2/s-1]"},
+                        "type": "shaded",
+                        "colormap":  "wrf5.uh",
+                        "var1": "UH",
+                        "a": 1.94384,
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
                      }
                   ]
                }

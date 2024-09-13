@@ -462,6 +462,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
             res = time_series_data
             set_resource(request, res, app.cache, app.use_pymemcache)
         else:
+          log.info("[*][*][*][*] Res : " + str(res))
           res = eval(res)
         return jsonify(res)
 
