@@ -410,7 +410,7 @@ layers = {
         "extras": {
 
             "layers": 'CLDFRA_TOTAL',
-            #"styles": 'raster/tcldBars',
+            "styles": 'raster/wrf5_cldfrc',
             "format": 'image/png',
             "transparent": True,
             "opacity": 0.8,
@@ -431,7 +431,7 @@ layers = {
         "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "layers": 'T2C',
-            #"styles": 'default-scalar/tspBars',
+            "styles": 'raster/wrf5_t2c_lamma',
             "format": 'image/png',
             "transparent": True,
             "opacity": 0.8,
@@ -452,7 +452,7 @@ layers = {
         "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "layers": 'DELTA_RAIN',
-            #"styles": 'raster/crhBars',
+            "styles": 'raster/wrf5_rain_lamma',
             "format": 'image/png',
             "transparent": True,
             "opacity": 0.8,
@@ -473,7 +473,7 @@ layers = {
         "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "layers": 'HOURLY_SWE',
-            #"styles": 'raster/sweBars',
+            "styles": 'raster/wrf5_snow',
             "format": 'image/png',
             "transparent": True,
             "opacity": 0.8,

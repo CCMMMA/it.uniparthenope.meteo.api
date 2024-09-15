@@ -80,16 +80,45 @@
          ]
       },
       "rms3.sss": {
-         "clevs": [ 37.5, 37.75, 38, 38.25, 38.5, 38.75 ,39 ],
+         "clevs": [ 37.5, 37.55, 37.6, 37.65, 37.7, 37.75, 37.8, 37.85, 37.9, 37.95, 38, 38.05, 38.1, 38.15, 38.2, 38.25, 38.3, 38.35, 38.4, 38.45, 38.5, 38.55, 38.6, 38.65, 38.7, 38.75,  38.8, 38.85, 38.9, 38.95, 39],
          "ccols": [
-            [32, 17, 233, 255],
-            [0, 108, 248, 255],
-            [0, 174, 251, 255],
-            [150, 254, 58, 255],
-            [252, 254, 60, 255],
-            [255, 136, 39, 255],
-            [224, 0, 19, 255],
-            [218, 163, 163, 255]
+            [22, 48, 246, 255],
+            [39, 85, 246, 255],
+            [53, 113, 246, 255],
+            [66, 139, 249, 255],
+            [92, 191, 249, 255],
+
+            [102, 211, 249, 255],
+            [111, 228, 240, 255],
+            [119, 244, 233, 255],
+            [120, 246, 230, 255],
+            [122, 250, 225, 255],
+
+            [98, 195, 97, 255],
+            [127, 209, 153, 255],
+            [141, 222, 67, 255],
+            [177, 238, 79, 255],
+            [214, 254, 94, 255],
+
+            [214, 254, 91, 255],
+            [242, 251, 83, 255],
+            [250, 230, 77, 255],
+            [246, 205, 69, 255],
+            [242, 177, 61, 255],
+
+            [241, 171, 60, 255],
+            [238, 151, 54, 255],
+            [236, 128, 49, 255],
+            [234, 103, 43, 255],
+            [232, 69, 38, 255],
+
+            [232, 58, 36, 255],
+            [231, 54, 35, 255],
+            [198, 41, 28, 255],
+            [161, 32, 21, 255],
+            [131, 23, 16, 255],
+            [131, 23, 16, 255]
+
          ]
       },
       "ww33.p.lamma": {
@@ -549,7 +578,7 @@
                         "BGCOLOR": "extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "mciBars",
+                        "STYLES": "raster/mciBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -598,7 +627,7 @@
                         "BGCOLOR": "extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "mciBars",
+                        "STYLES": "raster/mciBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -790,7 +819,7 @@
                         "BGCOLOR": "extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "concBars",
+                        "STYLES": "raster/concBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -838,7 +867,7 @@
                         "BGCOLOR" :"extend",
                         "ELEVATION": "0",
                         "LOGSCALE": "false",
-                        "STYLES": "concBars",
+                        "STYLES": "raster/concBars",
                         "LEGEND": "right"
                      }
                   ]
@@ -1156,7 +1185,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"curBars",
+                           "STYLES":"raster/curBars",
                            "LEGEND":"right"
                      },
                      {
@@ -1226,7 +1255,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"curBars",
+                           "STYLES":"raster/curBars",
                            "LEGEND":"right"
                      },
                      {
@@ -1296,7 +1325,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"saltBars",
+                           "STYLES":"raster/saltBars",
                            "LEGEND":"right"
                      }
                   ]
@@ -1345,7 +1374,7 @@
                            "BGCOLOR":"extend",
                            "ELEVATION":"0",
                            "LOGSCALE":"false",
-                           "STYLES":"tempBars",
+                           "STYLES":"raster/tempBars",
                            "LEGEND":"right"
                      }
                   ]
@@ -2896,7 +2925,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"tcldBars",
+                        "STYLES":"raster/wrf5_cldfrc",
                         "LEGEND":"right"
                      },
                      {
@@ -2907,7 +2936,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"crhBars",
+                        "STYLES":"raster/wrf5_rain_lamma",
                         "LEGEND":"left"
                      },
                      {
@@ -2918,7 +2947,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"sweBars"
+                        "STYLES":"raster/wrf5_snow"
                      },
                      {
                         "LAYERS":"U10M:V10M-dir",
@@ -3018,7 +3047,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"tcldBars",
+                        "STYLES":"raster/wrf5_cldfrc",
                         "LEGEND":"right"
                      },
                      {
@@ -3029,7 +3058,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"crhBars",
+                        "STYLES":"raster/wrf5_rain_lamma",
                         "LEGEND":"left"
                      },
                      {
@@ -3040,7 +3069,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"uhBars",
+                        "STYLES":"raster/wrf5_uh",
                         "LEGEND":"top"
                      }
                   ]
@@ -3094,7 +3123,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"crdBars",
+                        "STYLES":"raster/wrf5_rain_lamma",
                         "LEGEND":"left"
                      }
                   ]
@@ -3127,7 +3156,7 @@
                      "BELOWMINCOLOR":"extend",
                      "BGCOLOR":"extend",
                      "LOGSCALE":"false",
-                     "STYLES":"tspBars",
+                     "STYLES":"raster/wrf5_t2c_lamma",
                      "LEGEND":"right"
                   },
                   {
@@ -3178,7 +3207,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/x-Rainbow",
+                        "STYLES":"raster/wrf5_gp5",
                         "LEGEND":"left"
                      },
                      {
@@ -3229,7 +3258,7 @@
                         "BELOWMINCOLOR":"transparent",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"raster/x-Rainbow",
+                        "STYLES":"raster/wrf5_gp8",
                         "LEGEND":"left"
                      },
                      {
@@ -3280,7 +3309,7 @@
                         "BELOWMINCOLOR":"extend",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"wndBars",
+                        "STYLES":"raster/wrf5_wind_kt",
                         "LEGEND":"right"
                      },
                      {
@@ -3359,7 +3388,7 @@
                         "BELOWMINCOLOR":"extend",
                         "BGCOLOR":"extend",
                         "LOGSCALE":"false",
-                        "STYLES":"dws10Bars",
+                        "STYLES":"raster/wrf5_wsv",
                         "LEGEND":"right"
                      },
                      {
