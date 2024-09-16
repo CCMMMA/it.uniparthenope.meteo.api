@@ -462,7 +462,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
             res = time_series_data
             set_resource(request, res, app.cache, app.use_pymemcache)
         else:
-          log.info("[*][*][*][*] Res : " + str(res))
+          # log.info("[*][*][*][*] Res : " + str(res))
           res = eval(res)
         return jsonify(res)
 
@@ -524,7 +524,7 @@ class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
             params = get_params({'id': place, 'filter': None, 'prod': prod})
             places = Places(app.application.config)
             placeData = places.get_place_by_id(place, params)
-            print("placeData: ", placeData)
+            # print("placeData: ", placeData)
             if placeData is None:
                 return jsonify({
                     "details": "Place not found.",
@@ -571,7 +571,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
         """
         res=get_resource(request, app.cache, app.use_pymemcache)
 
-        log.info("1) res : " + str(res))
+        # log.info("1) res : " + str(res))
 
         if res is None:
             params = get_params({'id':place,'filter':None, 'place':place, 'prod': prod, 'output':'gen', 'date':None,'width': 1024, 'height': 768,'dry':"false",'opt':""})

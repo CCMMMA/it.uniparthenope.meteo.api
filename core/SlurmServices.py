@@ -148,16 +148,16 @@ if __name__ == "__main__":
     else:
       config[parts[0]] = int(parts[1])
 
-  print (str(config))
+  # print (str(config))
   slurm=SlurmServices(config)
 
   out=slurm.sinfo()
-  print (str(out))
-  print ("----------")
+  # print (str(out))
+  # print ("----------")
 
   out=slurm.squeue()
-  print (str(out))
-  print ("----------")
+  # print (str(out))
+  # print ("----------")
 
   out=slurm.get_storage_status()
-  print (str(out))
+  # print (str(out))

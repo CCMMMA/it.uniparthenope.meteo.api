@@ -201,7 +201,7 @@ class Places(object):
             query["$and"].append({"zoom.min": {"$lte": zoom}})
             query["$and"].append({"zoom.max": {"$gte": zoom}})
 
-        print(query)
+        # print(query)
 
         # print "Query:"+str(query)
         # items = places.find(query, self.proj)

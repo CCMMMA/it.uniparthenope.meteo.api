@@ -97,7 +97,7 @@ class GribServices:
         try:
             os.makedirs(self.cfg['BASE_PRODUCTS'] + "/" + relativePath)
         except Exception as e:
-            print(e)
+            # print(e)
             pass
 
         csvPath = self.cfg['BASE_PRODUCTS'] + "/" + relativePath + "/" + csvName
@@ -108,7 +108,7 @@ class GribServices:
             # Set the local path of the data file
             # url = self.cfg['BASE_PATH'] + "/" + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
             url = self.cfg['BASE_PATH'] + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-            print(url)
+            # print(url)
             ncfile = None
             try:
                 # Open the data file
@@ -168,7 +168,7 @@ class GribServices:
         return retval
 
     def asJson(self, params=None):
-        print("start asJson()")
+        # print("start asJson()")
         retval = {}
 
         prod = self.default_prod

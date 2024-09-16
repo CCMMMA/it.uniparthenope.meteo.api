@@ -1199,8 +1199,8 @@ class MeteoServices:
             height) + ":" + lang + ".png"
         imgPath = self.config['BASE_PRODUCTS'] + "/legend/" + imgName
 
-        print("imgPath : " + imgPath)
-        log.info("imgPath : " + imgPath)
+        # print("imgPath : " + imgPath)
+        # log.info("imgPath : " + imgPath)
 
         basePath = "/project/var/bars"
         fileName = basePath + "/" + prod + "/bar_" + prod + "_" + output + "_" + position[0].lower() + ":" + lang + ".png"
@@ -1478,7 +1478,7 @@ class MeteoServices:
 
                                         aggregateList = self.maps["products"][prod]['fields'][field]['aggregate']
 
-                                        log.info("")
+                                        # log.info("")
 
                                         if any("sum" in s for s in aggregateList) or any("ave" in s for s in aggregateList):
                                             sums[field] = forecast[key][field]
@@ -1560,7 +1560,7 @@ class MeteoServices:
                             try:
                                 aggregated['winds'] = windS(aggregated["wd10"])
                             except Exception as e:
-                                log.info("----------------- MeteoServices -  error windS : " + str(e))
+                                # log.info("----------------- MeteoServices -  error windS : " + str(e))
                                 pass
 
                             try:
@@ -1580,7 +1580,7 @@ class MeteoServices:
 
                             # save
                             retval["timeseries"].append(aggregated)
-                            log.info("[*][*][*][*] aggregated : " + str(aggregated))
+                            # log.info("[*][*][*][*] aggregated : " + str(aggregated))
                             if autostep > 0:
                                 autostep = autostep + 1
                                 step = self.maps["products"][prod]['autosteps'][autostep - 1]
@@ -1655,8 +1655,8 @@ class MeteoServices:
             print("full_link:%s" % full_link)
 
         data = self.__executeRequest(full_link)
-        log.info("full_link: " + str(full_link))
-        log.info("data     : " + str(data))
+        # log.info("full_link: " + str(full_link))
+        # log.info("data     : " + str(data))
         if not data:
             return self.__statusCode['404']
         try:
@@ -1876,7 +1876,7 @@ class MeteoServices:
 
                     #### Save image #####
                     imgBaseMap.save(imagePath)
-                    log.info("")
+
 
             else:
                 # The place is not available

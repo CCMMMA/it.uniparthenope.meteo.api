@@ -246,17 +246,17 @@ class Plotter(object):
 
     def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
 
-        log.info("---------- Plotter - render() : start")
-        log.info("---------- Plotter - render() : (input) place = " + str(place))
-        log.info("---------- Plotter - render() : (input) prod = " + str(prod))
-        log.info("---------- Plotter - render() : (input) output = " + str(output))
+        # log.info("---------- Plotter - render() : start")
+        # log.info("---------- Plotter - render() : (input) place = " + str(place))
+        # log.info("---------- Plotter - render() : (input) prod = " + str(prod))
+        # log.info("---------- Plotter - render() : (input) output = " + str(output))
 
 
         # Get place information by id
         place_info = self.places.get_place_by_id(place)
-        #place_info = self.places.get_place_by_id(place, params)
+        # place_info = self.places.get_place_by_id(place, params)
 
-        log.info("----------- Plotter - render() : place_info = " + str(place_info))
+        # log.info("----------- Plotter - render() : place_info = " + str(place_info))
 
         # Get bounding box of the place
         minLat = place_info["minLat"]
@@ -270,7 +270,7 @@ class Plotter(object):
         # The the domain id by the product and the place
         domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0]
 
-        log.info("---------- Plotter -- render() : domainID = " + str(domainId))
+        # log.info("---------- Plotter -- render() : domainID = " + str(domainId))
           
         # Get the year (YYYY)
         year = dateTime[:4]
@@ -296,7 +296,7 @@ class Plotter(object):
         # Check if the the file not exists
         if os.path.exists(data_file) is False:
             # Raise an exception
-            log.info("---------- Plotter - render() : data_file error = " + str(data_file))
+            # log.info("---------- Plotter - render() : data_file error = " + str(data_file))
             raise DataNotAvailableException
         
         # Assemble the relative path
