@@ -1,13 +1,14 @@
 import pymongo.errors
-import logging
+# import logging
 
-log = logging.getLogger(__name__)
-hdlr = logging.FileHandler('var/log/test.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
-log.setLevel(logging.INFO)
-
+#### Logging ####
+# log = logging.getLogger(__name__)
+# hdlr = logging.FileHandler('var/log/test.log')
+# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# hdlr.setFormatter(formatter)
+# log.addHandler(hdlr)
+# log.setLevel(logging.INFO)
+################
 
 class MongoDBHandlers(object):
     config = {}
@@ -40,9 +41,11 @@ class MongoDBHandlers(object):
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:
-            log.error(str(connection_failure))
+            print(str(connection_failure))
+            # log.error(str(connection_failure))
         except pymongo.errors.ConfigurationError as configuration_error:
-            log.error(str(configuration_error))
+            print(str(configuration_error))
+            # log.error(str(configuration_error))
         db = client[self.config['DATABASE']]
         collection = db[name_collection]
         out = collection.find_one(query, proj)
@@ -53,9 +56,11 @@ class MongoDBHandlers(object):
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:
-            log.error(str(connection_failure))
+            print(str(connection_failure))
+            # log.error(str(connection_failure))
         except pymongo.errors.ConfigurationError as configuration_error:
-            log.error(str(configuration_error))
+            print(str(configuration_error))
+            # log.error(str(configuration_error))
         db = client[self.config['DATABASE']]
         collection = db[name_collection]
         out = collection.insert_one(data)

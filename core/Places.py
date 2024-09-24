@@ -1,18 +1,20 @@
 import json
 import netCDF4
 import numpy as np
-import logging
 from math import radians, cos, sin, asin, sqrt
 from datetime import datetime
 from numpy.compat import basestring
 from core.MongoDbHandlers import MongoDBHandlers
+import logging
 
-log = logging.getLogger(__name__)
-hdlr = logging.FileHandler('var/log/test.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
-log.setLevel(logging.INFO)
+#### Logging ####
+# log = logging.getLogger(__name__)
+# hdlr = logging.FileHandler('var/log/test.log')
+# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# hdlr.setFormatter(formatter)
+# log.addHandler(hdlr)
+# log.setLevel(logging.INFO)
+################
 
 class Places(object):
     config = {}
@@ -67,7 +69,7 @@ class Places(object):
         km = 6367 * c
         return km
 
-    def get_domain_and_indeces_by_product_and_place(self, product, place_id):
+    def get_domain_and_indeces_by_product_and_place(self, product, place_id, date=None):
         # conn = pymongo.MongoClient()
         # db = conn[self.config['DATABASE']]  # connessione databse
         # places = db['places']  # richiesta collezione 'places'
@@ -89,14 +91,18 @@ class Places(object):
                     domain = d
 
             if "wrf5" in product or "rms3" in product or "wcm3" in product or "ww33" in product or "aiq3" in product:
-                nowutc_datetime = datetime.utcnow()
-                ncep_date = nowutc_datetime.strftime("%Y%m%dZ%H00")
+                if date == None:
+                    nowutc_datetime = datetime.utcnow()
+                    ncep_date = nowutc_datetime.strftime("%Y%m%dZ%H00")
+                else:
+                    ncep_date = date
+
                 yyyy = str(ncep_date[0:4])
                 mm = str(ncep_date[4:6])
                 dd = str(ncep_date[6:8])
                 hh = str(ncep_date[9:11])
 
-                url = "/storage/ccmmma/prometeo/data/opendap/" + product + "/" + domain + "/archive/" + yyyy + "/" + mm + "/" + dd + "/" + product + "_" + domain + "_" + ncep_date + ".nc"
+                url = "/data1/ccmmma/prometeo/data/opendap/" + product + "/" + domain + "/archive/" + yyyy + "/" + mm + "/" + dd + "/" + product + "_" + domain + "_" + ncep_date + ".nc"
 
                 # print("get_domain_and_indices_by_product_and_place() - firt if -  : " + url)
 

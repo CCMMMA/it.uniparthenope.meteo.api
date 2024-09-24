@@ -3,7 +3,7 @@
       "it-IT": "http://meteo.uniparthenope.it\n%HZ%d%b%Y __name__ (__place__/__product__)\n__title__",
       "en-US": "http://meteo.uniparthenope.it\n%HZ%d%b%Y __name__ (__place__/__product__)\n__title__"
    },
-   "data_path": "/storage/ccmmma/prometeo/data/opendap/",
+   "data_path": "/data1/ccmmma/prometeo/data/opendap/",
    "result_path": "/project/images/",
    "cache_path": "/data1/ccmmma/prometeo/cache/",
    "base": [
@@ -1422,7 +1422,7 @@
                { "ge": 480,            "values": { "skip": 16, "scale": 10 }}
             ],
             "d03": [
-	       { "ge":   0, "lt":  30, "values": { "skip":  1, "scale":  1  }},
+	       { "ge":   0, "lt":  30, "values": { "skip":  1, "scale":  5  }},
                { "ge":  30, "lt":  60, "values": { "skip":  2, "scale":  5  }},
                { "ge":  60, "lt": 120, "values": { "skip":  6, "scale":  7  }},
                { "ge": 120, "lt": 240, "values": { "skip":  8, "scale":  5  }},

@@ -23,13 +23,14 @@ import app
 from PIL import ImageFont
 from PIL import ImageDraw 
 
-log = logging.getLogger(__name__)
-hdlr = logging.FileHandler('var/log/test.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
-log.setLevel(logging.INFO)
-
+#### Logging ####
+# log = logging.getLogger(__name__)
+# hdlr = logging.FileHandler('var/log/test.log')
+# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# hdlr.setFormatter(formatter)
+# log.addHandler(hdlr)
+# log.setLevel(logging.INFO)
+################
 
 def statusByConc(args):
     con = args[0]
@@ -706,7 +707,6 @@ class MeteoServices:
         return calendar_items
 
     def modelOutput(self, params=None):
-
         retval = {}
 
         prod = self.default_prod
@@ -749,7 +749,7 @@ class MeteoServices:
         date = datetime(year, month, day, hour, minute)
 
         # Get the domain and the indeces of the place
-        domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place)
+        domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
 
         # Check if domain and indeces are correct
         if domain_indeces is not None:
@@ -768,6 +768,8 @@ class MeteoServices:
 
             # Check if the file exists
             dataset = None
+
+            #app.application.logger.warning('url_dataset_netCDF4 : ' + str(url))
 
             try:
                 # Open the data file
@@ -919,6 +921,14 @@ class MeteoServices:
                                 # Check if level is none and time is not (3D variable, not depending by the level)
                                 elif time is not None and level is None:
 
+                                    # app.application.logger.warning('var : ' + str(var))
+                                    # app.application.logger.warning('time : ' + str(time))
+                                    # app.application.logger.warning('Jmin : ' + str(Jmin))
+                                    # app.application.logger.warning('Jmax : ' + str(Jmax))
+                                    # app.application.logger.warning('Imin : ' + str(Imin))
+                                    # app.application.logger.warning('Imax : ' + str(Imax))
+                                    # app.application.logger.warning('dataset.variables[var][time, Jmin:Jmax, Imin:Imax] : ' + str(dataset.variables[var][time, Jmin:Jmax, Imin:Imax]))
+
                                     # Get the value and append it to the values list
                                     values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
 
@@ -1004,7 +1014,7 @@ class MeteoServices:
 
             # Add details to the result status
             retval['details'] = "Place not indexed"
-
+        
         # Return the result
         return retval
 
@@ -1426,8 +1436,13 @@ class MeteoServices:
             
             # log.info("[*][*][*][*] items : " + str(items))
 
-            with mp.Pool(self.config['NUM_THREADS']) as p:
+            with mp.Pool(self.config['NUM_THREADS']) as p: 
                 model_outputs = p.starmap(self.modelOutput, items)
+
+        
+            # without thread 
+            # model_outputs = [self.modelOutput(*item) for item in items]
+
 
             # log.info("[*][*][*][*] model_outputs : " + str(model_outputs))
             
@@ -1477,8 +1492,6 @@ class MeteoServices:
                                     if 'aggregate' in self.maps["products"][prod]['fields'][field]:
 
                                         aggregateList = self.maps["products"][prod]['fields'][field]['aggregate']
-
-                                        # log.info("")
 
                                         if any("sum" in s for s in aggregateList) or any("ave" in s for s in aggregateList):
                                             sums[field] = forecast[key][field]
@@ -1739,11 +1752,12 @@ class MeteoServices:
 
         imageName="map_"+place+"_"+prod+"_"+dateTime+"_"+output+"_"+str(width)+"x"+str(height)+".png"
         relativePath="map/"+place+"/"+prod+"/"+dateTimePath
+
+        # Check if the directory exists
+        if os.path.exists(self.config['BASE_PRODUCTS']+"/"+relativePath) is False:
         
-        try:
+            # Create the directory
             os.makedirs(self.config['BASE_PRODUCTS']+"/"+relativePath)
-        except Exception as e:
-            log.info("----------- MeteoServices - modelmapurl_or_image : error about makedirs - error : " + str(e))
 
         # imagePath=self.cfg['BASE_PRODUCTS']+"/"+relativePath+"/"+imageName
         # imageUrl=self.cfg['PUB_URL']+"/"+relativePath+"/"+imageName
@@ -1866,7 +1880,8 @@ class MeteoServices:
                                     imgLayer = Image.open(io.BytesIO(data))
                                     imgBaseMap.paste(imgLayer, (0, 0), imgLayer)
                             except Exception as e :
-                                log.error("error : " + str(e))
+                                print("error : " + str(e))
+                                #log.error("error : " + str(e))
 
 
                     #### ####
@@ -1974,10 +1989,14 @@ class MeteoServices:
 
         imageName="plt_"+place+"_"+prod+"_"+dateTime+"_"+output+"_"+str(width)+"x"+str(height)+".png"
         relativePath="plt/"+place+"/"+prod+"/"+dateTimePath
-        try:
+
+        # Check if the directory exists
+        if os.path.exists(self.config['BASE_PRODUCTS']+"/"+relativePath) is False:
+
+            # Create the directory
             os.makedirs(self.config['BASE_PRODUCTS']+"/"+relativePath)
-        except:
-            pass
+        
+        
         imagePath=self.config['BASE_PRODUCTS']+"/"+relativePath+"/"+imageName
         imageUrl=self.config['PUB_URL']+"/"+relativePath+"/"+imageName
 

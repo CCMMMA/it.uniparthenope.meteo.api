@@ -19,13 +19,14 @@ import os
 import datetime
 
 
-log = logging.getLogger(__name__)
-hdlr = logging.FileHandler('var/log/test.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
-log.setLevel(logging.INFO)
-
+#### Logging ####
+# log = logging.getLogger(__name__)
+# hdlr = logging.FileHandler('var/log/test.log')
+# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# hdlr.setFormatter(formatter)
+# log.addHandler(hdlr)
+# log.setLevel(logging.INFO)
+#################
 
 class DataNotAvailableException(Exception):
     pass
@@ -145,7 +146,7 @@ class Plotter(object):
         # For each shapefile in the shapefiles array...
         for shapefile in shapefiles:
 
-            logging.debug("Shapefile:", shapefile)
+            # logging.debug("Shapefile:", shapefile)
 
             # Check if the path is defined and if the related file exists
             if "path" in shapefile and os.path.exists(shapefile["path"]+".shp"):

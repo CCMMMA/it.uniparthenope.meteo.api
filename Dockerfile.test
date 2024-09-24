@@ -20,6 +20,6 @@ USER ccmmma
 COPY --chown=ccmmma:ccmmma . /project
 WORKDIR /project
 
-CMD ["uwsgi", "--ini", "ccmmmaapi.ini", "--uid", "ccmmma"]
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
+#CMD ["uwsgi", "--ini", "ccmmmaapi-test.ini", "--uid", "ccmmma"]
+ENTRYPOINT ["tail", "-f", "/dev/null"]
 # uwsgi --ini ccmmmaapi.ini --uid ccmmma

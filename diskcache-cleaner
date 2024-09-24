@@ -1,0 +1,17 @@
+#! /bin/bash
+
+base_path="/data1/ccmmma/prometeo/diskcache/"
+
+for item in `ls $base_path`
+do
+  removed=""
+  now=`date +%s`
+  created=`cat $base_path/$item/meta.json | jq .created`
+  expire=`cat $base_path/$item/meta.json | jq .expire`
+  delta=$((now-created))
+  if [ $delta -ge $expire ]; then
+    #rm -rf $base_path/$item
+    removed="[X]"
+  fi
+  echo $item $expire $delta $removed 
+done

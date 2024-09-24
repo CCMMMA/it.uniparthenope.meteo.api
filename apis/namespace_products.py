@@ -13,12 +13,12 @@ from flask import request
 from core.GribServices import GribServices
 
 ##### Logging #####
-log = logging.getLogger(__name__)
-hdlr = logging.FileHandler('var/log/test.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-log.addHandler(hdlr)
-log.setLevel(logging.INFO)
+# log = logging.getLogger(__name__)
+# hdlr = logging.FileHandler('var/log/test.log')
+# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+# hdlr.setFormatter(formatter)
+# log.addHandler(hdlr)
+# log.setLevel(logging.INFO)
 #################
 
 api = Namespace('products', description='Products API')
