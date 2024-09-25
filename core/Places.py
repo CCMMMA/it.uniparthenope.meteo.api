@@ -8,12 +8,7 @@ from core.MongoDbHandlers import MongoDBHandlers
 import logging
 
 #### Logging ####
-# log = logging.getLogger(__name__)
-# hdlr = logging.FileHandler('var/log/test.log')
-# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# hdlr.setFormatter(formatter)
-# log.addHandler(hdlr)
-# log.setLevel(logging.INFO)
+logger = logging.getLogger('main_logger')
 ################
 
 class Places(object):
@@ -115,7 +110,6 @@ class Places(object):
                 lat1 = dataset.variables["latitude"][-1]
                 dxll = (lon1 - lon0) / ipoints
                 dyll = (lat1 - lat0) / jpoints
-                dataset.close()
 
                 # print( str(lon0) + "," + str(lat0) )
                 # print( str(ipoints) + "," + str(jpoints) )
@@ -126,18 +120,34 @@ class Places(object):
                 maxLon = float(result['maxLon'])
                 maxLat = float(result['maxLat'])
 
-                Imin = int((minLon - lon0) / dxll)
-                Imax = int((maxLon - lon0) / dxll)
-                Jmin = int((minLat - lat0) / dyll)
-                Jmax = int((maxLat - lat0) / dyll)
+                if minLon < lon0:
+                    minLon = lon0
+                if maxLon > lon1:
+                    maxLon = lon1
+                if minLat < lat0:
+                    minLat = lat0
+                if maxLat > lat1:
+                    maxLat = lat1
+
+                #Imin = int((minLon - lon0) / dxll)
+                #Imax = int((maxLon - lon0) / dxll)
+                #Jmin = int((minLat - lat0) / dyll)
+                #Jmax = int((maxLat - lat0) / dyll)
+
+                Imin = max(0, int((minLon - lon0) / dxll))
+                Imax = min(ipoints - 1, int((maxLon - lon0) / dxll))
+                Jmin = max(0, int((minLat - lat0) / dyll))
+                Jmax = min(jpoints - 1, int((maxLat - lat0) / dyll))
 
                 # print(str(domain))
-                # print(str(Imin) + "," + str(Jmin))
-                # print(str(Imax) + "," + str(Jmax))
+                #print(str(Imin) + "," + str(Jmin))
+                #print(str(Imax) + "," + str(Jmax))
+
+                dataset.close()
 
                 return domain, Jmin, Jmax, Imin, Imax
 
-            elif "Jmin" in result['prods'][product][domain]:
+            elif "Jmin" in result['prods'][product][domain] and "Jmax" in result['prods'][product][domain] and "Imin" in result['prods'][product][domain] and "Imax" in result['prods'][product][domain]:
                 Jmin = result["prods"][product][domain]["Jmin"]
                 Jmax = result["prods"][product][domain]["Jmax"]
                 Imin = result["prods"][product][domain]["Imin"]
@@ -148,6 +158,7 @@ class Places(object):
                 # print(Imin)
                 # print(Imax)
                 return domain, Jmin, Jmax, Imin, Imax
+
         return None
 
     def get_places_by_bb(self, lon_min, lat_min, lon_max, lat_max, options=None):

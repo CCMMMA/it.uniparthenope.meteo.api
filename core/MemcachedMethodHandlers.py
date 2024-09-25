@@ -37,7 +37,7 @@ def set_resource(request_in, res, cache, use_pymemcache):
 
     m = hashlib.md5(request_in.url.encode('utf-8'))
     if m is not None:
-        to_be_cached = False;
+        to_be_cached = False
         timestamp = int(datetime.datetime.now().timestamp())
         to_expire = (60 - int(strftime("%M", gmtime()))) * 60
         try:

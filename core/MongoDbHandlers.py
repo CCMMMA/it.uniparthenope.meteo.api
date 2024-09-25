@@ -1,13 +1,8 @@
 import pymongo.errors
-# import logging
+import logging
 
 #### Logging ####
-# log = logging.getLogger(__name__)
-# hdlr = logging.FileHandler('var/log/test.log')
-# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# hdlr.setFormatter(formatter)
-# log.addHandler(hdlr)
-# log.setLevel(logging.INFO)
+logger = logging.getLogger('main_logger')
 ################
 
 class MongoDBHandlers(object):

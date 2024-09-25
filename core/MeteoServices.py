@@ -18,18 +18,13 @@ from core.Plotter import Plotter
 from datetime import datetime, timedelta, time
 import xmltodict
 import logging
-import app 
+import app
 
 from PIL import ImageFont
 from PIL import ImageDraw 
 
 #### Logging ####
-# log = logging.getLogger(__name__)
-# hdlr = logging.FileHandler('var/log/test.log')
-# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# hdlr.setFormatter(formatter)
-# log.addHandler(hdlr)
-# log.setLevel(logging.INFO)
+logger = logging.getLogger('main_logger')
 ################
 
 def statusByConc(args):
@@ -769,8 +764,6 @@ class MeteoServices:
             # Check if the file exists
             dataset = None
 
-            #app.application.logger.warning('url_dataset_netCDF4 : ' + str(url))
-
             try:
                 # Open the data file
                 dataset = netCDF4.Dataset(url)
@@ -866,6 +859,7 @@ class MeteoServices:
                     if "zero_if_positive" in item:
                         zero_if_positive = item["zero_if_positive"]
 
+
                     # Check if var1 is defined
                     if "var" in item:
 
@@ -921,14 +915,6 @@ class MeteoServices:
                                 # Check if level is none and time is not (3D variable, not depending by the level)
                                 elif time is not None and level is None:
 
-                                    # app.application.logger.warning('var : ' + str(var))
-                                    # app.application.logger.warning('time : ' + str(time))
-                                    # app.application.logger.warning('Jmin : ' + str(Jmin))
-                                    # app.application.logger.warning('Jmax : ' + str(Jmax))
-                                    # app.application.logger.warning('Imin : ' + str(Imin))
-                                    # app.application.logger.warning('Imax : ' + str(Imax))
-                                    # app.application.logger.warning('dataset.variables[var][time, Jmin:Jmax, Imin:Imax] : ' + str(dataset.variables[var][time, Jmin:Jmax, Imin:Imax]))
-
                                     # Get the value and append it to the values list
                                     values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
 
@@ -938,9 +924,9 @@ class MeteoServices:
                                     # Get the value and append it to the values list
                                     values.append(float(method(dataset.variables[var][time, level, Jmin:Jmax, Imin:Imax])))
 
+                        
                         # Check if at least one value is avaliable 
                         if len(values)>0:
-
                             # Initialize the value
                             value = None
 

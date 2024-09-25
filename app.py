@@ -18,14 +18,17 @@ dictConfig({
             'format': '%(levelname)s: %(message)s',
         },
         'info_format': {
-            'format': '[%(asctime)s] type : %(levelname)s ---- %(module)s : %(message)s',
+            'format': '[%(asctime)s] %(levelname)s in %(module)s (function [ %(funcName)s ]) (line [ %(lineno)d ]): %(message)s ',
             # 'format': '[%(asctime)s] %(levelname)s in %(module)s (%(funcName)s): %(message)s',
         },
         'error_format': {
-            'format': '[%(asctime)s] %(levelname)s in %(module)s (%(funcName)s): %(message)s',
+            'format': '[%(asctime)s] %(levelname)s in %(module)s (function [ %(funcName)s ]) (line [ %(lineno)d ]): %(message)s ',
         },
         'warning_format': {
-            'format': '[%(asctime)s] type : %(levelname)s ---- %(module)s : %(message)s',
+            'format': '[%(asctime)s] %(levelname)s in %(module)s (function [ %(funcName)s ]) (line [ %(lineno)d ]): %(message)s ',
+        },
+        "critical_format": {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s (function [ %(funcName)s ]) (line [ %(lineno)d ]): %(message)s '
         }
     },
     'handlers': {
@@ -48,12 +51,17 @@ dictConfig({
             'class': 'logging.StreamHandler',
             'formatter': 'warning_format',
             'level': 'WARNING',
+        },
+        'critical_handler': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'critical_format',
+            'level': 'CRITICAL',
         }
     },
     'loggers': {
         'main_logger': {
             'level': 'DEBUG',
-            'handlers': ['info_handler', 'error_handler', 'warning_handler'],
+            'handlers': ['info_handler', 'error_handler', 'warning_handler', 'critical_handler'],
             'propagate': False
         }
     }
@@ -71,10 +79,9 @@ application = Flask(__name__)
 CORS(application)
 api.init_app(application)
 
-application.logger = logger
-application.logger.info('test message')
-application.logger.warning('test message')
-application.logger.error('test message')
+logger.info("Test info log message")
+logger.warning("Test warning log message")
+logger.error("Test error log message")
 
 application.config.from_object(__name__)
 application.config.from_envvar('APP_SETTINGS', silent=False)

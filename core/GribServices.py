@@ -14,12 +14,7 @@ import numpy as np
 from scipy.interpolate import griddata
 
 #### Logging ####
-# log = logging.getLogger(__name__)
-# hdlr = logging.FileHandler(os.path.dirname(os.path.realpath(__file__)) + '/../var/log/' + __name__ + '.log')
-# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# hdlr.setFormatter(formatter)
-# log.addHandler(hdlr)
-# log.setLevel(logging.INFO)
+logger = logging.getLogger('main_logger')
 ################
 
 class GribServices:

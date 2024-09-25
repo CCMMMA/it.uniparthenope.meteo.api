@@ -20,13 +20,9 @@ import datetime
 
 
 #### Logging ####
-# log = logging.getLogger(__name__)
-# hdlr = logging.FileHandler('var/log/test.log')
-# formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-# hdlr.setFormatter(formatter)
-# log.addHandler(hdlr)
-# log.setLevel(logging.INFO)
+logger = logging.getLogger('main_logger')
 #################
+
 
 class DataNotAvailableException(Exception):
     pass
@@ -92,9 +88,11 @@ class Plotter(object):
                         os.makedirs(self.cache_path)
 
             else:
-                logging.critical(config_file + " not found!")
+                # logging.critical(config_file + " not found!")
+                logger.critical(config_file + " not found!")
         else:
-            logging.critical("MAPS not set in the json configuration file.")
+            #logging.critical("MAPS not set in the json configuration file.")
+            logger.critical("MAPS not set in the json configuration file.")
 
     # Add a shaded layer to the basemap
     def _add_shaded(self, basemap, values, lons, lats, data, colors, legend_title, position_legend, size="2%",
@@ -145,8 +143,6 @@ class Plotter(object):
 
         # For each shapefile in the shapefiles array...
         for shapefile in shapefiles:
-
-            # logging.debug("Shapefile:", shapefile)
 
             # Check if the path is defined and if the related file exists
             if "path" in shapefile and os.path.exists(shapefile["path"]+".shp"):
@@ -247,17 +243,13 @@ class Plotter(object):
 
     def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
 
-        # log.info("---------- Plotter - render() : start")
-        # log.info("---------- Plotter - render() : (input) place = " + str(place))
-        # log.info("---------- Plotter - render() : (input) prod = " + str(prod))
-        # log.info("---------- Plotter - render() : (input) output = " + str(output))
-
-
         # Get place information by id
         place_info = self.places.get_place_by_id(place)
-        # place_info = self.places.get_place_by_id(place, params)
 
-        # log.info("----------- Plotter - render() : place_info = " + str(place_info))
+        if place_info is None:
+            logger.error("place : " + str(place)) 
+
+        # place_info = self.places.get_place_by_id(place, params)
 
         # Get bounding box of the place
         minLat = place_info["minLat"]
@@ -298,6 +290,7 @@ class Plotter(object):
         if os.path.exists(data_file) is False:
             # Raise an exception
             # log.info("---------- Plotter - render() : data_file error = " + str(data_file))
+            logger.error('data_file : ' + str(data_file))
             raise DataNotAvailableException
         
         # Assemble the relative path
@@ -449,11 +442,6 @@ class Plotter(object):
                             barb_length = values["barb_length"]
                         break
 
-        #logging.debug("domainId:", domainId)
-        #logging.debug("skip:", skip)
-        #logging.debug("scale:", scale)
-        #logging.debug("hpa_tick", hpa_tick)
-
         # Check if the outputs key is defined        
         if "outputs" not in self.maps["products"][prod]:
             raise Exception("The outputs key is missing in products."+prod)
@@ -497,6 +485,8 @@ class Plotter(object):
                 language = "en-US"
             
             # Get the title
+   
+        
         title = outputs_output["title"][language]
       
             
@@ -579,6 +569,10 @@ class Plotter(object):
             # Check if the text key is defined 
             if "text" in layer:
                 text = layer["text"][language]
+                # text = layer["text"]['it-IT']
+                # logger.error(' text : ' + str(text))
+                # logger.error(' language : ' + str(language))
+                # logger.error(' layer[text][it-IT] : ' + str(layer["text"]['it-IT']))
 
             # Check if the pad key is defined 
             if "pad" in layer:
