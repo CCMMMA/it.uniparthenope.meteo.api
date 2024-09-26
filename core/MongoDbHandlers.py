@@ -1,8 +1,9 @@
 import pymongo.errors
-import logging
+# import logging
+from core.Logger import logger
 
 #### Logging ####
-logger = logging.getLogger('main_logger')
+# logger = logging.getLogger('main_logger')
 ################
 
 class MongoDBHandlers(object):

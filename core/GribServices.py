@@ -5,16 +5,17 @@ from datetime import timedelta, date, datetime
 import os
 import os.path
 # import ConfigParser
-import logging, os
-
+# import logging, os
+import os
 import netCDF4
 from netCDF4 import Dataset
 from wrf import getvar, ALL_TIMES, get_basemap, latlon_coords, geo_bounds, to_np, get_cartopy, destagger, ll_to_xy
 import numpy as np
 from scipy.interpolate import griddata
+from core.Logger import logger
 
 #### Logging ####
-logger = logging.getLogger('main_logger')
+# logger = logging.getLogger('main_logger')
 ################
 
 class GribServices:

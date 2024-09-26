@@ -17,14 +17,15 @@ from core.Places import Places
 from core.Plotter import Plotter
 from datetime import datetime, timedelta, time
 import xmltodict
-import logging
+# import logging
+from core.Logger import logger
 import app
 
 from PIL import ImageFont
 from PIL import ImageDraw 
 
 #### Logging ####
-logger = logging.getLogger('main_logger')
+# logger = logging.getLogger('main_logger')
 ################
 
 def statusByConc(args):

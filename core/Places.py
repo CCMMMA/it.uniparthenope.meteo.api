@@ -5,10 +5,11 @@ from math import radians, cos, sin, asin, sqrt
 from datetime import datetime
 from numpy.compat import basestring
 from core.MongoDbHandlers import MongoDBHandlers
-import logging
+# import logging
+from core.Logger import logger
 
 #### Logging ####
-logger = logging.getLogger('main_logger')
+# logger = logging.getLogger('main_logger')
 ################
 
 class Places(object):

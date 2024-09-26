@@ -1,5 +1,6 @@
 import sys
-import logging
+# import logging
+from core.Logger import logger
 
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from matplotlib.collections import PatchCollection
@@ -20,7 +21,7 @@ import datetime
 
 
 #### Logging ####
-logger = logging.getLogger('main_logger')
+# logger = logging.getLogger('main_logger')
 #################
 
 

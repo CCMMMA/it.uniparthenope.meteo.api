@@ -1,7 +1,8 @@
 import hashlib
 import app
 import base64
-import logging
+# import logging
+from core.Logger import logger
 import json
 from flask_restx import Namespace, Resource
 from flask import jsonify, Response, make_response
@@ -13,7 +14,7 @@ from flask import request
 from core.GribServices import GribServices
 
 ##### Logging #####
-logger = logging.getLogger('main_logger')
+# logger = logging.getLogger('main_logger')
 #################
 
 
