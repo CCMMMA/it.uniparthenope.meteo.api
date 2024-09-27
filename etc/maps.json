@@ -1240,8 +1240,8 @@
             },
             "scu": {
                "title": {
-                  "en-US": "Regional Ocean Model System",
-                  "it-IT": "Regional Ocean Model System"
+                  "en-US": "Surface current [kn]",
+                  "it-IT": "Corrente marina superficiale [kn]"
                },
                "wms": {
                   "layers":[
