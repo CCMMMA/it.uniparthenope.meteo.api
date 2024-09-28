@@ -1,11 +1,9 @@
 import simplejson
 import time
-import time
 from datetime import timedelta, date, datetime
 import os
 import os.path
 # import ConfigParser
-# import logging, os
 import os
 import netCDF4
 from netCDF4 import Dataset
@@ -14,14 +12,10 @@ import numpy as np
 from scipy.interpolate import griddata
 from core.Logger import logger
 
-#### Logging ####
-# logger = logging.getLogger('main_logger')
-################
-
 class GribServices:
     default_domain = 'd01'
     default_prod = 'wrf5'
-    cfg = {}
+    config = {}
     path = ""
 
     __statusCode = {'200': {'code': '200', 'msg': 'OK'}, '205': {'code': '205', 'msg': 'No Content'},
@@ -29,10 +23,10 @@ class GribServices:
                     '401': {'code': '401', 'msg': 'Unauthorized'}, '404': {'code': '404', 'msg': 'Not Found'}}
 
     def __init__(self, config):
-        self.cfg = config
+        self.config = config
         self.products = None
         self.maps = None
-        with open(self.cfg["MAPS"]) as f:
+        with open(self.config["MAPS"]) as f:
             self.maps = simplejson.load(f)
         self.products = self.maps["products"]
 
@@ -91,25 +85,26 @@ class GribServices:
         relativePath = "csv/" + domain + "/" + prod + "/" + dateTimePath
 
         try:
-            os.makedirs(self.cfg['BASE_PRODUCTS'] + "/" + relativePath)
+            os.makedirs(self.config['BASE_PRODUCTS'] + "/" + relativePath)
         except Exception as e:
-            # print(e)
+            logger.error(str(e))
             pass
 
-        csvPath = self.cfg['BASE_PRODUCTS'] + "/" + relativePath + "/" + csvName
-        csvUrl = self.cfg['PUB_URL'] + "/" + relativePath + "/" + csvName
+        csvPath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + csvName
+        csvUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + csvName
 
         # Check if the file already exists and it is valid
-        if os.path.isfile(csvPath) is False or (os.path.isfile(csvPath) is True and (time.time() - os.path.getmtime(csvPath)) > 86400):
+        if os.path.isfile(csvPath) is False or (os.path.isfile(csvPath) is True and (time.time() - os.path.getmtime(csvPath)) > self.config['CACHE_TIMEOUT']):
             # Set the local path of the data file
             # url = self.cfg['BASE_PATH'] + "/" + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-            url = self.cfg['BASE_PATH'] + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            url = self.config['BASE_PATH'] + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
             # print(url)
             ncfile = None
             try:
                 # Open the data file
                 ncfile = netCDF4.Dataset(url)
-            except:
+            except Exception as e:
+                logger.error(str(e))
                 pass
 
             if ncfile is not None:
@@ -159,6 +154,7 @@ class GribServices:
             with open(csvPath, 'r') as content_file:
                 retval = content_file.read()
         except Exception as e:
+            logger.error(str(e))
             pass
 
         return retval
@@ -188,7 +184,6 @@ class GribServices:
                 timeref = params['date']
 
         if timeref is None:
-            # print "get current utc"
             date = datetime.utcnow()
             year = date.year
             month = date.month
@@ -196,7 +191,6 @@ class GribServices:
             hour = int(round(date.hour + date.minute / 60.0))
             minute = 0
         else:
-            # print "Date is provided"
             year = int(timeref[:4])
             month = int(timeref[4:6])
             day = int(timeref[6:8])
@@ -206,37 +200,37 @@ class GribServices:
 
         date = datetime(year, month, day, hour, minute)
 
-        data_ora = format(date.year, '04') + "-" + format(date.month, '02') + "-" + format(date.day,
-                                                                                           '02') + " " + format(
-            date.hour, '02') + ":" + format(date.minute, '02') + ":00"
+        data_ora = format(date.year, '04') + "-" + format(date.month, '02') + "-" + format(date.day, '02') + " " + format(date.hour, '02') + ":" + format(date.minute, '02') + ":00"
 
         # Set the dateTime
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour,
-                                                                                                              '02') + format(
-            date.minute, '02')
+        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
         dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
 
         jsonName = domain + "_" + prod + "_" + dateTime + ".json"
         relativePath = "jsn/" + domain + "/" + prod + "/" + dateTimePath
-        try:
-            os.makedirs(self.cfg['BASE_PRODUCTS'] + "/" + relativePath)
-        except Exception as e:
-            print(e)
-            pass
 
-        jsonPath = self.cfg['BASE_PRODUCTS'] + "/" + relativePath + "/" + jsonName
-        jsonUrl = self.cfg['PUB_URL'] + "/" + relativePath + "/" + jsonName
+        if os.path.exists(self.config['BASE_PRODUCTS'] + "/" + relativePath) is False:
+            try:
+                os.makedirs(self.config['BASE_PRODUCTS'] + "/" + relativePath)
+            except Exception as e:
+                logger.error(str(e))
+                pass
+
+        jsonPath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + jsonName
+        jsonUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + jsonName
+
+        logger.info(" jsonPath : " + str(jsonPath))
 
         # Check if the file already exists and it is valid
-        if os.path.isfile(jsonPath) is False or (
-                os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > 86400):
-            # Set the local path of the data file
-            url = self.cfg['BASE_PATH'] + "/" + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+        if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['CACHE_TIMEOUT']):
+            # Set the local path of the data file 
+            url =  self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
             ncfile = None
             try:
                 # Open the data file
                 ncfile = netCDF4.Dataset(url)
-            except:
+            except Exception as e:
+                logger.error(str(e))
                 pass
 
             if ncfile is not None:
@@ -305,10 +299,8 @@ class GribServices:
                     minLon = min_long.item()
                     maxLon = max_long.item()
 
-                    minimo = ll_to_xy(ncfile, minLat, minLon, timeidx=0, squeeze=True, meta=True, stagger=None,
-                                      as_int=True)
-                    massimo = ll_to_xy(ncfile, maxLat, maxLon, timeidx=0, squeeze=True, meta=True, stagger=None,
-                                       as_int=True)
+                    minimo = ll_to_xy(ncfile, minLat, minLon, timeidx=0, squeeze=True, meta=True, stagger=None, as_int=True)
+                    massimo = ll_to_xy(ncfile, maxLat, maxLon, timeidx=0, squeeze=True, meta=True, stagger=None, as_int=True)
 
                     py = np.array(Xlat).flatten()
                     px = np.array(Xlon).flatten()
@@ -382,7 +374,7 @@ class GribServices:
                             "parameterNumber": 3,
                             "dx": dLon,
                             "dy": dLat,
-                            "parameterNumberName": "U-component_of_wind",
+                            "parameterNumberName": "V-component_of_wind",
                             "la1": maxLat,
                             "la2": minLat,
                             "parameterCategory": 2,

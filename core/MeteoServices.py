@@ -15,11 +15,12 @@ import os.path
 from flask import make_response
 from core.Places import Places
 from core.Plotter import Plotter
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 import xmltodict
 # import logging
 from core.Logger import logger
 import app
+import time
 
 from PIL import ImageFont
 from PIL import ImageDraw 
@@ -1156,14 +1157,25 @@ class MeteoServices:
         # Set the dateTime
         dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
 
-        relativePath, imageName = self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
+        # Assemble the relative path
+        relativePath = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
+        
 
-        imagePath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + imageName
+        if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
+            os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
+
+        # Assemble the image name
+        imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png" 
+
+        imagePath = self.config['BASE_PRODUCTS'] + os.path.sep + relativePath + os.path.sep + imageName
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
 
+        if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
+            # Creation image 
+            self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
+        
         retval['link'] = imageUrl
 
-       
         try:
             with open(imagePath, 'rb') as content_file:
             #with open(imagePath, 'r') as content_file:
@@ -1667,7 +1679,7 @@ class MeteoServices:
         
     
     # funziona aggiunta dalle vecchie API 
-    def modelmapurl_or_image(self, use_diskcached=True, params = None):
+    def modelmapurl_or_image(self, use_disk_cached=True, params = None):
         retval = {}
 
         # places = Places(app.application.config)
@@ -1746,14 +1758,11 @@ class MeteoServices:
             # Create the directory
             os.makedirs(self.config['BASE_PRODUCTS']+"/"+relativePath)
 
-        # imagePath=self.cfg['BASE_PRODUCTS']+"/"+relativePath+"/"+imageName
-        # imageUrl=self.cfg['PUB_URL']+"/"+relativePath+"/"+imageName
-
         imagePath=self.config['BASE_PRODUCTS']+"/"+relativePath+"/"+imageName
         imageUrl=self.config['PUB_URL']+"/"+relativePath+"/"+imageName
 
         # Check if the file already exists and it is valid
-        if app.use_disk_cached is False or os.path.isfile(imagePath) is False or ( os.path.isfile(imagePath) is True and (time.time()-os.path.getmtime(imagePath))>86400):
+        if use_disk_cached is False or os.path.isfile(imagePath) is False or ( os.path.isfile(imagePath) is True and (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
                         
             # Get place data
             placeData = self.places.get_place_by_id(place,params)
@@ -1764,15 +1773,12 @@ class MeteoServices:
                 # Get the domain and the indeces of the place
                 domain_indeces=self.places.get_domain_and_indeces_by_product_and_place(prod, place)
 
-                #print "domain_indeces:"+str(domain_indeces)
 
                 # Check if domain and indeces are correct
                 if domain_indeces is not None:
                     
                     # Retrieve domain and indeces
                     (domain,Jmin,Jmax,Imin,Imax)=domain_indeces
-
-                    #print "best domain:"+str(domain)
 
                     minLon=placeData["minLon"]
                     minLat=placeData["minLat"]
@@ -1899,8 +1905,9 @@ class MeteoServices:
 
         return (retval,imageName)
 
+    ''' 
     # funzione aggiunta dalle vecchie API 
-    def modelploturl_or_image(self, use_diskcached=True, params = None):
+    def modelploturl_or_image(self, use_disk_cached=True, params = None):
         months=[ "jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]
         retval = {}
 
@@ -2231,15 +2238,15 @@ endvars
                         file = open(controlFileName,"w") 
                         file.write(controlFile)
                         file.close() 
-                        '''
-                        script=self.config['GRADS_SCRIPT']
+                        
+                        //script=self.config['GRADS_SCRIPT']
 
-                        environment="/home/ccmmma/prometeo/opt/ccmmmaapi/sourceme-grads-2.2.1"
-                        label=placeData["long_name"]["it"]
-                        command='grads -lbc "'+script+" "+controlFileName+" "+str(minLon)+" "+str(minLat)+" "+str(maxLon)+" "+str(maxLat)+" "+place+" "+domain+" "+prod+" "+output+" "+str(width)+" "+str(height)+" "+imagePath+" "+tempdir+" "+bars+" "+label+'"'
-                        os.system(". "+environment+";"+command)
+                        # environment="/home/ccmmma/prometeo/opt/ccmmmaapi/sourceme-grads-2.2.1"
+                        # label=placeData["long_name"]["it"]
+                        # command='grads -lbc "'+script+" "+controlFileName+" "+str(minLon)+" "+str(minLat)+" "+str(maxLon)+" "+str(maxLat)+" "+place+" "+domain+" "+prod+" "+output+" "+str(width)+" "+str(height)+" "+imagePath+" "+tempdir+" "+bars+" "+label+'"'
+                        # os.system(". "+environment+";"+command)
                         #shutil.rmtree(tempdir)
-                        '''
+                        
 
 
             else:
@@ -2257,4 +2264,5 @@ endvars
                 imageUrl=self.config['NOIMAGE_URL']
 
         return (retval,imageName)
+        '''
     

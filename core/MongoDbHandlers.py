@@ -1,10 +1,5 @@
 import pymongo.errors
-# import logging
 from core.Logger import logger
-
-#### Logging ####
-# logger = logging.getLogger('main_logger')
-################
 
 class MongoDBHandlers(object):
     config = {}
@@ -17,9 +12,9 @@ class MongoDBHandlers(object):
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:
-            log.error(str(connection_failure))
+            logger.error(str(connection_failure))
         except pymongo.errors.ConfigurationError as configuration_error:
-            log.error(str(configuration_error))
+            logger.error(str(configuration_error))
         db = client[self.config['DATABASE']]
         collection = db[name_collection]
         if limit is None:
@@ -37,11 +32,9 @@ class MongoDBHandlers(object):
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:
-            print(str(connection_failure))
-            # log.error(str(connection_failure))
+            logger.error(str(connection_failure))
         except pymongo.errors.ConfigurationError as configuration_error:
-            print(str(configuration_error))
-            # log.error(str(configuration_error))
+            logger.error(str(configuration_error))
         db = client[self.config['DATABASE']]
         collection = db[name_collection]
         out = collection.find_one(query, proj)
@@ -52,11 +45,9 @@ class MongoDBHandlers(object):
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:
-            print(str(connection_failure))
-            # log.error(str(connection_failure))
+            logger.error(str(connection_failure))
         except pymongo.errors.ConfigurationError as configuration_error:
-            print(str(configuration_error))
-            # log.error(str(configuration_error))
+            logger.error(str(configuration_error))
         db = client[self.config['DATABASE']]
         collection = db[name_collection]
         out = collection.insert_one(data)

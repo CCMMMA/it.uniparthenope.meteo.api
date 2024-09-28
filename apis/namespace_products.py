@@ -212,8 +212,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
             })
             
             (mapData, imageName) = app.meteo_services.ModelPlotImage(app.use_disk_cached, params)
-            # (mapData, imageName) = app.meteo_services.modelploturl_or_image(app.use_disk_cached, params)
-          
+        
             res = {
                 'plot': base64.b64encode(mapData).decode('utf-8'),
                 # 'plot': mapData,
@@ -568,9 +567,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
     
         """
         res=get_resource(request, app.cache, app.use_pymemcache)
-
-        # log.info("1) res : " + str(res))
-
         if res is None:
             params = get_params({'id':place,'filter':None, 'place':place, 'prod': prod, 'output':'gen', 'date':None,'width': 1024, 'height': 768,'dry':"false",'opt':""})
             ms = MeteoServices(app.application.config)
