@@ -246,10 +246,6 @@ class Plotter(object):
 
         # Get place information by id
         place_info = self.places.get_place_by_id(place)
-
-        if place_info is None:
-            logger.error("place : " + str(place)) 
-
         # place_info = self.places.get_place_by_id(place, params)
 
         # Get bounding box of the place
@@ -260,11 +256,9 @@ class Plotter(object):
 
         # Calculate the distance between the two opposite vertex of the bounding box
         diag = haversine.haversine((minLat, minLon), (maxLat, maxLon))
-    
+        
         # The the domain id by the product and the place
-        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0]
-
-        # log.info("---------- Plotter -- render() : domainID = " + str(domainId))
+        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0]        
           
         # Get the year (YYYY)
         year = dateTime[:4]
@@ -450,21 +444,13 @@ class Plotter(object):
         # Get the outputs dictionary
         outputs = self.maps["products"][prod]["outputs"]
 
-        # log.info("---------- Plotter - render() : self.maps[\"products\"][ " + str(prod) + " ][\"outputs\"] = " + str(outputs))
-
-        # linea 465 aggiunta da dario - per il caso rms3 con it000 faceva la chiamata con output = sss che in maps non aveva il campo plot 
-        # if output == 'sss':
-        #    output = 'gen'
-
         # Check if the selected output is in the output dictionary
         if output not in outputs:
             raise Exception("The " + output + " key is missing in products."+prod+".outputs")
 
         # Get the output object        
         outputs_output = outputs[output]
-        
-        # log.info("---------- Plotter - render() : outputs[output] = " + str(outputs_output))
-    
+            
         # Check if the plot key is in the output 
         if "plot" not in outputs_output:
             raise Exception("The plot key is missing in products."+prod+".outputs." + output)

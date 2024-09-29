@@ -219,8 +219,6 @@ class GribServices:
         jsonPath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + jsonName
         jsonUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + jsonName
 
-        logger.info(" jsonPath : " + str(jsonPath))
-
         # Check if the file already exists and it is valid
         if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['CACHE_TIMEOUT']):
             # Set the local path of the data file 

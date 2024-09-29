@@ -1159,7 +1159,6 @@ class MeteoServices:
 
         # Assemble the relative path
         relativePath = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
-        
 
         if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
             os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
@@ -1168,14 +1167,16 @@ class MeteoServices:
         imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png" 
 
         imagePath = self.config['BASE_PRODUCTS'] + os.path.sep + relativePath + os.path.sep + imageName
+
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
 
-        if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
-            # Creation image 
-            self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
+        if prod != 'aiq3' and place != 'it000':
+            if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
+                # Creation image 
+                self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
         
         retval['link'] = imageUrl
-
+        
         try:
             with open(imagePath, 'rb') as content_file:
             #with open(imagePath, 'r') as content_file:
@@ -1183,8 +1184,14 @@ class MeteoServices:
                 content_file.close()
         except Exception as e:
             imagePath = self.config['NOIMAGE_PATH']
-            imageUrl = self.config['NOIMAGE_URL']
 
+            with open(imagePath, 'rb') as content_file:
+                retval = content_file.read()
+                content_file.close()
+            # imageUrl = self.config['NOIMAGE_URL']
+            # retval['link'] = imageUrl
+            
+        
         return retval, imageName
 
     def getlegenddata(self, prod, position, output, params=None):
