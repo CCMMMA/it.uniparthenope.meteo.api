@@ -212,8 +212,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
             })
             
             (mapData, imageName) = app.meteo_services.ModelPlotImage(app.use_disk_cached, params)
-
-            logger.info(" mapData : " + str(mapData))
         
             res = {
                 'plot': base64.b64encode(mapData).decode('utf-8'),

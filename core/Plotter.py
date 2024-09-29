@@ -248,6 +248,12 @@ class Plotter(object):
         place_info = self.places.get_place_by_id(place)
         # place_info = self.places.get_place_by_id(place, params)
 
+        if (place_info is None) or (str(place_info['long_name']['it']) == "Italia" and prod == "rms3") or (str(place_info['long_name']['it']) == "Italia" and prod == "aiq3") or (str(place_info['long_name']['it']) == "Italia" and prod == "wcm3"):
+            relative_path = self.config['NOIMAGE_PATH']
+            image_name = "noimage.png"
+            return relative_path, image_name
+        
+
         # Get bounding box of the place
         minLat = place_info["minLat"]
         maxLat = place_info["maxLat"]
@@ -256,9 +262,9 @@ class Plotter(object):
 
         # Calculate the distance between the two opposite vertex of the bounding box
         diag = haversine.haversine((minLat, minLon), (maxLat, maxLon))
-        
+
         # The the domain id by the product and the place
-        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0]        
+        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0]     
           
         # Get the year (YYYY)
         year = dateTime[:4]
@@ -284,7 +290,6 @@ class Plotter(object):
         # Check if the the file not exists
         if os.path.exists(data_file) is False:
             # Raise an exception
-            # log.info("---------- Plotter - render() : data_file error = " + str(data_file))
             logger.error('data_file : ' + str(data_file))
             raise DataNotAvailableException
         

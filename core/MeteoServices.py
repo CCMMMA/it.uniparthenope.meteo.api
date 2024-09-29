@@ -1169,12 +1169,11 @@ class MeteoServices:
         imagePath = self.config['BASE_PRODUCTS'] + os.path.sep + relativePath + os.path.sep + imageName
 
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
-
-        
+                
         if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
             # Creation image 
             self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
-        
+            
         retval['link'] = imageUrl
         
         try:
@@ -1183,9 +1182,15 @@ class MeteoServices:
                 retval = content_file.read()
                 content_file.close()
         except Exception as e:
+            
             imagePath = self.config['NOIMAGE_PATH']
             imageUrl = self.config['NOIMAGE_URL']
-            #retval['link'] = imageUrl
+
+            with open(imagePath, 'rb') as content_file:
+                retval = content_file.read()
+                content_file.close()
+                
+            # retval['link'] = imagePath
             
         return retval, imageName
 

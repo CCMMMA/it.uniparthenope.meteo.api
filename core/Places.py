@@ -69,10 +69,6 @@ class Places(object):
         proj = {"_id": 0, "minLon": 1, "minLat": 1, "maxLon": 1, "maxLat": 1, "prods." + product: 1}
         # result = places.find_one(query, proj)
         result = MongoDBHandlers(self.config).get_query_find_one('places', query, proj)
-        # print("Result query find_one() : ")
-        # print(result)
-
-        # log.info("---------- Places() - get_domain_and_indeces_by_product_and_place : result = " + str(result))
 
         if result is not None and product in result['prods'] and result['prods'] != {}:
             res = 999
