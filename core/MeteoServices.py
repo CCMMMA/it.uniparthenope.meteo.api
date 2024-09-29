@@ -1184,14 +1184,9 @@ class MeteoServices:
                 content_file.close()
         except Exception as e:
             imagePath = self.config['NOIMAGE_PATH']
-
-            with open(imagePath, 'rb') as content_file:
-                retval = content_file.read()
-                content_file.close()
-            # imageUrl = self.config['NOIMAGE_URL']
-            # retval['link'] = imageUrl
+            imageUrl = self.config['NOIMAGE_URL']
+            #retval['link'] = imageUrl
             
-        
         return retval, imageName
 
     def getlegenddata(self, prod, position, output, params=None):
