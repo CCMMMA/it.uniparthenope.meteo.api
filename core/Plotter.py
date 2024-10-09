@@ -1,5 +1,4 @@
 import sys
-# import logging
 from core.Logger import logger
 
 from matplotlib.colors import ListedColormap, BoundaryNorm
@@ -18,11 +17,6 @@ import pickle
 import json
 import os
 import datetime
-
-
-#### Logging ####
-# logger = logging.getLogger('main_logger')
-#################
 
 
 class DataNotAvailableException(Exception):
@@ -89,15 +83,12 @@ class Plotter(object):
                         os.makedirs(self.cache_path)
 
             else:
-                # logging.critical(config_file + " not found!")
                 logger.critical(config_file + " not found!")
         else:
-            #logging.critical("MAPS not set in the json configuration file.")
             logger.critical("MAPS not set in the json configuration file.")
 
     # Add a shaded layer to the basemap
-    def _add_shaded(self, basemap, values, lons, lats, data, colors, legend_title, position_legend, size="2%",
-                     pad="5%", label_size=8, ticks_position="right", draw_colorbars = True):
+    def _add_shaded(self, basemap, values, lons, lats, data, colors, legend_title, position_legend, size="2%",pad="5%", label_size=8, ticks_position="right", draw_colorbars = True):
         
         # Convert the colormap from 0-255 RGBA to 0.0-1.0 RGBA
         colors = [[j / 255 for j in i] for i in colors]
@@ -561,10 +552,6 @@ class Plotter(object):
             # Check if the text key is defined 
             if "text" in layer:
                 text = layer["text"][language]
-                # text = layer["text"]['it-IT']
-                # logger.error(' text : ' + str(text))
-                # logger.error(' language : ' + str(language))
-                # logger.error(' layer[text][it-IT] : ' + str(layer["text"]['it-IT']))
 
             # Check if the pad key is defined 
             if "pad" in layer:

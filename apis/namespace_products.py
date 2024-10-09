@@ -299,6 +299,9 @@ class ProductsForecastMapByProdAndPlace(Resource):
         -------------------------------------------------------------------------------------------
         """
 
+        if prod == 'rdr1':
+            return None
+
         res = get_resource(request, app.cache, app.use_pymemcache)
         if res is None:
             params = get_params({

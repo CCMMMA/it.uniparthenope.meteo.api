@@ -388,7 +388,7 @@ layers = {
             "en-US": "Pressure"
         },
         "type": "wms",
-        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
+        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/cache/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "LAYERS": "SLP",
             "COLORSCALERANGE": "960,1040",
@@ -428,7 +428,7 @@ layers = {
             "en-US": "Temperature at 2m"
         },
         "type": "wms",
-        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
+        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/cache/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "layers": 'T2C',
             "styles": 'raster/wrf5_t2c_lamma',
@@ -449,7 +449,7 @@ layers = {
             "en-US": "Rain"
         },
         "type": "wms",
-        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
+        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/cache/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "layers": 'DELTA_RAIN',
             "styles": 'raster/wrf5_rain_lamma',
@@ -470,7 +470,7 @@ layers = {
             "en-US": "Snow"
         },
         "type": "wms",
-        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
+        "url": 'https://api.meteo.uniparthenope.it/ncWMS2/wms/lds/cache/wrf5/{domain}/archive/{year}/{month}/{day}/wrf5_{domain}_{ncepDate}.nc',
         "extras": {
             "layers": 'HOURLY_SWE',
             "styles": 'raster/wrf5_snow',

@@ -8,6 +8,7 @@ from core.Places import Places
 from flask import request, jsonify
 from core.MemcachedMethodHandlers import get_resource, set_resource
 import app
+from core.Logger import logger
 
 api = Namespace('places', description='Palces API')
 
@@ -106,7 +107,6 @@ class PlacesSearchByCoords(Resource):
             params = get_params({'range': None, 'filter': None, 'prod': None, 'limit': None})
             places = Places(app.application.config)
             res = places.get_places_by_ll(float(longitude), float(latitude), params)
-            # print "Result:"+str(result)
             set_resource(request, res, app.cache, app.use_pymemcache)
         else:
             res = eval(res)

@@ -40,6 +40,10 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
         :returns: json -- the return josn.
         -------------------------------------------------------------------------------------------
         """
+
+        if placeprefix == "reg":
+            return {'message': 'The place \'reg\' is not used'}
+
         res = get_resource(request, app.cache, app.use_pymemcache)
         if res is None:
             params = get_params({'date': None})
