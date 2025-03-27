@@ -669,8 +669,8 @@
                               }
                            },
                            {
-                              "path": "/project/data/shapefiles/Banchi_agg_lug2023",
-                              "name": "Banchi_agg_lug2023",
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "name": "Banchi_all_ott2024",
                               "color": "red"
                            }
                         ]
@@ -846,6 +846,24 @@
                            { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
                            { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
                         ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
                      }
                   ]
                }
@@ -909,7 +927,7 @@
                               }
                            },
                            {
-                              "path": "/project/data/shapefiles/Banchi_agg_lug2023",
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
                               "color": "red"
                            }
                         ]
@@ -1618,7 +1636,7 @@
                "plot": {
                   "layers": [
                      {
-                        "text": { "en-US":"Significant wave height [m]", "it-IT": "Altezza significativ [m]" },
+                        "text": { "en-US":"Significant wave height [m]", "it-IT": "Altezza significativa [m]" },
                         "type": "shaded",
                         "colormap": "ww33.h.lamma",
                         "var1": "hs",
@@ -1773,9 +1791,9 @@
             ],
             "d02": [
                { "ge":   0, "lt":  60, "values": { "skip":  2, "scale": 1, "hpa_tick":  1, "barb_length": 3  }},
-               { "ge":  60, "lt": 240, "values": { "skip":  4, "scale": 1, "hpa_tick":  1, "barb_length": 3  }},
-               { "ge": 240, "lt": 480, "values": { "skip":  8, "scale": 1, "hpa_tick":  1, "barb_length": 4  }},
-               { "ge": 480,            "values": { "skip": 16, "scale": 10, "hpa_tick": 2, "barb_length": 4  }}
+               { "ge":  60, "lt": 240, "values": { "skip":  4, "scale": 5, "hpa_tick":  1, "barb_length": 3  }},
+               { "ge": 240, "lt": 480, "values": { "skip":  10, "scale": 10, "hpa_tick":  1, "barb_length": 4  }},
+               { "ge": 480,            "values": { "skip": 35, "scale": 15, "hpa_tick": 2, "barb_length": 4  }}
             ],
             "d03": [
                { "ge":   0, "lt":  30, "values": { "skip":  1, "scale": 10, "hpa_tick": 1, "barb_length": 2  }},
@@ -3327,7 +3345,10 @@
                "plot": {
                   "layers": [
                      {
-                        "text": { "en-US":"Wind speed [kt]"},
+                        "text": { 
+                           "en-US":"Wind speed [kt]",
+                           "it-IT":"Velocità del vento [kt]"
+                        },
                         "type": "shaded",
                         "a": 1.94384,
                         "colormap": "wrf5.wind.kt",

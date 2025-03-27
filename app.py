@@ -29,11 +29,14 @@ cache = None
 use_pymemcache = True
 try:
     cache = Client('memcached:11211')
+
     # cache = Client([('172.18.0.10', 11211)])
-    use_pymemcache = True
-except memcache.errors.MemcacheError as memcache_error:
+    # use_pymemcache = True
+# except memcache.errors.MemcacheError as memcache_error:
+except Execption as memcache_error:
     print("[*]Memcached Error : " + str(memcache_error))
-    # logging.error("[*]Memcached Error : " + str(memcache_error))
+    logging.error("[*]Memcached Error : " + str(memcache_error))
+    use_pymemcache = False
 
 meteo_services = MeteoServices(application.config)
 grib_services = GribServices(application.config)

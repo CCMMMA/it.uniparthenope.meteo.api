@@ -13,8 +13,8 @@ RUN pip3 install -r /project/requirements.txt
 
 #RUN echo 'root:7fZ!p9Ls&XvG3bQd' | chpasswd
 
-RUN groupadd -g 3001 ccmmma
-RUN useradd -m -u 3001 -g 3001 -s /bin/bash ccmmma
+RUN groupadd -g 60005 ccmmma
+RUN useradd -m -u 60005 -g 60005 -s /bin/bash ccmmma
 USER ccmmma
 
 COPY --chown=ccmmma:ccmmma . /project

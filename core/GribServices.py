@@ -160,6 +160,9 @@ class GribServices:
         return retval
 
     def asJson(self, params=None):
+        
+        # logger.error(f"AsJson : {params}")
+    
         retval = {}
 
         prod = self.default_prod
@@ -218,19 +221,15 @@ class GribServices:
         jsonPath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + jsonName
         jsonUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + jsonName
 
-        #TODO: Instead of using data (and calculating it) from the file '.../history/ .... ' it must go and consider the variables of the file '.... / Archive / .... '
-        #TODO: Make Grib independent from the file .... / history ...
-
         # Check if the file already exists and it is valid
         if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['CACHE_TIMEOUT']):
             
             # Set the local path of the data file 
-            url =  self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            # url =  self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            
+            url = self.config['BASE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
             logger.info("url_data : " + str(url))
-
-            # Possible new url to archive instead of history 
-            # url = self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
             
             ncfile = None
             try:

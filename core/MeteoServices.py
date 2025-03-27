@@ -704,6 +704,8 @@ class MeteoServices:
         return calendar_items
 
     def modelOutput(self, params=None):
+
+
         retval = {}
 
         prod = self.default_prod
@@ -716,7 +718,6 @@ class MeteoServices:
         hour = 0
         minute = 0
 
-        # print "params in modeloutput:"+str(params)
 
         if params:
             if 'prod' in params and params['prod'] is not None:
@@ -747,6 +748,7 @@ class MeteoServices:
 
         # Get the domain and the indeces of the place
         domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
+
 
         # Check if domain and indeces are correct
         if domain_indeces is not None:
@@ -779,7 +781,8 @@ class MeteoServices:
                 for field, item in self.maps["products"][prod]["fields"].items():
 
                     # Set default method
-                    method = "nanmean"
+                    # method = "nanmean"
+                    method = "mean"
 
                     # Check if method is defined in item
                     if "method" in item:
@@ -916,9 +919,13 @@ class MeteoServices:
 
                                 # Check if level is none and time is not (3D variable, not depending by the level)
                                 elif time is not None and level is None:
+                                    # Get the value and append it to the values list 
+                                    data_dataset = dataset.variables[var][time, Jmin:Jmax, Imin:Imax]
+                                    data_dataset_copy = np.copy(data_dataset)
+                                    values.append(float(method(data_dataset_copy)))
 
-                                    # Get the value and append it to the values list
-                                    values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
+
+                                    #values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
 
                                 # If both time and level are not note, it is a 4D variable
                                 else:
@@ -1071,12 +1078,13 @@ class MeteoServices:
 
         dry = str(params['dry'])
 
-        date = datetime(year, month, day, hour, minute)
+        # date = datetime(year, month, day, hour, minute)
 
         # Set the dateTime
         dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
 
         relativePath, imageName = self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
+        # relativePath, imageName = self.plotter.render(place, prod, output, dateTime, language='it-IT', draw_colorbars=bars)
 
         imagePath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + imageName
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
@@ -1199,9 +1207,11 @@ class MeteoServices:
         width = self.default_xdim
         height = self.default_ydim
         lang = "en-US"
+        # lang = "it-IT"
 
         if params is not None:
             if "lang" in params and params['lang'] is not None:
+                # lang = 'it-IT'
                 lang = params['lang']
 
             if 'width' in params and params['width'] is not None:
@@ -1220,16 +1230,15 @@ class MeteoServices:
 
         basePath = "/project/var/bars"
         fileName = basePath + "/" + prod + "/bar_" + prod + "_" + output + "_" + position[0].lower() + ":" + lang + ".png"
-        print("fileName : " + fileName)
-
+        
         size = (width, height)
 
         if os.path.isfile(fileName):
-            print("file exist")
+            # print("file exist")
             img = Image.open(fileName)
             img.thumbnail(size, Image.ANTIALIAS)
         else:
-            print("file not exist")
+            # print("file not exist")
             img = Image.new('RGBA', size)
 
         img.save(imgPath, 'PNG')
@@ -1355,6 +1364,9 @@ class MeteoServices:
         return data
 
     def timeseries(self, params=None):
+
+        logger.info(f"params : {params}")
+
         retval = {}
 
         prod = self.default_prod
@@ -1406,8 +1418,10 @@ class MeteoServices:
 
         date = datetime(year, month, day, hour, minute)
 
+
         # Get the domain and the indeces of the place
         domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place)
+
 
         # Check if domain and indeces are correct
         if domain_indeces is not None:
@@ -1429,7 +1443,7 @@ class MeteoServices:
             while count < 168:
                 dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
                 dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
-
+        
                 url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['ARCHIVE'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
                 if os.path.isfile(url):
@@ -1440,22 +1454,15 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
             
-            # log.info("[*][*][*][*] items : " + str(items))
-
+            logger.info(f"items : {items}")
+        
             with mp.Pool(self.config['NUM_THREADS']) as p: 
                 model_outputs = p.starmap(self.modelOutput, items)
-
-        
-            # without thread 
-            # model_outputs = [self.modelOutput(*item) for item in items]
-
-
-            # log.info("[*][*][*][*] model_outputs : " + str(model_outputs))
             
+            #[ model_outputs ] = self.modelOutput(items)
+
             for model_output in model_outputs:
                 forecast[model_output["dateTime"]]=model_output
-            
-            # log.info("[*][*][*][*] forecast : " + str(forecast))
 
             keys = sorted(forecast)
             if hours == 0:

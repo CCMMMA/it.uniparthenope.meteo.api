@@ -84,10 +84,12 @@ class Places(object):
                 else:
                     ncep_date = date
 
+                
                 yyyy = str(ncep_date[0:4])
                 mm = str(ncep_date[4:6])
                 dd = str(ncep_date[6:8])
                 hh = str(ncep_date[9:11])
+
 
                 url = "/data1/ccmmma/prometeo/data/opendap/" + product + "/" + domain + "/archive/" + yyyy + "/" + mm + "/" + dd + "/" + product + "_" + domain + "_" + ncep_date + ".nc"
 

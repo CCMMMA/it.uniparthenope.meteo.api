@@ -233,6 +233,8 @@ class Plotter(object):
                     basemap.readshapefile(shapefile_path, shapefile_name, default_encoding='iso-8859-15', color=shapefile_color)
                    
 
+    
+    # def render(self, place, prod, output, dateTime, language="it-IT", draw_colorbars=True):
     def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
 
         # Get place information by id
@@ -243,7 +245,6 @@ class Plotter(object):
             relative_path = self.config['NOIMAGE_PATH']
             image_name = "noimage.png"
             return relative_path, image_name
-        
 
         # Get bounding box of the place
         minLat = place_info["minLat"]
@@ -255,8 +256,12 @@ class Plotter(object):
         diag = haversine.haversine((minLat, minLon), (maxLat, maxLon))
 
         # The the domain id by the product and the place
-        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0]     
-          
+        # domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0] 
+        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place, dateTime)[0]       
+
+        if output == 'wn1':
+            logger.info("wn1 domain : " + str(domainId))
+        
         # Get the year (YYYY)
         year = dateTime[:4]
 
@@ -432,6 +437,14 @@ class Plotter(object):
                             # Set the barb lenght
                             barb_length = values["barb_length"]
                         break
+            
+            # Modify the if condition in order to find the correct configuration into maps.json
+            #if output == 'wn1' : 
+            #if place == 'med000':
+            #    logger.info("values : " + str(values))
+            #    logger.info("scale : " + str(scale)) 
+            #    logger.info("hpa_tick : " + str(hpa_tick) )
+            #    logger.info("barb_length : " + str(barb_length))
 
         # Check if the outputs key is defined        
         if "outputs" not in self.maps["products"][prod]:
@@ -466,6 +479,7 @@ class Plotter(object):
 
                 # Set the language as english by default
                 language = "en-US"
+                # language = "it-IT"
             
             # Get the title
    
@@ -552,6 +566,7 @@ class Plotter(object):
             # Check if the text key is defined 
             if "text" in layer:
                 text = layer["text"][language]
+                # text = layer["text"]["it-IT"]
 
             # Check if the pad key is defined 
             if "pad" in layer:
@@ -560,6 +575,7 @@ class Plotter(object):
             # Check if the position key is defined 
             if "position" in layer:
                 position = layer["position"]
+                # position = "bottom"
 
             # Check if the ticks_position key is defined 
             if "ticks_position" in layer:
@@ -713,10 +729,10 @@ class Plotter(object):
                 else:
                     var = var1
                 
-                # aggiunto da dario if 
+                # aggiunto if 
                 if output == 'wn2':
                     hpa_tick=140
-
+                
                 clevs = np.arange(clev_min, clev_max, hpa_tick)
                 cs = basemap.contour(lons, lats, var, clevs, colors=colors, linewidths=0.5, latlon=True)
                 clabels = plt.clabel(cs, fontsize=6, inline=1, fmt='%1.0f')
