@@ -920,12 +920,10 @@ class MeteoServices:
                                 # Check if level is none and time is not (3D variable, not depending by the level)
                                 elif time is not None and level is None:
                                     # Get the value and append it to the values list 
-                                    data_dataset = dataset.variables[var][time, Jmin:Jmax, Imin:Imax]
-                                    data_dataset_copy = np.copy(data_dataset)
-                                    values.append(float(method(data_dataset_copy)))
-
-
-                                    #values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
+                                    # data_dataset = dataset.variables[var][time, Jmin:Jmax, Imin:Imax]
+                                    # data_dataset_copy = np.copy(data_dataset)
+                                    # values.append(float(method(data_dataset_copy)))
+                                    values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
 
                                 # If both time and level are not note, it is a 4D variable
                                 else:
