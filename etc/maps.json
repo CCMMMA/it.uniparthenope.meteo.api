@@ -18,6 +18,13 @@
       { "path": "/project/data/shapefiles/europe", "color": "black" },
       { "path": "/project/data/shapefiles/Africa", "color": "black" }
    ],
+   "watermarks" : [
+      { 
+         "path" : "/project/data/watermark/logo_parthenope.png",
+         "position" : "bottom-left",
+         "opacity" : 0.5
+      }
+   ],
    "colormaps": {
       "rms3.cur.lamma": {
          "clevs": [
@@ -1062,7 +1069,7 @@
                },
                "level": 0,
                "time": 0,
-               "round": 1,
+               "round": 3,
                "var": [ "u", "v"],
                "a": 1.94384,
                "func": "modulus",

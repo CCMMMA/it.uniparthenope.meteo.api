@@ -923,7 +923,12 @@ class MeteoServices:
                                     # data_dataset = dataset.variables[var][time, Jmin:Jmax, Imin:Imax]
                                     # data_dataset_copy = np.copy(data_dataset)
                                     # values.append(float(method(data_dataset_copy)))
+
+                                    
+
                                     values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
+
+                                    
 
                                 # If both time and level are not note, it is a 4D variable
                                 else:
@@ -1111,6 +1116,7 @@ class MeteoServices:
         minute = 0
 
         bars = False
+        watermark = False 
 
         if params:
             if 'lang' in params and params['lang'] is not None:
@@ -1138,6 +1144,10 @@ class MeteoServices:
 
             if 'date' in params and params['date'] is not None:
                 timeref = params['date']
+            
+            if 'watermark' in params:
+                watermark = params['watermark']
+        
 
         if timeref is None:
             # print "get current utc"
@@ -1178,8 +1188,9 @@ class MeteoServices:
                 
         if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
             # Creation image 
-            self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
-            
+            # self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
+            self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars, draw_watermark=watermark)
+
         retval['link'] = imageUrl
         
         try:
@@ -1363,8 +1374,6 @@ class MeteoServices:
 
     def timeseries(self, params=None):
 
-        logger.info(f"params : {params}")
-
         retval = {}
 
         prod = self.default_prod
@@ -1452,7 +1461,6 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
             
-            logger.info(f"items : {items}")
         
             with mp.Pool(self.config['NUM_THREADS']) as p: 
                 model_outputs = p.starmap(self.modelOutput, items)

@@ -179,6 +179,10 @@ class ProductsForecastByProdAndPlace(Resource):
             res = app.meteo_services.modelOutput(params)
             if 'result' in res and "ok" not in res['result']:
                 return jsonify(res)
+            if place == 'VEB1500013' :
+                res['scs'] = 0
+            if place == 'VEB1500018' :
+                res['winds'] = 0
             set_resource(request, res, app.cache, app.use_pymemcache)
         return jsonify(eval(str(res)))
 
@@ -196,6 +200,13 @@ class ProductsForecastMapByProdAndPlace(Resource):
         :returns:  json -- the return josn.
         -------------------------------------------------------------------------------------------
         """
+
+        
+        origin = request.headers.get('Origin')
+        referer = request.headers.get('Referer')        
+  
+        # print(f"\n\n origin : {origin} -- referer : {referer} \n\n")
+
         res = get_resource(request, app.cache, app.use_pymemcache)
         if res is None:
             params = get_params({
@@ -210,6 +221,17 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 'dry': "false",
                 'opt': ""
             })
+
+            # Section to distinguish mytilex calls from those of the weather portal.
+            # MytilEX case.
+            if origin == 'https://meteo.uniparthenope.it' :
+                params['watermark'] = True
+
+            # Weather portal case.
+            #elif origin == None :
+            #    print(f"\n\n request from weather portal. \n\n")
+
+            # print(f"\n\n params : {params} \n\n", flush=True)
             
             (mapData, imageName) = app.meteo_services.ModelPlotImage(app.use_disk_cached, params)
         

@@ -9,6 +9,8 @@ from netCDF4 import Dataset as NetCDFFile
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
+import matplotlib.image as mpimg
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from core.Places import Places
 import haversine
@@ -230,13 +232,35 @@ class Plotter(object):
                 else:
 
                     # Read the shapefile and add it to the basemap (Polygon shapefile)
-                    basemap.readshapefile(shapefile_path, shapefile_name, default_encoding='iso-8859-15', color=shapefile_color)
+                    basemap.readshapefile(shapefile_path, shapefile_name, default_encoding='iso-8859-15', color=shapefile_color, linewidth=0.5)
                    
 
-    
-    # def render(self, place, prod, output, dateTime, language="it-IT", draw_colorbars=True):
-    def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
 
+
+ 
+    
+    def _add_watermark(self, fig, path, position, opacity=0.5):
+        pos_dict = {
+            "top-right": [0.85, 0.85, 0.30, 0.30],  
+            #"top-left": [0.02, 0.85, 0.15, 0.15],   
+            "top-left": [0.09, 0.85, 0.30, 0.30],
+            "bottom-left": [0.09, 0.02, 0.30, 0.30], 
+            "bottom-right": [0.85, 0.02, 0.30, 0.30] 
+        }
+
+        watermark_img = mpimg.imread(path)
+    
+        logo_ax = fig.add_axes(pos_dict[position], anchor='SW', zorder=10)
+        logo_ax.imshow(watermark_img, alpha=opacity)
+        logo_ax.axis('off')
+    
+
+
+
+    # Plot with titles in Italian. 
+    # def render(self, place, prod, output, dateTime, language="it-IT", draw_colorbars=True):
+    # def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
+    def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True, draw_watermark=False):
         # Get place information by id
         place_info = self.places.get_place_by_id(place)
         # place_info = self.places.get_place_by_id(place, params)
@@ -252,15 +276,13 @@ class Plotter(object):
         minLon = place_info["minLon"]
         maxLon = place_info["maxLon"]
 
+        
         # Calculate the distance between the two opposite vertex of the bounding box
         diag = haversine.haversine((minLat, minLon), (maxLat, maxLon))
 
         # The the domain id by the product and the place
         # domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0] 
-        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place, dateTime)[0]       
-
-        if output == 'wn1':
-            logger.info("wn1 domain : " + str(domainId))
+        domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place, dateTime)[0]
         
         # Get the year (YYYY)
         year = dateTime[:4]
@@ -367,7 +389,7 @@ class Plotter(object):
 
             # Add all the shapefiles as basemap
             self._add_shapefiles(basemap, self.maps["shapefiles"]) 
-
+        
         # Set the number of map paralles
         parallels = np.arange(minLat, maxLat, (maxLat - minLat) / 4)
 
@@ -786,9 +808,16 @@ class Plotter(object):
             place_name = place_info["name"][language[:2]]
         else:
             place_name = place_info["name"][next(iter(place_info["name"]))]
-
+        
+        
+    
         plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name).replace("__title__", title).replace("__product__",prod).replace("__output__",output).replace("__place__",place).replace("__domain__",domainId)
         plt.title( plot_title )
+
+        # Check if add watermark to plot 
+        if draw_watermark==True :
+            self._add_watermark(plt.gcf(), self.maps['watermarks'][0]['path'], self.maps['watermarks'][0]['position'], self.maps['watermarks'][0]['opacity'])
+        
         plt.show()
         plt.savefig(result_file, bbox_inches='tight', dpi=300)
 
