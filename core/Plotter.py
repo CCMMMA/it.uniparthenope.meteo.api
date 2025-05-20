@@ -20,6 +20,10 @@ import json
 import os
 import datetime
 
+# To watermark 
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+import io
+
 
 class DataNotAvailableException(Exception):
     pass
@@ -234,33 +238,39 @@ class Plotter(object):
                     # Read the shapefile and add it to the basemap (Polygon shapefile)
                     basemap.readshapefile(shapefile_path, shapefile_name, default_encoding='iso-8859-15', color=shapefile_color, linewidth=0.5)
                    
-
-
-
- 
     
-    def _add_watermark(self, fig, path, position, opacity=0.5):
-        pos_dict = {
-            "top-right": [0.85, 0.85, 0.30, 0.30],  
-            #"top-left": [0.02, 0.85, 0.15, 0.15],   
-            "top-left": [0.09, 0.85, 0.30, 0.30],
-            "bottom-left": [0.09, 0.02, 0.30, 0.30], 
-            "bottom-right": [0.85, 0.02, 0.30, 0.30] 
-        }
+    def _add_watermark(self, fig, watermarks, result_file):
+        for watermark in watermarks: 
+            buf = io.BytesIO()
+            fig.savefig(buf, dpi=300, bbox_inches='tight', format='png')
+            buf.seek(0)
+            
+            plot_image = Image.open(buf).convert("RGBA")
+            logo = Image.open(watermark['path']).convert("RGBA")
 
-        watermark_img = mpimg.imread(path)
-    
-        logo_ax = fig.add_axes(pos_dict[position], anchor='SW', zorder=10)
-        logo_ax.imshow(watermark_img, alpha=opacity)
-        logo_ax.axis('off')
-    
+            logo_width = int(plot_image.width * watermark['dim'])  
+            logo = logo.resize((logo_width, int(logo_width * (logo.height / logo.width))), Image.ANTIALIAS)
+
+            r, g, b, alpha = logo.split()
+          
+            alpha = ImageEnhance.Brightness(alpha).enhance(watermark['opacity'])
+            logo.putalpha(alpha)
+
+            positions = {
+                "top-right": (plot_image.width - logo.width - 40, 60),
+                "top-left": (40, 50),
+                "bottom-right": (plot_image.width - logo.width - 40, plot_image.height - logo.height - 60),
+                "bottom-left": (40, plot_image.height - logo.height - 60) 
+            }
+
+            logo_position = positions.get(watermark['position'], "top-right")
+
+            plot_image.paste(logo, logo_position, logo)
+            plot_image.save(result_file)    
 
 
 
-    # Plot with titles in Italian. 
-    # def render(self, place, prod, output, dateTime, language="it-IT", draw_colorbars=True):
-    # def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
-    def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True, draw_watermark=False):
+    def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
         # Get place information by id
         place_info = self.places.get_place_by_id(place)
         # place_info = self.places.get_place_by_id(place, params)
@@ -507,6 +517,18 @@ class Plotter(object):
    
         
         title = outputs_output["title"][language]
+
+
+        place_name = ""
+        if language in place_info["name"]:
+            place_name = place_info["name"][language]
+        elif language[:2] in place_info["name"]:
+            place_name = place_info["name"][language[:2]]
+        else:
+            place_name = place_info["name"][next(iter(place_info["name"]))]
+
+        plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name)
+        plt.title(plot_title)
       
             
         # Check if the layers key is present in the plot object
@@ -800,7 +822,10 @@ class Plotter(object):
             elif "shapefiles" in layer_type:
                 if "shapefiles" in layer:
                     self._add_shapefiles(basemap,layer["shapefiles"])
-
+            elif "watermark" in layer_type:                
+                self._add_watermark(plt.gcf(), layer["watermarks"], result_file)
+            
+        '''
         place_name = ""
         if language in place_info["name"]:
             place_name = place_info["name"][language]
@@ -809,16 +834,13 @@ class Plotter(object):
         else:
             place_name = place_info["name"][next(iter(place_info["name"]))]
         
-        
-    
-        plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name).replace("__title__", title).replace("__product__",prod).replace("__output__",output).replace("__place__",place).replace("__domain__",domainId)
+        # plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name).replace("__title__", title).replace("__product__",prod).replace("__output__",output).replace("__place__",place).replace("__domain__",domainId)
+        plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name)
         plt.title( plot_title )
-
-        # Check if add watermark to plot 
-        if draw_watermark==True :
-            self._add_watermark(plt.gcf(), self.maps['watermarks'][0]['path'], self.maps['watermarks'][0]['position'], self.maps['watermarks'][0]['opacity'])
-        
         plt.show()
-        plt.savefig(result_file, bbox_inches='tight', dpi=300)
+        '''
+            
+        if not os.path.exists(result_file): 
+            plt.savefig(result_file, bbox_inches='tight', dpi=300)
 
         return relative_path, image_name

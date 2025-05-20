@@ -1,7 +1,6 @@
 import hashlib
 import app
 import base64
-# import logging
 from core.Logger import logger
 import json
 from flask_restx import Namespace, Resource
@@ -12,10 +11,6 @@ from core.MeteoServices import MeteoServices, csvfy
 from core.Places import Places
 from flask import request
 from core.GribServices import GribServices
-
-##### Logging #####
-# logger = logging.getLogger('main_logger')
-#################
 
 
 api = Namespace('products', description='Products API')
@@ -168,6 +163,7 @@ class ProductsForecastByProdAndPlace(Resource):
         -------------------------------------------------------------------------------------------
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
+
         if res is None:
             params = get_params({
                 'place': place,
@@ -179,11 +175,8 @@ class ProductsForecastByProdAndPlace(Resource):
             res = app.meteo_services.modelOutput(params)
             if 'result' in res and "ok" not in res['result']:
                 return jsonify(res)
-            if place == 'VEB1500013' :
-                res['scs'] = 0
-            if place == 'VEB1500018' :
-                res['winds'] = 0
-            set_resource(request, res, app.cache, app.use_pymemcache)
+
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         return jsonify(eval(str(res)))
 
 # TESTED AND WORKING
@@ -200,13 +193,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
         :returns:  json -- the return josn.
         -------------------------------------------------------------------------------------------
         """
-
         
-        origin = request.headers.get('Origin')
-        referer = request.headers.get('Referer')        
-  
-        # print(f"\n\n origin : {origin} -- referer : {referer} \n\n")
-
         res = get_resource(request, app.cache, app.use_pymemcache)
         if res is None:
             params = get_params({
@@ -221,17 +208,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 'dry': "false",
                 'opt': ""
             })
-
-            # Section to distinguish mytilex calls from those of the weather portal.
-            # MytilEX case.
-            if origin == 'https://meteo.uniparthenope.it' :
-                params['watermark'] = True
-
-            # Weather portal case.
-            #elif origin == None :
-            #    print(f"\n\n request from weather portal. \n\n")
-
-            # print(f"\n\n params : {params} \n\n", flush=True)
             
             (mapData, imageName) = app.meteo_services.ModelPlotImage(app.use_disk_cached, params)
         
@@ -240,7 +216,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 # 'plot': mapData,
                 'imageName': imageName
             }
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
         
@@ -274,7 +250,7 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
             })
             json_data = app.grib_services.asText(params)
             res = json_data
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         return Response(res, mimetype='text/plain')
 
 
@@ -302,7 +278,7 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
             })
             json_data = app.grib_services.asJson(params)
             res = json_data
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         return jsonify(res)
 
 
@@ -320,7 +296,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
         :returns:  json -- the return josn.
         -------------------------------------------------------------------------------------------
         """
-
+        # TODO: hard-code -- to remove 
         if prod == 'rdr1':
             return None
 
@@ -364,7 +340,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                     if 'place' in params['opt']:
                         res['fields'] = forecastData['fields']
 
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
            res = eval(res)
 
@@ -407,7 +383,7 @@ class ProductsForecastBarByProdAndPositionAndOutput(Resource):
             res = {
                 'legend': base64.b64encode(bar_data).decode('utf-8')
             }
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
           res = eval(res)
 
@@ -444,7 +420,7 @@ class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
             res = {
                 'legend': base64.b64encode(bar_data).decode('utf-8')
             }
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
           res = eval(res)
 
@@ -482,7 +458,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
             if 'result' in time_series_data and "ok" not in time_series_data['result']:
                 return jsonify(time_series_data)
             res = time_series_data
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
           # log.info("[*][*][*][*] Res : " + str(res))
           res = eval(res)
@@ -520,7 +496,7 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
                 return jsonify(time_series_data)
 
             res = time_series_data
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
           res = eval(res)
 
@@ -570,7 +546,7 @@ class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
                 'chart': chartData,
                 'place': placeData
             }
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         return jsonify(res)
         
 
@@ -600,7 +576,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 'map': base64.b64encode(mapData).decode('utf-8'),
                 'imageName': imageName
             }
-            set_resource(request,res, app.cache, app.use_pymemcache)
+            set_resource(request,res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
                         

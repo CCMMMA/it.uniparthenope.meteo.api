@@ -48,7 +48,7 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
         if res is None:
             params = get_params({'date': None})
             res = app.tiles.get_weather_ex(prod, placeprefix, params, z, x, y)
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = json.loads(res)
         return jsonify(res)

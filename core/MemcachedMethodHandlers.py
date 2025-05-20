@@ -26,19 +26,17 @@ def get_resource(request_in, cache, use_pymemcache):
 
 
 # set resource to cache
-def set_resource(request_in, res, cache, use_pymemcache):
+def set_resource(request_in, res, cache, use_pymemcache, ttl):
     if use_pymemcache is False:
         return
 
     m = hashlib.md5(request_in.url.encode('utf-8'))
     if m is not None:
-        to_be_cached = False
-        timestamp = int(datetime.datetime.now().timestamp())
-        to_expire = (60 - int(strftime("%M", gmtime()))) * 60
+        # to_be_cached = False
         try:
             if isinstance(res, dict):
               res = json.dumps(res).encode('utf-8')
-            cache.set(m.hexdigest(), res, to_expire)
+            cache.set(m.hexdigest(), res, ttl)
 
         except memcache.MemcacheError as e:
             logger.error(str(e))

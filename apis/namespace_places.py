@@ -31,7 +31,7 @@ class PlacesSearchByName(Resource):
             params = get_params({'name': name, 'filter': None, 'prod': None, 'limit': None})
             places = Places(app.application.config)
             res = places.get_places_by_name(name, params)
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
         return jsonify(res)
@@ -60,7 +60,7 @@ class PlacesSearchByNameAutocomplete(Resource):
                 ret_val.append({'label': p['long_name']['it'], 'id': p['id']})
             # res = json.dumps(retVal)
             res = ret_val
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
         return jsonify(res)
@@ -85,7 +85,7 @@ class PlacesByIdentifier(Resource):
             res = places.get_place_by_id(identifier, params)
             if res is None:
                 return jsonify({"details": "Place not found.", "result": "error"})
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
         return jsonify(res)
@@ -107,7 +107,7 @@ class PlacesSearchByCoords(Resource):
             params = get_params({'range': None, 'filter': None, 'prod': None, 'limit': None})
             places = Places(app.application.config)
             res = places.get_places_by_ll(float(longitude), float(latitude), params)
-            set_resource(request, res, app.cache, app.use_pymemcache)
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
         return jsonify(res)
@@ -133,7 +133,7 @@ class PlacesSearchByBoundingBox(Resource):
             res = places.get_places_by_bb(float(minLongitude), float(minLatitude), float(maxLongitude),
                                           float(maxLatitude), params)
             # print "------------------------->Result:"+str(res)
-            set_resource(request, res, app.cache, app.application.config)
+            set_resource(request, res, app.cache, app.application.config, app.application.config['TTL_MEMCACHED'])
         else:
             res = eval(res)
         return jsonify(res)

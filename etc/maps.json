@@ -1,7 +1,7 @@
 {
    "title": {
-      "it-IT": "http://meteo.uniparthenope.it\n%HZ%d%b%Y __name__ (__place__/__product__)\n__title__",
-      "en-US": "http://meteo.uniparthenope.it\n%HZ%d%b%Y __name__ (__place__/__product__)\n__title__"
+      "it-IT": "%d-%m-%Y %H:%M UTC\n__name__",
+      "en-US": "%d-%m-%Y %H:%M UTC\n__name__"
    },
    "data_path": "/data1/ccmmma/prometeo/data/opendap/",
    "result_path": "/project/images/",
@@ -17,13 +17,6 @@
    "shapefiles" : [
       { "path": "/project/data/shapefiles/europe", "color": "black" },
       { "path": "/project/data/shapefiles/Africa", "color": "black" }
-   ],
-   "watermarks" : [
-      { 
-         "path" : "/project/data/watermark/logo_parthenope.png",
-         "position" : "bottom-left",
-         "opacity" : 0.5
-      }
    ],
    "colormaps": {
       "rms3.cur.lamma": {
@@ -684,6 +677,86 @@
                      }
                   ]
                }
+            },
+            "mciW": {
+               "title": { 
+                  "en-US": "Mussel Contamination Index", 
+                  "it-IT": "Indice di contaminazione molluschi"
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "class_predict",
+                        "COLORSCALERANGE": "0,5",
+                        "NUMCOLORBANDS": "6",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR": "extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/mciBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US": "Mussel Contamination Index",
+                           "it-IT": "Indice Contaminazione Molluschi"
+                        },
+                        "colormap":"aiq3.mci",
+                        "var1": "class_predict",
+                        "b": 2,
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":4,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "name": "Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
+                     }
+                  ]
+               }
             }
          }
       },
@@ -938,6 +1011,85 @@
                               "color": "red"
                            }
                         ]
+                     }
+                  ]
+               }
+            },
+            "conW": {
+               "title": {
+                  "en-US": "Inert transport and diffusion",
+                  "it-IT": "Diffusione e trasporto traccinti inerti"
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "conc",
+                        "COLORSCALERANGE": "1,46000",
+                        "NUMCOLORBANDS": "7",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR" :"extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/concBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US":"Concentration [N. of particles]",
+                           "it-IT": "Concentrazione [N. particelle]"
+                        },
+                        "colormap":"wcm3.con",
+                        "var1": "conc",
+                        "type": "shaded",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
                      }
                   ]
                }
@@ -1259,6 +1411,87 @@
                            { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
                            { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
                         ]
+                     }
+                  ]
+               }
+            },
+            "genW": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "wms": {
+                  "layers": [
+                     {
+                           "LAYERS":"u:v-mag",
+                           "COLORSCALERANGE":"0.1,0.7",
+                           "NUMCOLORBANDS":"8",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "NODATAACOLOR":"transparent",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"raster/curBars",
+                           "LEGEND":"right"
+                     },
+                     {
+                           "LAYERS":"u:v-dir",
+                           "COLORSCALERANGE":"0,100",
+                           "NUMCOLORBANDS":"250",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Surface current [kn]",
+                           "it-IT": "Corrente marina superficiale [kn]"
+                        },
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "rms3.cur.lamma",
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]   
                      }
                   ]
                }
@@ -1665,6 +1898,57 @@
                            { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
                            { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
                         ]
+                     }
+                  ]
+               }
+             },
+             "hsdW": {
+               "title": {
+                  "it-IT": "Altezza significativa e direzione del fronte d'onda",
+                  "en-US": "Significant wave height and direction"
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Significant wave height [m]", "it-IT": "Altezza significativa [m]" },
+                        "type": "shaded",
+                        "colormap": "ww33.h.lamma",
+                        "var1": "hs",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
                      }
                   ]
                }
@@ -3053,6 +3337,140 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     }
+                  ]
+               }
+            },
+            "genW": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "wms": {
+                  "layers":[
+                     {
+                        "LAYERS":"CLDFRA_TOTAL",
+                        "COLORSCALERANGE":"0.125,1",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_cldfrc",
+                        "LEGEND":"right"
+                     },
+                     {
+                        "LAYERS":"DELTA_RAIN",
+                        "COLORSCALERANGE":".2,60",
+                        "NUMCOLORBANDS":"15",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_rain_lamma",
+                        "LEGEND":"left"
+                     },
+                     {
+                        "LAYERS":"HOURLY_SWE",
+                        "COLORSCALERANGE":"0.5,15.5",
+                        "NUMCOLORBANDS":"6",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_snow"
+                     },
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     },
+                     {
+                        "LAYERS":"SLP",
+                        "COLORSCALERANGE":"960,1040",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"contours/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Total Cloud Cover [0-1]",
+                           "it-IT": "Nuvolosità [0-1]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.cldfrc",
+                        "var1": "CLDFRA_TOTAL",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "text": {
+                           "en-US": "Total Precipitation [mm/1h]",
+                           "it-IT": "Precipitazione cumulata oraria [mm/1h]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.rain.lamma",
+                        "var1": "DELTA_RAIN",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "right",
+                        "ticks_position": "right",
+                        "label_size": 5
+                     },
+                     {
+                        "text": {
+                           "en-US": "Total Accumulated Snow [cm/1h]",
+                           "it-IT": "Neve cumulata oraria [cm/1h]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.snow",
+                        "var1": "HOURLY_SWE",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "bottom",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "SLP",
+                        "time": 0,
+                        "clev_min": 940,
+                        "clev_max": 1040,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "barbs",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
                      }
                   ]
                }

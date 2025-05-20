@@ -703,7 +703,7 @@ class MeteoServices:
                     calendar_items.append(calendar_item)
         return calendar_items
 
-    def modelOutput(self, params=None):
+    def modelOutput(self, params=None, use_disk_cached=True,):
 
 
         retval = {}
@@ -746,274 +746,296 @@ class MeteoServices:
 
         date = datetime(year, month, day, hour, minute)
 
-        # Get the domain and the indeces of the place
-        domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
+        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
+
+        relativePath = place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
+       
+        if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
+            os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
+
+        imageName = "jsn__" + place + "_" + prod + "_" + dateTime + ".json" 
+
+        imagePath = self.config['CACHE_JSON'] + os.path.sep + relativePath + os.path.sep + imageName
+
+        imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
+
+        
+        if use_disk_cached is False or os.path.isfile(imagePath) is False:
+            
+            #TODO: check if the file age is over 6h 
+
+            
 
 
-        # Check if domain and indeces are correct
-        if domain_indeces is not None:
+            # Get the domain and the indeces of the place
+            domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
 
-            # Retrieve domain and indeces
-            (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
-            # Set the dateTime
-            dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
+            # Check if domain and indeces are correct
+            if domain_indeces is not None:
 
-            dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
+                # Retrieve domain and indeces
+                (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
-            url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['HISTORY'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+                # Set the dateTime
+                dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
 
-            retval = {}
+                dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
 
-            # Check if the file exists
-            dataset = None
+                url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['HISTORY'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
-            try:
-                # Open the data file
-                dataset = netCDF4.Dataset(url)
-            except Exception as e:
-                print("[*] netCDF4 error : " + str(e))
+                retval = {}
 
-            # Check if the product is available and if the filds are defined
-            if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
+                # Check if the file exists
+                dataset = None
 
-                # For each field in fields
-                for field, item in self.maps["products"][prod]["fields"].items():
+                try:
+                    # Open the data file
+                    dataset = netCDF4.Dataset(url)
+                except Exception as e:
+                    print("[*] netCDF4 error : " + str(e))
 
-                    # Set default method
-                    # method = "nanmean"
-                    method = "mean"
+                # Check if the product is available and if the filds are defined
+                if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
 
-                    # Check if method is defined in item
-                    if "method" in item:
+                    # For each field in fields
+                    for field, item in self.maps["products"][prod]["fields"].items():
+
+                        # Set default method
+                        # method = "nanmean"
+                        method = "mean"
+
+                        # Check if method is defined in item
+                        if "method" in item:
+
+                            # Set the method
+                            method = item["method"]
+
 
                         # Set the method
-                        method = item["method"]
+                        method = getattr(sys.modules["numpy"],method)
+
+                        # Set time to None
+                        time = None
+
+                        # Check if time is defined in item
+                        if "time" in item:
+
+                            # Set time
+                            time = item["time"]
+
+                        # Set level to None
+                        level = None
+
+                        # Check if level is in item
+                        if "level" in item:
+
+                            # Set level
+                            level = item["level"]
+
+                        # Check func to none
+                        func = None
+
+                        # Check if func is defined in item
+                        if "func" in item:
+
+                            # Get the module and the string module.function
+                            parts = item["func"].split(".")
+
+                            # Check if no module is set
+                            if len(parts) == 1:
+
+                                # Use the current module as default
+                                parts = [ sys.modules[__name__], item["func"]]
+
+                            # Check if the module name is set
+                            elif len(parts) == 2:
+
+                                # Use the specified module
+                                parts = [ sys.modules[parts[0]], item["func"]]
+
+                            # Try to set the function
+                            try:
+
+                                # Set the function pointer
+                                func = getattr(parts[0], parts[1])
+
+                            # If inconsistent module/function rise an exception
+                            except Exception as e:
+                                pass
+
+                        a = 1
+                        if "a" in item:
+                            a = item["a"]
+
+                        b = 0
+                        if "b" in item:
+                            b = item["b"]
+
+                        round_digits = None
+                        if "round" in item:
+                            round_digits = item["round"]
 
 
-                    # Set the method
-                    method = getattr(sys.modules["numpy"],method)
+                        zero_if_negative = False
+                        if "zero_if_negative" in item:
+                            zero_if_negative = item["zero_if_negative"]
 
-                    # Set time to None
-                    time = None
-
-                    # Check if time is defined in item
-                    if "time" in item:
-
-                        # Set time
-                        time = item["time"]
-
-                    # Set level to None
-                    level = None
-
-                    # Check if level is in item
-                    if "level" in item:
-
-                        # Set level
-                        level = item["level"]
-
-                    # Check func to none
-                    func = None
-
-                    # Check if func is defined in item
-                    if "func" in item:
-
-                        # Get the module and the string module.function
-                        parts = item["func"].split(".")
-
-                        # Check if no module is set
-                        if len(parts) == 1:
-
-                            # Use the current module as default
-                            parts = [ sys.modules[__name__], item["func"]]
-
-                        # Check if the module name is set
-                        elif len(parts) == 2:
-
-                            # Use the specified module
-                            parts = [ sys.modules[parts[0]], item["func"]]
-
-                        # Try to set the function
-                        try:
-
-                            # Set the function pointer
-                            func = getattr(parts[0], parts[1])
-
-                        # If inconsistent module/function rise an exception
-                        except Exception as e:
-                            pass
-
-                    a = 1
-                    if "a" in item:
-                        a = item["a"]
-
-                    b = 0
-                    if "b" in item:
-                        b = item["b"]
-
-                    round_digits = None
-                    if "round" in item:
-                        round_digits = item["round"]
+                        zero_if_positive = False
+                        if "zero_if_positive" in item:
+                            zero_if_positive = item["zero_if_positive"]
 
 
-                    zero_if_negative = False
-                    if "zero_if_negative" in item:
-                        zero_if_negative = item["zero_if_negative"]
+                        # Check if var1 is defined
+                        if "var" in item:
 
-                    zero_if_positive = False
-                    if "zero_if_positive" in item:
-                        zero_if_positive = item["zero_if_positive"]
+                            # Get the var1 value
+                            var_list = item["var"]
 
+                            # Check if var is a string
+                            if type(var_list) == str:
 
-                    # Check if var1 is defined
-                    if "var" in item:
+                                # Convert var in a single element list
+                                var_list = [ var_list ]
 
-                        # Get the var1 value
-                        var_list = item["var"]
+                            # Set the values list
+                            values = []
 
-                        # Check if var is a string
-                        if type(var_list) == str:
+                            # For each variable in the list
+                            for var in var_list:
 
-                            # Convert var in a single element list
-                            var_list = [ var_list ]
+                                # Check if it is a link
+                                if "__link__" in var:
 
-                        # Set the values list
-                        values = []
+                                    # Set the field value
+                                    values.append("prod=" + prod + "&place=" + place + "&date=" + dateTime)
 
-                        # For each variable in the list
-                        for var in var_list:
+                                # Check if it is a datetime
+                                elif "__dateTime__" in var:
 
-                            # Check if it is a link
-                            if "__link__" in var:
+                                    # Set the field value
+                                    values.append(dateTime)
 
-                                # Set the field value
-                                values.append("prod=" + prod + "&place=" + place + "&date=" + dateTime)
+                                # Check if it is a iDate
+                                elif "__iDate__" in var:
+                                    try:
+                                        # Set the value
+                                        values.append(dataset.IDATE)
+                                    except Exception as e:
+                                        pass
 
-                            # Check if it is a datetime
-                            elif "__dateTime__" in var:
-
-                                # Set the field value
-                                values.append(dateTime)
-
-                            # Check if it is a iDate
-                            elif "__iDate__" in var:
-                                try:
-                                    # Set the value
-                                    values.append(dataset.IDATE)
-                                except Exception as e:
-                                    pass
-
-                            else:
-                                # Get the variable float value
-
-                                # Check if both time and level are none (2D variable)
-                                if time is None and level is None: 
-                                    # Get the value and append it to the values list
-                                    values.append(float(method(dataset.variables[var][Jmin:Jmax, Imin:Imax])))
-
-                                # Check if time is none and level is not (3D variable, not depending by the time)
-                                elif time is None and level is not None:
-
-                                    # Get the value and append it to the values list
-                                    values.append(float(method(dataset.variables[var][level, Jmin:Jmax, Imin:Imax])))
-
-                                # Check if level is none and time is not (3D variable, not depending by the level)
-                                elif time is not None and level is None:
-                                    # Get the value and append it to the values list 
-                                    # data_dataset = dataset.variables[var][time, Jmin:Jmax, Imin:Imax]
-                                    # data_dataset_copy = np.copy(data_dataset)
-                                    # values.append(float(method(data_dataset_copy)))
-
-                                    
-
-                                    values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
-
-                                    
-
-                                # If both time and level are not note, it is a 4D variable
                                 else:
+                                    # Get the variable float value
 
-                                    # Get the value and append it to the values list
-                                    values.append(float(method(dataset.variables[var][time, level, Jmin:Jmax, Imin:Imax])))
+                                    # Check if both time and level are none (2D variable)
+                                    if time is None and level is None: 
+                                        # Get the value and append it to the values list
+                                        values.append(float(method(dataset.variables[var][Jmin:Jmax, Imin:Imax])))
 
-                        
-                        # Check if at least one value is avaliable 
-                        if len(values)>0:
-                            # Initialize the value
-                            value = None
+                                    # Check if time is none and level is not (3D variable, not depending by the time)
+                                    elif time is None and level is not None:
+                                        # Get the value and append it to the values list
+                                        values.append(float(method(dataset.variables[var][level, Jmin:Jmax, Imin:Imax])))
 
-                            # Check if a function have to be applied
-                            if func is not None:
+                                    # Check if level is none and time is not (3D variable, not depending by the level)
+                                    elif time is not None and level is None:
+                                        # Get the value and append it to the values list 
+                                        values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
 
-                                # Invoke the function
-                                value = func(values)
-                            else:
-                                # Only one value
-                                value = values[0]
+                                    # If both time and level are not note, it is a 4D variable
+                                    else:
+
+                                        # Get the value and append it to the values list
+                                        values.append(float(method(dataset.variables[var][time, level, Jmin:Jmax, Imin:Imax])))
+
+                            
+                            # Check if at least one value is avaliable 
+                            if len(values)>0:
+                                # Initialize the value
+                                value = None
+
+                                # Check if a function have to be applied
+                                if func is not None:
+
+                                    # Invoke the function
+                                    value = func(values)
+                                else:
+                                    # Only one value
+                                    value = values[0]
 
 
-                            # Check if value is integer of float and not nan
-                            if (type(value) == int or type(value) == float) and not math.isnan(value):
+                                # Check if value is integer of float and not nan
+                                if (type(value) == int or type(value) == float) and not math.isnan(value):
 
-                                # Apply the correction
-                                value = value * a + b
+                                    # Apply the correction
+                                    value = value * a + b
 
-                                # If needed, set the value as zero if negative
-                                if zero_if_negative is True:
-                                    if value < 0:
-                                        value = 0
+                                    # If needed, set the value as zero if negative
+                                    if zero_if_negative is True:
+                                        if value < 0:
+                                            value = 0
 
-                                # If needed, set the value as zero if positive
-                                if zero_if_positive is True:
-                                    if value > 0:
-                                        value = 0
+                                    # If needed, set the value as zero if positive
+                                    if zero_if_positive is True:
+                                        if value > 0:
+                                            value = 0
 
-                                # Check if the number have be rounded
-                                if round_digits is not None and type(value) == float:
+                                    # Check if the number have be rounded
+                                    if round_digits is not None and type(value) == float:
 
-                                    # Round the value
-                                    value = round(value, round_digits)
-                                
-                            # Check if value is valued
-                            if (type(value) == float and not math.isnan(value)) or type(value) != float:
+                                        # Round the value
+                                        value = round(value, round_digits)
+                                    
+                                # Check if value is valued
+                                if (type(value) == float and not math.isnan(value)) or type(value) != float:
 
-                                # Set the value
-                                retval[field] = value
+                                    # Set the value
+                                    retval[field] = value
 
-                # Close the datase
-                dataset.close()
+                    # Close the datase
+                    dataset.close()
 
-                # Set the result status
-                retval['result'] = "ok"
+                    # Set the result status
+                    retval['result'] = "ok"
 
-                # Check if the opt parameter is set
-                if "opt" in params:
+                    # Check if the opt parameter is set
+                    if "opt" in params:
 
-                    # Check if the place info have to be added
-                    if "place" in params['opt']:
+                        # Check if the place info have to be added
+                        if "place" in params['opt']:
 
-                        # Add the place info
-                        retval['place'] = self.places.get_place_by_id(place, params)
+                            # Add the place info
+                            retval['place'] = self.places.get_place_by_id(place, params)
 
-                    # Check if the fields info have to be added
-                    if "fields" in params['opt']:
+                        # Check if the fields info have to be added
+                        if "fields" in params['opt']:
 
-                        # Add the fields info
-                        retval['fields'] = self.maps["products"][prod]['fields']
+                            # Add the fields info
+                            retval['fields'] = self.maps["products"][prod]['fields']
+                else:
+                    # Set the result status
+                    retval['result'] = "error"
+
+                    # Add details to the result status
+                    retval['details'] = "Data not available"
             else:
                 # Set the result status
                 retval['result'] = "error"
 
                 # Add details to the result status
-                retval['details'] = "Data not available"
-        else:
-            # Set the result status
-            retval['result'] = "error"
+                retval['details'] = "Place not indexed"
+            
+            # Save retval as .json file into cache_jsn
+            with open(imagePath, "w") as json_file:
+                json.dump(retval, json_file, indent=4)
+                    
 
-            # Add details to the result status
-            retval['details'] = "Place not indexed"
+            # Return the result
+            return retval
         
-        # Return the result
+        # If it gets here it means that the file already exists, so it reads it and returns.
+        with open(imagePath, "r") as json_file:
+            retval = json.load(json_file)
         return retval
 
     def ModelPlotUrl(self, use_disk_cached=True, params=None):
@@ -1082,12 +1104,11 @@ class MeteoServices:
         dry = str(params['dry'])
 
         # date = datetime(year, month, day, hour, minute)
-
         # Set the dateTime
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
+        # dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
+        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + "00"
 
         relativePath, imageName = self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
-        # relativePath, imageName = self.plotter.render(place, prod, output, dateTime, language='it-IT', draw_colorbars=bars)
 
         imagePath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + imageName
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
@@ -1116,7 +1137,6 @@ class MeteoServices:
         minute = 0
 
         bars = False
-        watermark = False 
 
         if params:
             if 'lang' in params and params['lang'] is not None:
@@ -1144,9 +1164,6 @@ class MeteoServices:
 
             if 'date' in params and params['date'] is not None:
                 timeref = params['date']
-            
-            if 'watermark' in params:
-                watermark = params['watermark']
         
 
         if timeref is None:
@@ -1188,8 +1205,7 @@ class MeteoServices:
                 
         if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
             # Creation image 
-            # self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
-            self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars, draw_watermark=watermark)
+            self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
 
         retval['link'] = imageUrl
         
