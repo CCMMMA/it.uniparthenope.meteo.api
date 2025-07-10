@@ -5,7 +5,7 @@ import app
 api = Namespace('version', description='Version API')
 
 
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE
 @api.route('')
 class Version(Resource):
     @api.doc()

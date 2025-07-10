@@ -6,7 +6,7 @@ import app
 api = Namespace('webcam', description='Webcam API')
 
 
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE
 # I DON'T HAVE WEBCAM DIRECTORY
 @api.route("/<string:place>/<string:location>/<string:cam>")
 class Webcam(Resource):

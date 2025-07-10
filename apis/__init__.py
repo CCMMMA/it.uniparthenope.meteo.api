@@ -9,6 +9,7 @@ from .namespace_products import api as ns_products
 from .namespace_v2 import api as ns_v2
 from .namespace_version import api as ns_version
 from .namespace_webcam import api as ns_webcam
+from .namespace_instruments import api as ns_instruments
 
 api = Api()
 
@@ -22,5 +23,6 @@ api.add_namespace(ns_products)
 api.add_namespace(ns_v2)
 api.add_namespace(ns_version)
 api.add_namespace(ns_webcam)
+api.add_namespace(ns_instruments)
 
 

@@ -7,7 +7,7 @@ import app
 api = Namespace('legal', description='Legal API')
 
 
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE 
 @api.route('/disclaimer')
 class LegalDiscaimer(Resource):
     @api.doc()
@@ -23,7 +23,7 @@ class LegalDiscaimer(Resource):
         return jsonify(res)
 
 
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE 
 @api.route('/privacy')
 class LegalPrivacy(Resource):
     @api.doc()

@@ -6,7 +6,7 @@ from core.GetParams import get_params
 api = Namespace('box', description='Box API')
 
 
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE
 @api.route('/today/<string:place>')
 class BoxToday(Resource):
     @api.doc()

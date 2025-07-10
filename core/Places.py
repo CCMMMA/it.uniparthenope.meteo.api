@@ -59,6 +59,10 @@ class Places(object):
         # 6367 km is the radius of the Earth
         km = 6367 * c
         return km
+    
+    
+    def get_all_places(self, place):
+        return MongoDBHandlers(self.config).get_query(place, all_places=True)
 
     def get_domain_and_indeces_by_product_and_place(self, product, place_id, date=None):
         # conn = pymongo.MongoClient()

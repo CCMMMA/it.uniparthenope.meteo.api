@@ -7,7 +7,7 @@ class MongoDBHandlers(object):
     def __init__(self, config):
         self.config = config
 
-    def get_query(self, name_collection, query, proj, limit=None, order_flag=None):
+    def get_query(self, name_collection, query=None, proj=None, limit=None, order_flag=None, all_places=False):
         out = []
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
@@ -17,6 +17,8 @@ class MongoDBHandlers(object):
             logger.error(str(configuration_error))
         db = client[self.config['DATABASE']]
         collection = db[name_collection]
+        if all_places is True:
+            return list(collection.find())
         if limit is None:
             for item in collection.find(query, proj):
                 out.append(item)

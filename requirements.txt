@@ -19,3 +19,8 @@ matplotlib
 basemap
 haversine == 2.8.0
 flask-cors
+
+influxdb_client
+flask_sqlalchemy
+psycopg2
+utils

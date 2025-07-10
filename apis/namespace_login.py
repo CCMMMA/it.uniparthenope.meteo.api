@@ -10,7 +10,7 @@ user_model = api.model("user", {
     "pass": fields.String("The user password")
 })
 
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE
 @api.route('/login')
 class UserLogin(Resource):
     @api.doc()

@@ -767,7 +767,7 @@
             "en-US": "Inert tracer transport and diffusion"
          },
          "timestep": "60",
-         "steps": "144",
+         "steps": "168",
          "fields": {
             "link": {
                "title": {
@@ -890,14 +890,13 @@
                "wms": {
                   "layers": [
                      {
-                        "LAYERS": "conc",
+                        "LAYERS": "sfconc10m",
                         "COLORSCALERANGE": "1,46000",
                         "NUMCOLORBANDS": "7",
                         "ABOVEMAXCOLOR": "extend",
                         "BELOWMINCOLOR": "transparent",
                         "NODATAACOLOR": "transparent",
                         "BGCOLOR": "extend",
-                        "ELEVATION": "0",
                         "LOGSCALE": "false",
                         "STYLES": "raster/concBars",
                         "LEGEND": "right"
@@ -908,14 +907,13 @@
                   "layers":[
                      {
                         "text": {
-                           "en-US": "Concentration [N. of particles]",
-                           "it-IT": "Concentrazione [N. particelle]"
+                           "en-US": "Concentration [N. of particles] 10m",
+                           "it-IT": "Concentrazione [N. particelle] 10m"
                         },
                         "colormap":"wcm3.con",
-                        "var1": "conc",
+                        "var1": "sfconc10m",
                         "type": "shaded",
                         "time": 0,
-                        "level": 0,
                         "pad": "13%",
                         "position": "left",
                         "ticks_position": "left"
@@ -956,14 +954,13 @@
                "wms": {
                   "layers": [
                      {
-                        "LAYERS": "conc",
+                        "LAYERS": "sfconc10m",
                         "COLORSCALERANGE": "1,46000",
                         "NUMCOLORBANDS": "7",
                         "ABOVEMAXCOLOR": "extend",
                         "BELOWMINCOLOR": "transparent",
                         "NODATAACOLOR": "transparent",
                         "BGCOLOR" :"extend",
-                        "ELEVATION": "0",
                         "LOGSCALE": "false",
                         "STYLES": "raster/concBars",
                         "LEGEND": "right"
@@ -974,14 +971,13 @@
                   "layers":[
                      {
                         "text": {
-                           "en-US":"Concentration [N. of particles]",
-                           "it-IT": "Concentrazione [N. particelle]"
+                           "en-US":"Concentration [N. of particles] 10m",
+                           "it-IT": "Concentrazione [N. particelle] 10m"
                         },
                         "colormap":"wcm3.con",
-                        "var1": "conc",
+                        "var1": "sfconc10m",
                         "type": "shaded",
                         "time": 0,
-                        "level": 0,
                         "pad": "13%",
                         "position": "left",
                         "ticks_position": "left",
@@ -1023,14 +1019,13 @@
                "wms": {
                   "layers": [
                      {
-                        "LAYERS": "conc",
+                        "LAYERS": "sfconc10m",
                         "COLORSCALERANGE": "1,46000",
                         "NUMCOLORBANDS": "7",
                         "ABOVEMAXCOLOR": "extend",
                         "BELOWMINCOLOR": "transparent",
                         "NODATAACOLOR": "transparent",
                         "BGCOLOR" :"extend",
-                        "ELEVATION": "0",
                         "LOGSCALE": "false",
                         "STYLES": "raster/concBars",
                         "LEGEND": "right"
@@ -1045,10 +1040,9 @@
                            "it-IT": "Concentrazione [N. particelle]"
                         },
                         "colormap":"wcm3.con",
-                        "var1": "conc",
+                        "var1": "sfconc10m",
                         "type": "shaded",
                         "time": 0,
-                        "level": 0,
                         "pad": "13%",
                         "position": "left",
                         "ticks_position": "left",
@@ -2081,7 +2075,7 @@
                { "ge": 480,            "values": { "skip": 18, "scale": 10, "hpa_tick": 2, "barb_length": 5  }}
             ],
             "d02": [
-               { "ge":   0, "lt":  60, "values": { "skip":  2, "scale": 1, "hpa_tick":  1, "barb_length": 3  }},
+               { "ge":   0, "lt":  60, "values": { "skip":  1, "scale": 1, "hpa_tick":  1, "barb_length": 4  }},
                { "ge":  60, "lt": 240, "values": { "skip":  4, "scale": 5, "hpa_tick":  1, "barb_length": 3  }},
                { "ge": 240, "lt": 480, "values": { "skip":  10, "scale": 10, "hpa_tick":  1, "barb_length": 4  }},
                { "ge": 480,            "values": { "skip": 35, "scale": 15, "hpa_tick": 2, "barb_length": 4  }}
@@ -3337,6 +3331,17 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3471,6 +3476,17 @@
                            }
                         ]
                            
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3550,6 +3566,17 @@
                         "pad": "13%",
                         "position": "bottom",
                         "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3583,6 +3610,17 @@
                         "position": "right",
                         "ticks_position": "right",
                         "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3634,6 +3672,17 @@
                         "clev_min": 940,
                         "clev_max": 1040,
                         "colors": "green"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3685,6 +3734,17 @@
                         "clev_min": 940,
                         "clev_max": 1040,
                         "colors": "green"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3736,6 +3796,17 @@
                         "clev_min": 940,
                         "clev_max": 1040,
                         "colors": "green"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3791,6 +3862,17 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3818,6 +3900,17 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3887,6 +3980,17 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3926,6 +4030,17 @@
                         "var1": "U10M",
                         "var2": "V10M",
                         "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3947,6 +4062,17 @@
                         "position": "left",
                         "ticks_position": "left",
                         "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }
@@ -3969,6 +4095,17 @@
                         "position": "left",
                         "ticks_position": "left",
                         "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
                      }
                   ]
                }

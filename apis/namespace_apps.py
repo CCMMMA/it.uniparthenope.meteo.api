@@ -30,7 +30,44 @@ api = Namespace('apps', description='Apps API')
 #        for item in data:
 #            print(item)
 
-# TESTED AND WORKING
+
+# TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
+@api.route('/owm/<string:prod>/<string:placeprefix>/<int:z>/<int:x>/<int:y>.geojson', methods=['GET', 'OPTIONS'])
+class AppsOwmWeatherProdPlacePrefix(Resource):
+    @api.doc()
+    def get(self, prod, placeprefix, z, x, y):
+        """
+        :example: /apps/owm/wrf5/prov/10/552/384.geojson
+        :returns: json -- the return josn.
+        -------------------------------------------------------------------------------------------
+        """
+
+        if placeprefix == "reg":
+            return {'message': 'The place \'reg\' is not used'}
+
+        res = get_resource(request, app.cache, app.use_pymemcache)
+
+        # Check Memcache
+        if res is None:
+
+            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
+
+            if res is None:
+        
+                params = get_params({'date': None})
+                res = app.tiles.get_weather_ex(prod, placeprefix, params, z, x, y)
+
+                # Save on Diskcache
+                app.diskcache.set(request, res, 'json')
+
+                # Save on Memcache
+                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+        else:
+            res = json.loads(res)
+        return jsonify(res)
+
+'''
+# TESTED AND WORKING -- OLD VERION 
 @api.route('/owm/<string:prod>/<string:placeprefix>/<int:z>/<int:x>/<int:y>.geojson', methods=['GET', 'OPTIONS'])
 class AppsOwmWeatherProdPlacePrefix(Resource):
     @api.doc()
@@ -52,9 +89,9 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
         else:
             res = json.loads(res)
         return jsonify(res)
+'''
 
-
-# TESTED AND WORKING
+# TESTED AND WORKING -- NO CACHE USE 
 @api.route('/sais/index')
 class AppsSaisRisk(Resource):
     @api.doc()
