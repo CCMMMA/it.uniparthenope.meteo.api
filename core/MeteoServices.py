@@ -2052,6 +2052,11 @@ class MeteoServices:
                 hours = int(params['hours'])
             else:
                 hours = 0
+            
+            if 'output' in params:
+                output = params['output']
+            else:
+                output = " "
 
         if timeref is None:
             date = datetime.utcnow()
@@ -2083,6 +2088,25 @@ class MeteoServices:
             (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
             retval = {"timeseries": []}
+
+            if output != None:
+                
+                retval = {"meta-chart": {}, "timeseries": []}
+                chart = (
+                    self.maps
+                    .get("products", {})
+                    .get(prod, {})
+                    .get("outputs", {})
+                    .get(output, {})
+                    .get("chart", {})
+                )
+
+                for key in [
+                    "title_chart", "title_bars", "var_bars", "pos_bars", "unit_bars",
+                    "values_bars", "title_line", "var_line", "pos_line", "unit_line", "values_line"
+                ]:
+                    if key in chart:
+                        retval["meta-chart"][key] = chart[key]
 
             done = False
             count = 0
@@ -2570,6 +2594,39 @@ class MeteoServices:
         
 
         return (retval,imageName)
+
+
+    def MakeJsonAlt(self, prod, place, params=None): 
+        prod = prod
+        place = place
+        output = 'gen'
+        now = datetime.now()
+        year = now.strftime('%Y')
+        month = now.strftime('%m')
+        day = now.strftime('%d')
+        hour = '00'
+        minute = '00'
+
+        if params:
+            if 'output' in params and params['output'] is not None:
+                output = params['output']
+            if "lang" in params and params['lang'] is not None:
+                lang = params['lang']
+            if "date" in params and params['date'] is not None:
+                now = params['date']
+                year = now[0:4]
+                month = now[4:6]
+                day = now[6:8]
+                hour = now[9:11]
+                minute = now[11:13]
+
+        model_name = self.maps["products"][prod]["desc"][lang]
+        output_name = self.maps["products"][prod]["outputs"][output]["title"][lang]
+            
+        out = self.maps["alt"][lang].replace("%H", hour).replace("%M",minute).replace("%d", day).replace("%m", month).replace("%Y", year).replace("__place__", place).replace("__model__", model_name).replace("__output__", output_name)
+
+        return out
+
 
     ''' 
     # funzione aggiunta dalle vecchie API 

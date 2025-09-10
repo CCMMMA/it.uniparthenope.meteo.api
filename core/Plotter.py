@@ -407,10 +407,10 @@ class Plotter(object):
         meridians = np.arange(minLon, maxLon, (maxLat - minLat) / 4)
 
         # Draw the parallels
-        basemap.drawparallels(parallels, labels=[1, 0, 0, 0], fontsize=4)
+        basemap.drawparallels(parallels, labels=[1, 0, 0, 0], fontsize=4, linewidth=0.1)
 
         # Draw the meridians
-        basemap.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=4)
+        basemap.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=4, linewidth=0.1)
 
         # Create a mesh grid using nongitudes and latitudes
         lons, lats = np.meshgrid(lon, lat)
@@ -821,7 +821,7 @@ class Plotter(object):
                 basemap.barbs(
                     lons[skip2], lats[skip2],
                     var1[skip2], var2[skip2],
-                    latlon=True, pivot='middle',  barbcolor='#666666', length=barb_length
+                    latlon=True, pivot='middle',  barbcolor='#666666', length=barb_length, linewidths=0.3
                 )
             elif "shapefiles" in layer_type:
                 if "shapefiles" in layer:

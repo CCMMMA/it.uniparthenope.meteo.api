@@ -17,6 +17,18 @@ from core.GribServices import GribServices
 api = Namespace('products', description='Products API')
 
 # TESTED AND WORKING - NO CACHE USE 
+@api.route('')
+class Products(Resource):
+    @api.doc()
+    def get(self):
+        """Returns the avaliable products.
+        :example: /products
+        :returns:  json -- the return json.
+        """
+        res = app.meteo_services.getProds()
+        return jsonify(products=res)
+
+# TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/<string:place>/avail')
 class ProductsAvailable(Resource):
     @api.doc()
@@ -83,19 +95,6 @@ class ProductsThemesByProd(Resource):
         """
         res = app.meteo_services.getThemes(prod)
         return jsonify(themes=res)
-
-
-# TESTED AND WORKING - NO CACHE USE 
-@api.route('')
-class Products(Resource):
-    @api.doc()
-    def get(self):
-        """Returns the avaliable products.
-        :example: /products
-        :returns:  json -- the return json.
-        """
-        res = app.meteo_services.getProds()
-        return jsonify(products=res)
 
 
 # TESTED AND WORKING - NO CACHE USE
@@ -359,6 +358,32 @@ class ProductsForecastMapByProdAndPlace(Resource):
         return response
 '''
 
+@api.route('/<string:prod>/forecast/<string:place>/plot/alt')
+class ProductsForecastPlotAndAlt(Resource):
+    @api.doc()
+    def get(self, prod, place, language="en-US"):
+        
+        params = get_params({
+            'id': place,
+            'filter': None,
+            #'place': place,
+            #'prod': prod,
+            'output': 'gen',
+            'date': None,
+            'width': 1024,
+            'height': 768,
+            'dry': "false",
+            'lang': language,
+            'opt': ""
+        })
+
+        all_info_place = Places(app.application.config).get_place_by_id(place)
+        long_name = all_info_place['long_name']['it']
+        res = app.meteo_services.MakeJsonAlt(prod, long_name, params)
+
+        return res
+
+
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/<string:domain>/grib/text')
 class ProductsForecastGribJsonByProdAndDomain(Resource):
@@ -571,7 +596,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
         return jsonify(res)
 '''
 
-
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/legend/<string:position>/<string:output>')
 class ProductsForecastBarByProdAndPositionAndOutput(Resource):
@@ -678,6 +702,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                 params = get_params({
                     'place': place,
                     'prod': prod,
+                    'output': None,
                     'hours': 0,
                     'step': 1,
                     'md5': None,
@@ -838,6 +863,7 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
         return csvfy(res)
 '''
 
+'''
 # ORIGINAL : Internal Server Error -- USE MEMCACHE 
 @api.route('/<string:prod>/timeseries/<string:place>/chart')
 class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
@@ -883,7 +909,7 @@ class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
             }
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         return jsonify(res)
-        
+'''        
 
 # USE MEMCACHE
 @api.route('/<prod>/forecast/<place>/map/image')

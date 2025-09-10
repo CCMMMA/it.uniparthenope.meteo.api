@@ -3,6 +3,10 @@
       "it-IT": "%d-%m-%Y %H:%M UTC\n__name__",
       "en-US": "%d-%m-%Y %H:%M UTC\n__name__"
    },
+   "alt": {
+      "it-IT": "Ore %H:%M UTC del giorno %d-%m-%Y, __place__, __model__, __output__",
+      "en-US": "Hours %H:%M UTC of day %d-%m-%Y, __place__, __model__, __output__"
+   },
    "data_path": "/data1/ccmmma/prometeo/data/opendap/",
    "result_path": "/project/images/",
    "cache_path": "/data1/ccmmma/prometeo/cache/",
@@ -566,6 +570,14 @@
                   "en-US": "Generic",
                   "it-IT": "Generico"
                },
+               "chart": {
+                  "title_chart": "Mussels contamination index",
+                  "title_bars": "Index (#)", 
+                  "var_bars": "mci",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "values_bars": [0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.7, 3, 3.2]
+               },
                "wms": {
                   "layers": [
                      {
@@ -614,6 +626,14 @@
                "title": { 
                   "en-US": "Mussel Contamination Index", 
                   "it-IT": "Indice di contaminazione molluschi"
+               },
+               "chart": {
+                  "title_chart": "Mussels contamination index",
+                  "title_bars": "Index (#)", 
+                  "var_bars": "mci",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "values_bars": [0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.7, 3, 3.2]
                },
                "wms": {
                   "layers": [
@@ -887,6 +907,14 @@
                   "en-US": "Generic",
                   "it-IT": "Generico"
                },
+               "chart": {
+                  "title_chart": "Particle concentration ",
+                  "title_bars": "Number of Particles (#)", 
+                  "var_bars": "con",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "values_bars": [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650]
+               },
                "wms": {
                   "layers": [
                      {
@@ -950,6 +978,14 @@
                "title": {
                   "en-US": "Inert transport and diffusion",
                   "it-IT": "Diffusione e trasporto traccinti inerti"
+               },
+               "chart": {
+                  "title_chart": "Particle concentration ",
+                  "title_bars": "Number of Particles (#)", 
+                  "var_bars": "con",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "values_bars": [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650]
                },
                "wms": {
                   "layers": [
@@ -1344,6 +1380,19 @@
                   "en-US": "Generic",
                   "it-IT": "Generico"
                },
+               "chart": {
+                  "title_chart": "Surface current",
+                  "title_bars": "Current Speed at the surface (m/s)", 
+                  "var_bars": "scm",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m/s",
+                  "values_bars": [0, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07],
+                  "title_line": "Current Direction at the surface (°N)", 
+                  "var_line": "scd",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
                   "layers": [
                      {
@@ -1495,6 +1544,19 @@
                   "en-US": "Surface current [kn]",
                   "it-IT": "Corrente marina superficiale [kn]"
                },
+               "chart": {
+                  "title_chart": "Surface current",
+                  "title_bars": "Current Speed at the surface (m/s)", 
+                  "var_bars": "scm",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m/s",
+                  "values_bars": [0, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07],
+                  "title_line": "Current Direction at the surface (°N)", 
+                  "var_line": "scd",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
                   "layers":[
                      {
@@ -1565,6 +1627,14 @@
                   "en-US": "Sea Surface Salinity [PSU]",
                   "it-IT": "Salinità Superficiale [PSU]"
                },
+               "chart": {
+                  "title_chart": "Surface salinity",
+                  "title_bars": "Surface salinity (PSU)", 
+                  "var_bars": "sss",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "values_bars": [37.88, 37.885, 37.89, 37.895, 37.9, 37.905, 37.91, 37.915, 37.92, 37.925, 37.93, 37.935, 37.94, 37.945, 37.95, 37.955 ]
+               },
                "wms": {
                   "layers":[
                      {
@@ -1613,6 +1683,14 @@
                "title": {
                   "en-US": "Sea Surface Temperature",
                   "it-IT": "Temperatura Superficiale"
+               },
+               "chart": {
+                  "title_chart": "Surface temperature",
+                  "title_bars": "Surface temperature (°C)", 
+                  "var_bars": "sst",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# °C",
+                  "values_bars": [ 25.2, 25.3, 25.4, 25.5, 25.6, 25.7, 25.8, 25.9, 26, 26.1, 26.2, 26.3, 26.4 ]
                },
                "wms": {
                   "layers":[
@@ -1823,6 +1901,19 @@
                   "it-IT": "Generico",
                   "en-US": "Generic"
                },
+               "chart": {
+                  "title_chart": "Significant wave height and direction",
+                  "title_bars": "Significant wave height (m)", 
+                  "var_bars": "hs",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m",
+                  "values_bars": [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32 ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
                   "layers": [
 
@@ -1861,6 +1952,19 @@
                "title": {
                   "it-IT": "Altezza significativa e direzione del fronte d'onda",
                   "en-US": "Significant wave height and direction"
+               },
+               "chart": {
+                  "title_chart": "Significant wave height and direction",
+                  "title_bars": "Significant wave height (m)", 
+                  "var_bars": "hs",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m",
+                  "values_bars": [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32 ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
                },
                "wms": {
                   "layers": [
@@ -1952,6 +2056,19 @@
                   "it-IT": "Lunghezza e direzione del fronte d'onda",
                   "en-US": "Wave length and direction"
                },
+               "chart": {
+                  "title_chart": "Mean wave length and direction",
+                  "title_bars": "Mean wave length (m)", 
+                  "var_bars": "lm",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m",
+                  "values_bars": [10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
                   "layers": [
 
@@ -1992,6 +2109,19 @@
                   "it-IT": "Frequenza di picco e direzione del fronte d'onda",
                   "en-US": "Wave peak frequency and direction"
                },
+               "chart": {
+                  "title_chart": "Peak frequency and direction",
+                  "title_bars": "Peak frequency (s-1)", 
+                  "var_bars": "fp",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# s-1",
+                  "values_bars": [ 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42 ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
                   "layers": [
 
@@ -2030,6 +2160,19 @@
                "title": {
                   "it-IT": "Periodo e direzione del fronte d'onda",
                   "en-US": "Wave period and direction"
+               },
+               "chart": {
+                  "title_chart": "Mean Period and Direction",
+                  "title_bars": "Mean Period (s)", 
+                  "var_bars": "period",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# s",
+                  "values_bars": [ 2.4, 2.8, 3.2, 3.6, 4, 4.4, 4.8, 5.2, 5.6 ],
+                  "title_line": "Mean wave direction surface (ºN)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
                },
                "wms": {
                   "layers": [
@@ -2142,6 +2285,20 @@
                },
                "unit": "date",
                "var": "__iDate__"
+            },
+            "mcape": {
+               "title":{
+                  "it-IT": "Most unstable convective available potential energy [J/kg-1]",
+                  "en-US": "Most unstable convective available potential energy [J/kg-1]"
+               },
+               "label": {
+                  "it-IT": "MCAPE",
+                  "en-US": "MCAPE"
+               },
+               "round": 0,
+               "time": 0,
+               "var": "MCAPE",
+               "unit": "J/kg-1"
             },
             "t2c": {
                "title": {
@@ -3218,6 +3375,14 @@
                   "en-US": "Generic",
                   "it-IT": "Generico"
                },
+               "chart": {
+                  "title_chart": "Total Cloud Fraction",
+                  "title_bars": "Total Cloud fraction [%]", 
+                  "var_bars": "clf",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# %",
+                  "values_bars": [0.1 , 0.14, 0.22, 0.26, 0.3, 0.34, 0.38, 0.42, 0.46, 0.5]
+               },
                "wms": {
                   "layers":[
                      {
@@ -3496,6 +3661,19 @@
                   "en-US": "Hourly cloudness and cumulated pecipitation",
                   "it-IT": "Nuvolosità e precipitazione cumulata oraria"
                },
+               "chart": {
+                  "title_chart": "Clouds and Rain",
+                  "title_bars": "Hourly cumulated rain (mm)", 
+                  "var_bars": "crh",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# mm",
+                  "values_bars": [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11],
+                  "title_line": "Cloud fraction (%)", 
+                  "var_line": "clf",
+                  "pos_line": "right",
+                  "unit_line": "#0.## %",
+                  "values_line": [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+               },
                "wms": {
                   "layers": [
                      {
@@ -3583,6 +3761,14 @@
             },
             "crd": {
                "title": { "en-US": "Cumulated Daily Pecipitation" },
+               "chart": {
+                  "title_chart": "Daily Cumulated Rain",
+                  "title_bars": "Daily Cumulated Rain (mm)", 
+                  "var_bars": "crd",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# mm",
+                  "values_bars": [ 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8 ] 
+               },
                "wms": {
                   "layers":[
                      {
@@ -3626,7 +3812,20 @@
                }
             },
             "tsp": { 
-               "title": {"en-US":"Temperature and Sea Level Pressure"}, 
+               "title": {"en-US":"Temperature and Sea Level Pressure"},
+               "chart": {
+                  "title_chart": "Pressure And Temperature",
+                  "title_bars": "Temperature (°C)",
+                  "var_bars": "t2c",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## °C",
+                  "values_bars":  [ 1016.5, 1017, 1017.5, 1018, 1018.5, 1019, 1019.5, 1020, 1020.5, 1021, 1021.5, 1022, 1022.5],
+                  "title_line": "Sea Level Pressure (hPa)", 
+                  "var_line": "slp",
+                  "pos_line": "right",
+                  "unit_line": "##.# hPa",
+                  "values_line": [19.5, 20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24, 24.5, 25, 25.5, 26, 26.5]
+               },
                "wms": { 
                   "layers": [
                   {
@@ -3688,7 +3887,20 @@
                }
             },
             "gp5": {
-               "title": { "en-US":"Geopotential Height at 500 HPa and sea level pressure" }, 
+               "title": { "en-US":"Geopotential Height at 500 HPa and sea level pressure" },
+               "chart": {
+                  "title_chart": "Geopotential and Pressure",
+                  "title_bars": "Geopotential",
+                  "var_bars": "gph500",
+                  "pos_bars": "left",
+                  "unit_bars": "m",
+                  "values_bars":  [ 1016.5, 1017, 1017.5, 1018, 1018.5, 1019, 1019.5, 1020, 1020.5, 1021, 1021.5, 1022, 1022.5],
+                  "title_line": "Sea Level Pressure (hPa)", 
+                  "var_line": "slp",
+                  "pos_line": "right",
+                  "unit_line": "##.# hPa",
+                  "values_line": [583, 583.5, 584, 584.5, 585, 585.5, 586, 586.5, 587, 587.5, 588, 588.5]
+               }, 
                "wms": { 
                   "layers": [
                      {
@@ -3750,7 +3962,20 @@
                }
             },
             "gp8": {
-               "title": {"en-US":"Geopotential Height at 850 HPa and sea level pressure" }, 
+               "title": {"en-US":"Geopotential Height at 850 HPa and sea level pressure" },
+               "chart": {
+                  "title_chart": "Geopotential and Pressure",
+                  "title_bars":"Geopotential",
+                  "var_bars": "gph850",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## m",
+                  "values_bars":  [ 1016.5, 1017, 1017.5, 1018, 1018.5, 1019, 1019.5, 1020, 1020.5, 1021, 1021.5, 1022, 1022.5],
+                  "title_line": "Sea Level Pressure (hPa)", 
+                  "var_line": "slp",
+                  "pos_line": "right",
+                  "unit_line": "##.# hPa",
+                  "values_line": [155, 155.4, 155.8, 156.2, 156.6, 157, 157.4, 157.8, 158.2, 158.6, 159]
+               }, 
                "wms": { 
                   "layers": [
                      {
@@ -3813,6 +4038,19 @@
             },
             "wn1": {
                "title": { "en-US": "Wind speed at 10m (spectrum scale)"},
+               "chart": {
+                  "title_chart": "Wind Speed and Direction at 10m",
+                  "title_bars": "Wind Speed at 10m (knt)", 
+                  "var_bars": "ws10n",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# knt",
+                  "values_bars":  [5.6, 5.8, 6, 6.2, 6.4, 6.6, 6.8, 7, 7.2, 7.4, 7.6, 7.8, 8, 8.2, 8.4],
+                  "title_line": "Wind Direction at 10m (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 316, 360 ] 
+               },
                "wms": {
                   "layers": [
                      {
@@ -3879,6 +4117,19 @@
             },
             "wn4": {
                "title": { "en-US": "Wind speed at 10m"},
+               "chart": {
+                  "title_chart": "Wind Speed and Direction at 10m",
+                  "title_bars": "Wind Speed at 10m (knt)", 
+                  "var_bars": "ws10n",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# knt",
+                  "values_bars":  [5.6, 5.8, 6, 6.2, 6.4, 6.6, 6.8, 7, 7.2, 7.4, 7.6, 7.8, 8, 8.2, 8.4],
+                  "title_line": "Wind Direction at 10m (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 316, 360 ] 
+               },
                "plot": {
                   "layers": [
                      {
@@ -3917,6 +4168,19 @@
             },
             "wn2": {
                "title": { "en-US": "Wind speed variation" },
+               "chart": {
+                  "title_chart": "Wind Speed Variation and Direction at 10m",
+                  "title_bars": "Wind Speed variation at 10m (m/s-1)", 
+                  "var_bars": "delta_wspd10",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m/s-1",
+                  "values_bars":  [ -0.35, -0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.2, 0.25 ], 
+                  "title_line": "Wind Direction variation at 10m (°N)", 
+                  "var_line": "delta_wdir10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ -45, 0, 45, 90, 135, 180, 225, 270, 315, 360 ] 
+               },
                "wms": {
                   "layers": [
                      {
@@ -3997,6 +4261,19 @@
             },
             "rh2": {
                "title": { "en-US": "Air relative humidity at 2m and Wind Direction at 10m" },
+               "chart": {
+                  "title_chart": "Relative Humidity at 2m and Wind Dir",
+                  "title_bars": "Relative Humidity at 2m (%)", 
+                  "var_bars": "rh2",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## %",
+                  "values_bars":  [58, 62, 66, 70, 74, 78, 82, 86, 90, 94, 98],
+                  "title_line": "Wind Direction at 10m (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
                   "layers": [
                      {
@@ -4046,7 +4323,20 @@
                }
             },
             "mcape": {
-               "title": { "en-US": "MUCAPE"},
+               "title": { "en-US": "MUCAPE", "it-IT": "MUCAPE"},
+               "chart": {
+                  "title_chart": "MUCAPE and Wind Dir",
+                  "title_bars": "MUCAPE", 
+                  "var_bars": "mcape",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# JKg - 1",
+                  "values_bars":  [ 600, 800, 1000, 1200, 1600, 2000, 2200, 2400, 2600, 2800, 3000 ] ,
+                  "title_line": "Wind Direction ", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
                "wms": {
 
                },
@@ -4079,6 +4369,14 @@
             },
             "uh": {
                "title": { "en-US": "Updraft Helicity"},
+               "chart": {
+                  "title_chart": "Updraft Helicity ",
+                  "title_bars": "Updraft Helicity [m2/s-1]", 
+                  "var_bars": "uh",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m2/s-1",
+                  "values_bars":  [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9]
+               },
                "wms": {
 
                },

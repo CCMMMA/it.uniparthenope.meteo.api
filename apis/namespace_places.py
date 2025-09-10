@@ -126,7 +126,7 @@ class PlacesSearchByNameAutocomplete(Resource):
                 places = Places(app.application.config)
                 params = get_params({'term': None})
                 # params = getParams({'pretty':False})
-                opt = {'filter': ['com', 'porti', 'prov', 'reg', "ca", "iim", "med", 'UNI', 'VET', 'VEB'], 'limit': 20}
+                opt = {'filter': ['com', 'porti', 'prov', 'reg', "ca", "iim", "med", 'UNI', 'VET', 'VEB', 'la'], 'limit': 20}
                 res = places.get_places_by_name(params['term'], opt)
                 ret_val = []
                 for p in res:
