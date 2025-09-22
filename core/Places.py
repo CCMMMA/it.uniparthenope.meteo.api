@@ -1,5 +1,6 @@
 import json
 import netCDF4
+import pymongo
 import numpy as np
 from math import radians, cos, sin, asin, sqrt
 from datetime import datetime
@@ -266,12 +267,14 @@ class Places(object):
             query = {"$and": [query, {"id": {'$regex': filter + '.*'}}]}
 
         # items = places.find(query, self.proj).limit(limit)
+        items = MongoDBHandlers(self.config).get_query_find_one('places', query, self.proj)
         # print "------------->"+str(items)
-        # for item in items:
-        #    result.append(item)
+        for item in items:
+            result.append(item)
         # conn.close()
 
-        return MongoDBHandlers(self.config).get_query('places', query, self.proj, limit)
+        return items
+        #return MongoDBHandlers(self.config).get_query('places', query, self.proj, limit)
 
     def get_place_by_id(self, id, options=None):
         # conn = pymongo.MongoClient()
@@ -332,6 +335,15 @@ class Places(object):
         return MongoDBHandlers(self.config).get_query('places', query, self.proj)
 
 
+    def get_domain_by_product_and_ll(self, prod, lat, lon, options=None):
+        place = self.get_places_by_ll(lon, lat)
+        logger.info(f"place : {place}")
+        domain_indeces = self.get_domain_and_indeces_by_product_and_place(prod, place['id'])
+        logger.info(f"domain_indeces : {domain_indeces}")
+        if domain_indeces is not None:
+            (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
+        return domain
+        
 """
 if __name__ == "__main__":
     fname = "../etc/ccmmmaapi.development.conf"

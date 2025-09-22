@@ -24,3 +24,6 @@ influxdb_client
 flask_sqlalchemy
 psycopg2
 utils
+
+pandas
+metpy

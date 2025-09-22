@@ -1,3 +1,14 @@
+#################################################
+#   
+#   Università Degli Studi di Napoli Parthenope 
+#
+#
+# Author: 
+#    Prof. Raffaele Montella
+#    Dario Caramiello   
+#
+#################################################
+
 import hashlib
 import app
 import base64
@@ -12,7 +23,7 @@ from core.MemcachedMethodHandlers import get_resource, set_resource
 from core.MeteoServices import MeteoServices, csvfy
 from core.Places import Places
 from core.GribServices import GribServices
-
+from core.MakeArchivePaths import MakeArchivePaths
 
 api = Namespace('products', description='Products API')
 
@@ -261,7 +272,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
             # Check Diskcache 
             if res2 is None:
 
-
                 params = get_params({
                     'id': place,
                     'filter': None,
@@ -307,7 +317,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
         response.headers['Content-Type'] = 'image/png'
         # response.headers['Content-Disposition'] = 'attachment; filename=' + res['imageName']
         return response
-
 
 '''
 # TESTED AND WORKING -- USE MEMCACHE -- OLD VERSION 
@@ -357,6 +366,71 @@ class ProductsForecastMapByProdAndPlace(Resource):
         # response.headers['Content-Disposition'] = 'attachment; filename=' + res['imageName']
         return response
 '''
+
+# @api.route('/wrf5/forecast/<string:place>/<float:lat>/<float:lon>/plot/SkewT/image')
+@api.route('/wrf5/forecast/plot/SkewT/image')
+class ProductSkewTByProdAndPlace(Resource):
+    @api.doc()
+    def get(self):
+        """Returns the forexast plot of SkewT as image or url given a product code and a place
+        :example: /products/wrf5/forecast/ca001/plot/SkewT/image
+        :example: /products/wrf5/forecast/ca001/plot/SkewT/image?date=20250915Z1000
+        :param prod: The code of the product
+        :type prod: str.
+        :param place: The code of the place.
+        :type place: str
+        :returns: png -- the retun plot image
+        -------------------------------------------------------------------------------------------
+        """
+     
+        if "date" not in request.url:
+            nowutc_datetime = datetime.utcnow()
+            ncep_date = nowutc_datetime.strftime("%Y%m%dZ%H00")
+            request.url = f"{request.url}?date={ncep_date}"
+        
+        res = get_resource(request, app.cache, app.use_pymemcache)
+        
+
+        if res is None:
+            
+            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
+            
+
+            if res is None:
+
+                params = get_params({
+                    'prod': "wrf5",
+                    'lat': 40.856,
+                    'lon': 14.352,
+                    'date': None,
+                })
+
+                (mapData, imageName) = app.meteo_services.ModelPlotSkewT(app.use_disk_cached, params)
+
+                res = {
+                    'plot': base64.b64encode(mapData).decode('utf-8'),
+                    # 'plot': mapData,
+                    'imageName': imageName
+                }
+
+                app.diskcache.set(request, base64.b64encode(mapData).decode('utf-8'), 'plot')
+                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            
+            else:
+                # Data in Diskcache
+                res = {
+                    'plot': res,
+                    # 'imageName': imageName
+                }
+        else:
+            # Data in Memcache
+            res = eval(res)
+        
+        response = make_response(base64.b64decode(res['plot']))
+        # response = make_response(res['plot'])
+        response.headers['Content-Type'] = 'image/png'
+        # response.headers['Content-Disposition'] = 'attachment; filename=' + res['imageName']
+        return response
 
 @api.route('/<string:prod>/forecast/<string:place>/plot/alt')
 class ProductsForecastPlotAndAlt(Resource):
@@ -686,16 +760,22 @@ class ProductsTimeseriesByProdAndPlace(Resource):
         :returns: json -- the return josn.
         -------------------------------------------------------------------------------------------
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        # res = None
 
         # Check Memcache
-        if res is None:
-            
-            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
-            # res = None
+        res = get_resource(request, app.cache, app.use_pymemcache)
 
+        if res is None:
+
+            params = get_params({
+                'place': place,
+                'prod': prod,
+                'date': None
+            })
+
+            path_archive_file = MakeArchivePaths.makePath(params['prod'], params['place'])            
             # Check Diskcache
+            res = app.diskcache.get(request, app.diskcache_ttl, path_archive_file, app.use_disk_cached)
+            
             if res is None:
 
 
@@ -710,10 +790,11 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                     'opt': ""
                 })
                 time_series_data = app.meteo_services.timeseries(params)
+
                 if 'result' in time_series_data and "ok" not in time_series_data['result']:
                     return jsonify(time_series_data)
-                res = time_series_data
 
+                res = time_series_data
 
                 # Save on Diskcache
                 app.diskcache.set(request, res, 'json')
@@ -722,11 +803,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
 
         else:
-            logger.info(f"/timeseries res : {res}")
-            logger.info(f"/timeseries res type : {type(res)}")
-            res = json.loads(res)
-            # res = eval(str(res))
-        
+            res = json.loads(res) 
         
         return jsonify(res)
 

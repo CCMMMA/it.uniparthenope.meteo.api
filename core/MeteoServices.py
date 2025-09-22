@@ -1,32 +1,46 @@
+#################################################
+#   
+#   Università Degli Studi di Napoli Parthenope 
+#
+#
+# Authors: 
+#    Prof. Raffaele Montella
+#    Dario Caramiello   
+#
+#################################################
+
 import multiprocessing as mp
 import json
 import math
 import sys
 import calendar
 import uuid
-from PIL import Image
-import urllib.parse as urllib
-import urllib.request as urllib_request
 import netCDF4
 import numpy as np
 import requests
 import simplejson
 import os.path
-from flask import make_response
-from core.Places import Places
-from core.Plotter import Plotter
-from datetime import datetime, timedelta
 import xmltodict
-# import logging
-from core.Logger import logger
-import app
+import urllib.parse as urllib
+import urllib.request as urllib_request
+from flask import make_response
 import time
+import app
 
 from PIL import ImageFont
 from PIL import ImageDraw 
-
+from PIL import Image
 from influxdb_client import InfluxDBClient
+
+
+from core.Places import Places
+from core.Plotter import Plotter
+from datetime import datetime, timedelta
+from core.Logger import logger
 from core.Models import Instrument
+from core.MakeArchivePaths import MakeArchivePaths
+from core.SkewTServices import SkewTServices
+
 
 #### Logging ####
 # logger = logging.getLogger('main_logger')
@@ -778,7 +792,7 @@ class MeteoServices:
 
     
     def modelOutput(self, params=None, use_disk_cached=True,):
-
+        import time as t
 
         retval = {}
 
@@ -824,293 +838,308 @@ class MeteoServices:
 
         relativePath = place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
        
-        if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
-            os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
+        #if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
+        #    os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
 
         imageName = "jsn__" + place + "_" + prod + "_" + dateTime + ".json" 
-
         imagePath = self.config['CACHE_JSON'] + os.path.sep + relativePath + os.path.sep + imageName
-
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
 
+        if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
+            os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
+        else:
+            if os.path.isfile(imagePath):
+
+                path_archive = MakeArchivePaths.makePath(params['prod'], params['place'])
+
+                if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
+                    logger.info(f"DISK 2 : File '{imagePath}' not consistent respect to ARCHIVE file !")
+                    os.remove(imagePath)
+                    logger.info(f"DISK 2 : File '{imagePath}' deleted !")
+                else:
+                    # logger.info(f"DISK 2 : delta time expired {(t.time() - os.path.getmtime(imagePath))} !")
+                    if t.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
+                        logger.info(f"DISK 2 : File ( {imagePath} ) expired !")
+                        os.remove(imagePath)
+                        logger.info(f"DISK 2 : File ( {imagePath} ) deleted !")
+                    else:
+                        with open(imagePath, "r") as json_file:
+                            retval = json.load(json_file)
+                        return retval
+
         
-        if use_disk_cached is False or os.path.isfile(imagePath) is False:
+        # if use_disk_cached is False or os.path.isfile(imagePath) is False:
             
-            #TODO: check if the file age is over 6h 
-
-            
-
-
-            # Get the domain and the indeces of the place
-            domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
+        # Get the domain and the indeces of the place
+        domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
 
 
-            # Check if domain and indeces are correct
-            if domain_indeces is not None:
+        # Check if domain and indeces are correct
+        if domain_indeces is not None:
 
-                # Retrieve domain and indeces
-                (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
+            # Retrieve domain and indeces
+            (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
-                # Set the dateTime
-                dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
+            # Set the dateTime
+            dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
 
-                dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
+            dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
 
-                url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['HISTORY'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            #url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['HISTORY'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['ARCHIVE'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
-                retval = {}
+            retval = {}
 
-                # Check if the file exists
-                dataset = None
+            # Check if the file exists
+            dataset = None
 
-                try:
-                    # Open the data file
-                    dataset = netCDF4.Dataset(url)
-                except Exception as e:
-                    print("[*] netCDF4 error : " + str(e))
+            try:
+                # Open the data file
+                dataset = netCDF4.Dataset(url)
+            except Exception as e:
+                print("[*] netCDF4 error : " + str(e))
 
-                # Check if the product is available and if the filds are defined
-                if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
+            # Check if the product is available and if the filds are defined
+            if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
 
-                    # For each field in fields
-                    for field, item in self.maps["products"][prod]["fields"].items():
+                # For each field in fields
+                for field, item in self.maps["products"][prod]["fields"].items():
 
-                        # Set default method
-                        # method = "nanmean"
-                        method = "mean"
+                    # Set default method
+                    # method = "nanmean"
+                    method = "mean"
 
-                        # Check if method is defined in item
-                        if "method" in item:
-
-                            # Set the method
-                            method = item["method"]
-
+                    # Check if method is defined in item
+                    if "method" in item:
 
                         # Set the method
-                        method = getattr(sys.modules["numpy"],method)
-
-                        # Set time to None
-                        time = None
-
-                        # Check if time is defined in item
-                        if "time" in item:
-
-                            # Set time
-                            time = item["time"]
-
-                        # Set level to None
-                        level = None
-
-                        # Check if level is in item
-                        if "level" in item:
-
-                            # Set level
-                            level = item["level"]
-
-                        # Check func to none
-                        func = None
-
-                        # Check if func is defined in item
-                        if "func" in item:
-
-                            # Get the module and the string module.function
-                            parts = item["func"].split(".")
-
-                            # Check if no module is set
-                            if len(parts) == 1:
-
-                                # Use the current module as default
-                                parts = [ sys.modules[__name__], item["func"]]
-
-                            # Check if the module name is set
-                            elif len(parts) == 2:
-
-                                # Use the specified module
-                                parts = [ sys.modules[parts[0]], item["func"]]
-
-                            # Try to set the function
-                            try:
-
-                                # Set the function pointer
-                                func = getattr(parts[0], parts[1])
-
-                            # If inconsistent module/function rise an exception
-                            except Exception as e:
-                                pass
-
-                        a = 1
-                        if "a" in item:
-                            a = item["a"]
-
-                        b = 0
-                        if "b" in item:
-                            b = item["b"]
-
-                        round_digits = None
-                        if "round" in item:
-                            round_digits = item["round"]
+                        method = item["method"]
 
 
-                        zero_if_negative = False
-                        if "zero_if_negative" in item:
-                            zero_if_negative = item["zero_if_negative"]
+                    # Set the method
+                    method = getattr(sys.modules["numpy"],method)
 
-                        zero_if_positive = False
-                        if "zero_if_positive" in item:
-                            zero_if_positive = item["zero_if_positive"]
+                    # Set time to None
+                    time = None
 
+                    # Check if time is defined in item
+                    if "time" in item:
 
-                        # Check if var1 is defined
-                        if "var" in item:
+                        # Set time
+                        time = item["time"]
 
-                            # Get the var1 value
-                            var_list = item["var"]
+                    # Set level to None
+                    level = None
 
-                            # Check if var is a string
-                            if type(var_list) == str:
+                    # Check if level is in item
+                    if "level" in item:
 
-                                # Convert var in a single element list
-                                var_list = [ var_list ]
+                        # Set level
+                        level = item["level"]
 
-                            # Set the values list
-                            values = []
+                    # Check func to none
+                    func = None
 
-                            # For each variable in the list
-                            for var in var_list:
+                    # Check if func is defined in item
+                    if "func" in item:
 
-                                # Check if it is a link
-                                if "__link__" in var:
+                        # Get the module and the string module.function
+                        parts = item["func"].split(".")
 
-                                    # Set the field value
-                                    values.append("prod=" + prod + "&place=" + place + "&date=" + dateTime)
+                        # Check if no module is set
+                        if len(parts) == 1:
 
-                                # Check if it is a datetime
-                                elif "__dateTime__" in var:
+                            # Use the current module as default
+                            parts = [ sys.modules[__name__], item["func"]]
 
-                                    # Set the field value
-                                    values.append(dateTime)
+                        # Check if the module name is set
+                        elif len(parts) == 2:
 
-                                # Check if it is a iDate
-                                elif "__iDate__" in var:
-                                    try:
-                                        # Set the value
-                                        values.append(dataset.IDATE)
-                                    except Exception as e:
-                                        pass
+                            # Use the specified module
+                            parts = [ sys.modules[parts[0]], item["func"]]
 
-                                else:
-                                    # Get the variable float value
+                        # Try to set the function
+                        try:
 
-                                    # Check if both time and level are none (2D variable)
-                                    if time is None and level is None: 
-                                        # Get the value and append it to the values list
-                                        values.append(float(method(dataset.variables[var][Jmin:Jmax, Imin:Imax])))
+                            # Set the function pointer
+                            func = getattr(parts[0], parts[1])
 
-                                    # Check if time is none and level is not (3D variable, not depending by the time)
-                                    elif time is None and level is not None:
-                                        # Get the value and append it to the values list
-                                        values.append(float(method(dataset.variables[var][level, Jmin:Jmax, Imin:Imax])))
+                        # If inconsistent module/function rise an exception
+                        except Exception as e:
+                            pass
 
-                                    # Check if level is none and time is not (3D variable, not depending by the level)
-                                    elif time is not None and level is None:
-                                        # Get the value and append it to the values list 
-                                        values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
+                    a = 1
+                    if "a" in item:
+                        a = item["a"]
 
-                                    # If both time and level are not note, it is a 4D variable
-                                    else:
+                    b = 0
+                    if "b" in item:
+                        b = item["b"]
 
-                                        # Get the value and append it to the values list
-                                        values.append(float(method(dataset.variables[var][time, level, Jmin:Jmax, Imin:Imax])))
-
-                            
-                            # Check if at least one value is avaliable 
-                            if len(values)>0:
-                                # Initialize the value
-                                value = None
-
-                                # Check if a function have to be applied
-                                if func is not None:
-
-                                    # Invoke the function
-                                    value = func(values)
-                                else:
-                                    # Only one value
-                                    value = values[0]
+                    round_digits = None
+                    if "round" in item:
+                        round_digits = item["round"]
 
 
-                                # Check if value is integer of float and not nan
-                                if (type(value) == int or type(value) == float) and not math.isnan(value):
+                    zero_if_negative = False
+                    if "zero_if_negative" in item:
+                        zero_if_negative = item["zero_if_negative"]
 
-                                    # Apply the correction
-                                    value = value * a + b
+                    zero_if_positive = False
+                    if "zero_if_positive" in item:
+                        zero_if_positive = item["zero_if_positive"]
 
-                                    # If needed, set the value as zero if negative
-                                    if zero_if_negative is True:
-                                        if value < 0:
-                                            value = 0
 
-                                    # If needed, set the value as zero if positive
-                                    if zero_if_positive is True:
-                                        if value > 0:
-                                            value = 0
+                    # Check if var1 is defined
+                    if "var" in item:
 
-                                    # Check if the number have be rounded
-                                    if round_digits is not None and type(value) == float:
+                        # Get the var1 value
+                        var_list = item["var"]
 
-                                        # Round the value
-                                        value = round(value, round_digits)
-                                    
-                                # Check if value is valued
-                                if (type(value) == float and not math.isnan(value)) or type(value) != float:
+                        # Check if var is a string
+                        if type(var_list) == str:
 
+                            # Convert var in a single element list
+                            var_list = [ var_list ]
+
+                        # Set the values list
+                        values = []
+
+                        # For each variable in the list
+                        for var in var_list:
+
+                            # Check if it is a link
+                            if "__link__" in var:
+
+                                # Set the field value
+                                values.append("prod=" + prod + "&place=" + place + "&date=" + dateTime)
+
+                            # Check if it is a datetime
+                            elif "__dateTime__" in var:
+
+                                # Set the field value
+                                values.append(dateTime)
+
+                            # Check if it is a iDate
+                            elif "__iDate__" in var:
+                                try:
                                     # Set the value
-                                    retval[field] = value
+                                    values.append(dataset.IDATE)
+                                except Exception as e:
+                                    pass
 
-                    # Close the datase
-                    dataset.close()
+                            else:
+                                # Get the variable float value
 
-                    # Set the result status
-                    retval['result'] = "ok"
+                                # Check if both time and level are none (2D variable)
+                                if time is None and level is None: 
+                                    # Get the value and append it to the values list
+                                    values.append(float(method(dataset.variables[var][Jmin:Jmax, Imin:Imax])))
 
-                    # Check if the opt parameter is set
-                    if "opt" in params:
+                                # Check if time is none and level is not (3D variable, not depending by the time)
+                                elif time is None and level is not None:
+                                    # Get the value and append it to the values list
+                                    values.append(float(method(dataset.variables[var][level, Jmin:Jmax, Imin:Imax])))
 
-                        # Check if the place info have to be added
-                        if "place" in params['opt']:
+                                # Check if level is none and time is not (3D variable, not depending by the level)
+                                elif time is not None and level is None:
+                                    # Get the value and append it to the values list 
+                                    values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
 
-                            # Add the place info
-                            retval['place'] = self.places.get_place_by_id(place, params)
+                                # If both time and level are not note, it is a 4D variable
+                                else:
 
-                        # Check if the fields info have to be added
-                        if "fields" in params['opt']:
+                                    # Get the value and append it to the values list
+                                    values.append(float(method(dataset.variables[var][time, level, Jmin:Jmax, Imin:Imax])))
 
-                            # Add the fields info
-                            retval['fields'] = self.maps["products"][prod]['fields']
-                else:
-                    # Set the result status
-                    retval['result'] = "error"
+                        
+                        # Check if at least one value is avaliable 
+                        if len(values)>0:
+                            # Initialize the value
+                            value = None
 
-                    # Add details to the result status
-                    retval['details'] = "Data not available"
+                            # Check if a function have to be applied
+                            if func is not None:
+
+                                # Invoke the function
+                                value = func(values)
+                            else:
+                                # Only one value
+                                value = values[0]
+
+
+                            # Check if value is integer of float and not nan
+                            if (type(value) == int or type(value) == float) and not math.isnan(value):
+
+                                # Apply the correction
+                                value = value * a + b
+
+                                # If needed, set the value as zero if negative
+                                if zero_if_negative is True:
+                                    if value < 0:
+                                        value = 0
+
+                                # If needed, set the value as zero if positive
+                                if zero_if_positive is True:
+                                    if value > 0:
+                                        value = 0
+
+                                # Check if the number have be rounded
+                                if round_digits is not None and type(value) == float:
+
+                                    # Round the value
+                                    value = round(value, round_digits)
+                                
+                            # Check if value is valued
+                            if (type(value) == float and not math.isnan(value)) or type(value) != float:
+
+                                # Set the value
+                                retval[field] = value
+
+                # Close the datase
+                dataset.close()
+
+                # Set the result status
+                retval['result'] = "ok"
+
+                # Check if the opt parameter is set
+                if "opt" in params:
+
+                    # Check if the place info have to be added
+                    if "place" in params['opt']:
+
+                        # Add the place info
+                        retval['place'] = self.places.get_place_by_id(place, params)
+
+                    # Check if the fields info have to be added
+                    if "fields" in params['opt']:
+
+                        # Add the fields info
+                        retval['fields'] = self.maps["products"][prod]['fields']
             else:
                 # Set the result status
                 retval['result'] = "error"
 
                 # Add details to the result status
-                retval['details'] = "Place not indexed"
-            
-            # Save retval as .json file into cache_jsn
-            with open(imagePath, "w") as json_file:
-                json.dump(retval, json_file, indent=4)
-                    
+                retval['details'] = "Data not available"
+        else:
+            # Set the result status
+            retval['result'] = "error"
 
-            # Return the result
-            return retval
+            # Add details to the result status
+            retval['details'] = "Place not indexed"
+        
+        # Save retval as .json file into cache_jsn
+        with open(imagePath, "w") as json_file:
+            json.dump(retval, json_file, indent=4)
+                
+        # Return the result
+        return retval
         
         # If it gets here it means that the file already exists, so it reads it and returns.
-        with open(imagePath, "r") as json_file:
-            retval = json.load(json_file)
-        return retval
+        #with open(imagePath, "r") as json_file:
+        #    retval = json.load(json_file)
+        #return retval
     
     
     '''
@@ -1700,23 +1729,48 @@ class MeteoServices:
         # Assemble the relative path
         relativePath = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
 
-        if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
-            os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
+        #if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
+        #    os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
 
         # Assemble the image name
         imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png" 
-
         imagePath = self.config['BASE_PRODUCTS'] + os.path.sep + relativePath + os.path.sep + imageName
-
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
+        
+        retval['link'] = imageUrl
+
+        if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
+            os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
+        else:
+            path_archive = MakeArchivePaths.makePath(params['prod'], params['place'], timeref)
+
+            if os.path.isfile(imagePath):
                 
+                logger.info("DISK 3 : Check if valid file !")
+                
+                if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
+                    logger.info(f"DISK 3 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
+                    os.remove(imagePath)
+                    logger.info(f"DISK 3 : File '{imagePath}' deleted !")
+                else:
+                    logger.info(f"DISK 3 : delta time expired {(time.time() - os.path.getmtime(imagePath))} !")
+                    if time.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
+                        logger.info(f"DISK 3 : File ( {imagePath} ) expired !")
+                        os.remove(imagePath)
+                        logger.info(f"DISK 3 : File ( {imagePath} ) deleted !")
+                    else: 
+                        with open(imagePath, 'rb') as content_file:
+                            retval = content_file.read()
+                            content_file.close()
+                        return retval, imageName
+
         # if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
             # Creation image 
         #    self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
 
         self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
 
-        retval['link'] = imageUrl
+        # retval['link'] = imageUrl
         
         try:
             with open(imagePath, 'rb') as content_file:
@@ -1855,6 +1909,110 @@ class MeteoServices:
         #return retval, imageName
     '''   
 
+    def ModelPlotSkewT(self, use_disk_cached=True, params=None):
+
+        retval = {}
+
+        prod = self.default_prod
+        place = self.default_place
+        lat = None
+        lon = None
+
+        timeref = None
+        year = 0
+        month = 0
+        day = 0
+        hour = 0
+        minute = 0
+
+        bars = False
+
+        if params:
+            if 'prod' in params and params['prod'] is not None:
+                prod = params['prod']
+            
+            if 'lat' in params and params['lat'] is not None:
+                lat = float(params['lat'])
+            
+            if 'lon' in params and params['lon'] is not None:
+                lon = float(params['lon'])
+        
+
+        if timeref is None:
+            # print "get current utc"
+            date = datetime.utcnow()
+            year = date.year
+            month = date.month
+            day = date.day
+            hour = int(round(date.hour + date.minute / 60.0))
+            minute = 0
+        else:
+            # print "Date is provided"
+            year = int(timeref[:4])
+            month = int(timeref[4:6])
+            day = int(timeref[6:8])
+            hour = int(timeref[9:11])
+            if len(timeref) == 13:
+                minute = int(timeref[11:13])
+
+        date = datetime(year, month, day, hour, minute)
+
+        # Set the dateTime
+        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
+
+        # Assemble the relative path
+        relativePath = place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
+
+
+        # Assemble the image name
+        imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_1024x768.png" 
+        imagePath = self.config['BASE_SKEWT'] + os.path.sep + relativePath + os.path.sep + imageName
+        imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName   
+
+        retval['link'] = imageUrl
+
+        path_archive = MakeArchivePaths.makePath(params['prod'], None, timeref, True, lat, lon)
+
+        if os.path.exists(self.config['BASE_SKEWT'] + os.path.sep + relativePath) is False:
+            os.makedirs(self.config['BASE_SKEWT'] + os.path.sep + relativePath)
+        else:
+            if os.path.isfile(imagePath):
+                
+                if os.path.getmtime(path_archive) > os.path.getmtime(imagePath):
+                    logger.info(f"DISK 4 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
+                    os.remove(imagePath)
+                    logger.info(f"DISK 4 : File '{imagePath}' deleted !")
+                else:
+                    # logger.info(f"DISK 4 : delta time expired {(time.time() - os.path.getmtime(imagePath))} !")
+                    if time.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
+                        logger.info(f"DISK 4 : File ( {imagePath} ) expired !")
+                        os.remove(imagePath)
+                        logger.info(f"DISK 4 : File ( {imagePath} ) deleted !")
+                    else: 
+                        logger.info("DISK 4 : Present !")
+                        with open(imagePath, 'rb') as content_file:
+                            retval = content_file.read()
+                            content_file.close()
+                        return retval, imageName
+        
+        SkewTServices(path_archive).SkewTPlot(imagePath, lat, lon)
+
+        try:
+            with open(imagePath, 'rb') as content_file:
+                retval = content_file.read()
+                content_file.close()
+        except Exception as e:
+            
+            imagePath = self.config['NOIMAGE_PATH']
+            imageUrl = self.config['NOIMAGE_URL']
+
+            with open(imagePath, 'rb') as content_file:
+                retval = content_file.read()
+                content_file.close()
+                
+            # retval['link'] = imagePath
+            
+        return retval, imageName
 
 
     def getlegenddata(self, prod, position, output, params=None):
@@ -2102,7 +2260,7 @@ class MeteoServices:
                 )
 
                 for key in [
-                    "title_chart", "title_bars", "var_bars", "pos_bars", "unit_bars",
+                    "title_chart", "title_bars", "var_bars", "pos_bars", "unit_bars", "clevels", "ccolors",
                     "values_bars", "title_line", "var_line", "pos_line", "unit_line", "values_line"
                 ]:
                     if key in chart:
@@ -2121,6 +2279,7 @@ class MeteoServices:
                 dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
                 dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
         
+                #TODO: replace "/" with os.path.sep 
                 url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['ARCHIVE'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
                 if os.path.isfile(url):

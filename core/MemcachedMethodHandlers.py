@@ -1,3 +1,9 @@
+#################################################
+#
+# Author: Dario Caramiello
+#
+#################################################
+
 from time import strftime, gmtime
 import hashlib  # hash function for 128bit encryption
 import memcache
