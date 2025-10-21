@@ -26,6 +26,7 @@ import urllib.request as urllib_request
 from flask import make_response
 import time
 import app
+from core.GetWorkers import _init_session, work_worker, dispatch
 
 from PIL import ImageFont
 from PIL import ImageDraw 
@@ -115,7 +116,6 @@ def windS(args):
     if 348.75 <= direction < 359.9999:
         return "N"
 
-
 def currS(args):
     direction = northDirection(args)
     if 11.25 <= direction < 33.75:
@@ -150,7 +150,6 @@ def currS(args):
         return "SSE"
     if 348.75 <= direction < 359.9999:
         return "S"
-
 
 def weatherText(args):
     crh = args[0]
@@ -288,32 +287,23 @@ def csvfy(data):
 
 
 def knt2Beaufort(args):
-    d = args[0]
-    if d < 1:
-        return 0
-    if d < 3:
-        return 1
-    if d < 6:
-        return 2
-    if d < 10:
-        return 3
-    if d < 16:
-        return 4
-    if d < 21:
-        return 5
-    if d < 27:
-        return 6
-    if d < 33:
-        return 7
-    if d < 40:
-        return 8
-    if d < 47:
-        return 9
-    if d < 55:
-        return 10
-    if d < 63:
-        return 11
-    return 12
+    wind_speed = args[0]
+    return int(0.725 * ( wind_speed ** 2 ) ** (1/3))
+
+def beaufortText(wind_speed):
+
+    beaufort = knt2Beaufort(wind_speed)
+
+    text_list_en = ["Calm", "Light Air", "Light Breeze", "Gentle", "Moderate Breeze", "FreshBreeze", "Strong Breeze", "Near Gale", "Gale", "Strong Gale", "Storm", "Violent Storm", "Hurricane"]
+    text_list_in = ["Calma", "Bava Di Vento", "Brezza Leggera", "Vento Moderato", "VentoTeso", "Vento Fresco", "Vento Forte", "Burrasca", "Tempesta", "Tempesta Violenta", "Uragano" ]
+
+    
+    out = {
+        "it-IT": text_list_en[beaufort],
+        "en-US": text_list_in[beaufort]
+    }
+
+    return out
 
 def iconText(current):
     wtext = [
@@ -361,6 +351,78 @@ def iconText(current):
     if (crh < 10):
         return ('shower2' + suf), wtext[6]
     return ('shower3' + suf), wtext[7]
+
+def significantHeightIcon(args):
+    hs = round(args[0], 2)
+    hs_icons = ["glassy.png", "rippled.png", "smooth.png", "slight.png", "moderate.png", "rough.png", "veryrough.png", "high.png", "veryhigh.png", "phenomenal.png"]
+    index = -1
+    
+    if hs == 0.0:
+        index = 0   
+    elif hs <= 0.10:
+        index = 1   
+    elif hs <= 0.50:
+        index = 2  
+    elif hs <= 1.25:
+        index = 3   
+    elif hs <= 2.50:
+        index = 4  
+    elif hs <= 4.00:
+        index = 5   
+    elif hs <= 6.00:
+        index = 6  
+    elif hs <= 9.00:
+        index = 7   
+    elif hs <= 14.00:
+        index = 8   
+    else:
+        index = 9   
+        
+    return hs_icons[index]
+
+def surfaceCurrentIcon(args):
+    scm = args[0]
+    scm_icons = [ "current_very_weak.png", "current_weak.png", "current_low.png", "current_low_medium.png", "current_medium.png", "current_medium_high.png", "current_high.png", "current_very_high.png", "current_extremely_high.png", "current_maximum.png"]
+    index = -1
+    
+
+    if scm < 0.4:
+        index = 0
+    elif scm < 0.8:
+        index = 2
+    elif scm < 1.2:
+        index = 2
+    elif scm < 1.6:
+        index = 3
+    elif scm < 2.0:
+        index = 4
+    elif scm < 2.4:
+        index = 5
+    elif scm < 2.6:
+        index = 6
+    elif scm < 2.8:
+        index = 7
+    elif scm < 3.0:
+        index = 8
+    else:
+        ubdex = 9
+    
+    return scm_icons[index]
+
+def concentrationParticles(args):
+    if int(args[0]) > 10:
+        sts = statusByConc([int(args[0])])
+    else:
+        sts = int(args[0])
+    sts_icons = ["absent.png", "verylow.png", "low.png", "medium.png", "high.png", "veryhigh.png", "critical.png"]
+
+    return sts_icons[sts]
+
+def musselContaminationIcon(args):
+    mci = args[0]
+    mci_icons = ["absent.png", "verylow.png", "low.png", "medium.png", "high.png", "veryhigh.png", "critical.png"]
+
+    return mci_icons[int(mci) + 1]
 
 class MeteoServices:
     places = None
@@ -2176,6 +2238,26 @@ class MeteoServices:
 
         return data
 
+    def plotmetacharts(self, prod, output):
+     
+            
+        retval = {"meta-chart": {}}
+        chart = (
+            self.maps
+            .get("products", {})
+            .get(prod, {})
+            .get("outputs", {})
+            .get(output, {})
+            .get("chart", {})
+        )
+
+
+        for key in [ "title_chart", "title_bars", "var_bars", "pos_bars", "unit_bars", "clevels", "ccolors", "title_line", "var_line", "pos_line", "unit_line", "values_line" ]:
+            if key in chart:
+                retval["meta-chart"][key] = chart[key]
+
+        return retval
+    
     def timeseries(self, params=None):
 
         retval = {}
@@ -2210,11 +2292,6 @@ class MeteoServices:
                 hours = int(params['hours'])
             else:
                 hours = 0
-            
-            if 'output' in params:
-                output = params['output']
-            else:
-                output = " "
 
         if timeref is None:
             date = datetime.utcnow()
@@ -2247,25 +2324,6 @@ class MeteoServices:
 
             retval = {"timeseries": []}
 
-            if output != None:
-                
-                retval = {"meta-chart": {}, "timeseries": []}
-                chart = (
-                    self.maps
-                    .get("products", {})
-                    .get(prod, {})
-                    .get("outputs", {})
-                    .get(output, {})
-                    .get("chart", {})
-                )
-
-                for key in [
-                    "title_chart", "title_bars", "var_bars", "pos_bars", "unit_bars", "clevels", "ccolors",
-                    "values_bars", "title_line", "var_line", "pos_line", "unit_line", "values_line"
-                ]:
-                    if key in chart:
-                        retval["meta-chart"][key] = chart[key]
-
             done = False
             count = 0
 
@@ -2290,10 +2348,32 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
             
-        
+
+            flat_items = [it[0] for it in items]
+
+            api_calls = [
+                (
+                    "GET",
+                    f"https://api.meteo.uniparthenope.it/products/{prod}/forecast/{place}",
+                    {
+                        "params": {
+                            "date": item["date"]
+                        }
+                    }
+                )
+                for item in flat_items
+            ]
+
+            
+            with mp.Pool(self.config['NUM_THREADS'], initializer=_init_session) as p:
+                model_outputs = p.starmap(dispatch, api_calls)
+
+            '''
+            OLD VERSION
             with mp.Pool(self.config['NUM_THREADS']) as p: 
                 model_outputs = p.starmap(self.modelOutput, items)
-            
+            '''
+
             #[ model_outputs ] = self.modelOutput(items)
 
             for model_output in model_outputs:
@@ -2436,6 +2516,27 @@ class MeteoServices:
                             except Exception as e:
                                 # print(str(e))
                                 pass
+                            
+                            try:
+                                aggregated['icon'] = significantHeightIcon([aggregated['hs']])
+                            except Exception as e:
+                                logger.info(f"error : {e}")
+                                pass
+                            
+                            try:
+                                aggregated['icon'] = surfaceCurrentIcon([aggregated['scm']])
+                            except Exception as e:
+                                logger.info(f"error : {e}")
+                            
+                            try:
+                                aggregated['icon'] = concentrationParticles([aggregated['sts']])
+                            except Exception as e:
+                                logger.info(f"error : {e}")
+                            
+                            try:
+                                aggregated['icon'] = musselContaminationIcon([aggregated['mci']])
+                            except Exception as e:
+                                logger.info(f"error : {e}")
                             
                             # log.info("----------------- MeteoServices -  aggregated : " + str(aggregated))
 

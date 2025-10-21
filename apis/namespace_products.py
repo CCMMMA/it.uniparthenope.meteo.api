@@ -14,7 +14,7 @@ import app
 import base64
 import json
 from flask_restx import Namespace, Resource
-from flask import jsonify, Response, make_response, request
+from flask import jsonify, Response, make_response, request, send_from_directory
 from datetime import datetime
 
 from core.Logger import logger
@@ -746,6 +746,41 @@ class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
         return response
 
 
+@api.route('/<string:prod>/plot/<string:output>/metacharts')
+class ProductsPlotMetacharts(Resource):
+    @api.doc()
+    def get(self, prod, output):
+        """Returns ......................
+            :example: /products/wrf5/plot/gen/metacharts
+            :param prod: The code of the product.
+            :type prod: str.
+            :param place: The code of the place.
+            :type output: str.
+            :returns: json -- the return json.
+            -------------------------------------------------------------------------------------------
+            """
+        res = get_resource(request, app.cache, app.use_pymemcache)
+       
+        if res is None:
+
+            res = app.diskcache.get(request, app.diskcache_ttl, None, app.use_disk_cached)
+      
+            if res is None:
+                
+                meta_charts = app.meteo_services.plotmetacharts(prod, output)
+
+                res = meta_charts
+
+                app.diskcache.set(request, res, 'json')
+
+                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+                
+        else:
+            res = eval(res)
+        
+        return jsonify(res)
+
+
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/timeseries/<string:place>')
 class ProductsTimeseriesByProdAndPlace(Resource):
@@ -1021,3 +1056,19 @@ class ProductsForecastMapByProdAndPlace(Resource):
         response = make_response(base64.b64decode(res['map']))
         response.headers['Content-Type'] = 'image/png'
         return response
+
+
+
+@api.route('/resource/forecast/<string:icon>')
+class ProductsForecastIconsPng(Resource):
+    @api.doc()
+    def get(self, icon):
+        """Returns the forecast icon as png image
+        :example: /products/resource/forecast/name_icon.png
+        -------------------------------------------------------------------------------------------
+        """
+        base_path = f"./static/images/"
+        try:
+            return send_from_directory(base_path, icon)
+        except FileNotFoundError:
+            return "Image not found", 404

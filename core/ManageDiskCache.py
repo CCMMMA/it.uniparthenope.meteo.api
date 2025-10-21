@@ -23,7 +23,7 @@ class ManageDiskCache:
         self.base_diskcace = path_diskcache
 
 
-    def get(self, request, ttl, path_archive, flag_diskcache=True):
+    def get(self, request, ttl, path_archive=None, flag_diskcache=True):
         res_out = None
 
         if not flag_diskcache:
@@ -46,11 +46,12 @@ class ManageDiskCache:
                 final_path = f"{path}{os.path.sep}{file_name}"                
 
                 # Check if is valid respect to the date of ARCHIVE file 
-                if os.path.getmtime(path_archive) > os.path.getmtime(final_path):
-                    logger.info(f"DISK 1 : File '{final_path}' not consistent respect to ARCHIVE file !")
-                    os.remove(final_path)
-                    logger.info(f"DISK 1 : File '{final_path}' deleted !")
-                    return res_out
+                if path_archive is not None: 
+                    if os.path.getmtime(path_archive) > os.path.getmtime(final_path):
+                        logger.info(f"DISK 1 : File '{final_path}' not consistent respect to ARCHIVE file !")
+                        os.remove(final_path)
+                        logger.info(f"DISK 1 : File '{final_path}' deleted !")
+                        return res_out
 
                 # Check ttl of file , if file is old then ttl hours , must be re-created
                 # logger.info(f"DISK 1 : delta time expired {(time.time() - os.path.getmtime(final_path))} !")
