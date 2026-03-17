@@ -16,6 +16,12 @@ We will go step by step:
 
 The code examples use the Python `requests` library because it is simple and widely used.
 
+Related documents:
+
+- Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
+- Android/Kotlin tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
+- iOS/Swift tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
+
 ## 1. What Is An API?
 
 API stands for Application Programming Interface.

@@ -6,6 +6,14 @@ This document describes how to deploy, develop, update, operate, and use `it.uni
 
 The application is a Flask-RESTX API that exposes meteorological products and supporting content. It is not a standalone demo application: several endpoints assume the presence of mounted meteorological archives, generated image directories, configuration files, cache services, and backing databases.
 
+Related documents:
+
+- Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
+- Production setup checklist: [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md)
+- Python usage tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
+- Android usage tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
+- iOS usage tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
+
 ## Technology Stack
 
 - Python 3.8
@@ -248,4 +256,5 @@ When the code changes:
 3. Update `docs/PRODUCTION_SETUP.md` when production setup assumptions change.
 4. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.
 5. Update `docs/PYTHON_API_TUTORIAL.md` when beginner-facing examples or recommended usage patterns change.
-6. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.
+6. Update the Android and iOS tutorial documents when mobile integration guidance changes.
+7. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.
