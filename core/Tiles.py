@@ -2,13 +2,10 @@
 
 import math
 import datetime
-import requests
+from concurrent.futures import ThreadPoolExecutor
 from geojson import Feature, FeatureCollection, Point
-from threading import Thread
 from core.Places import Places
-import multiprocessing as mp
 import app
-import json
 
 
 class Tiles(object):
@@ -53,7 +50,7 @@ class Tiles(object):
         dateTime = params["date"]
 
         if place.startswith("euro"):
-            country = var[4:6]
+            country = place[4:6]
 
         data = app.meteo_services.modelOutput({"prod": prod, "place": item["id"], "date": dateTime})
 
@@ -100,12 +97,11 @@ class Tiles(object):
         # ricerco i luoghi con tali coordinate
         items = self.places.get_places_by_bb(bb['lon_min'], bb['lat_min'], bb['lon_max'], bb['lat_max'], options)
 
-        for i,v in enumerate(items):
-            items[i] = [ prod, params, v ]
-
-
-        with mp.Pool(self.config['NUM_THREADS']) as p:
-            features = p.starmap(self.do_stuff, items)
+        max_workers = max(1, min(self.config['NUM_THREADS'], len(items))) if items else 1
+        if items:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(self.do_stuff, prod, params, item) for item in items]
+                features = [future.result() for future in futures]
 
         result = FeatureCollection(features)
         return result

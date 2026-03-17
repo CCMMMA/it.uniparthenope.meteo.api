@@ -20,6 +20,7 @@ class SlurmServices(object):
         """Initialize slurm services state."""
 
         self.cfg = cfg
+        self._connections = {}
 
         self.storage_devices = [
             {"name": "Working Storage", "host": "frontend", "device": "/home", "warning": 2000000.0,
@@ -35,6 +36,19 @@ class SlurmServices(object):
             {"name": "Tertialy Storage 2", "host": "instrdata2", "device": "/data1", "warning": 1000000.0,
              "danger": 650000.0},
         ]
+
+    def _get_connection(self, host):
+        """Return a cached SSH connection for a host."""
+        connection = self._connections.get(host)
+        if connection is None:
+            connection = Connection(host)
+            self._connections[host] = connection
+        return connection
+
+    @staticmethod
+    def _split_columns(line):
+        """Return normalized whitespace-separated command columns."""
+        return line.split()
 
     def get_as_MB(self, part):
         """Return as mb."""
@@ -58,12 +72,10 @@ class SlurmServices(object):
             }
             # ssh instrdata1 'df -h /data1'|tail -n 1
             try:
-                connection = Connection(storage_device["host"])
+                connection = self._get_connection(storage_device["host"])
                 result = connection.run("df -h " + storage_device["device"], hide=True)
                 line = result.stdout.strip().split("\n")[1]
-                while "  " in line:
-                    line = line.replace("  ", " ")
-                parts = line.split(" ")
+                parts = self._split_columns(line)
                 storage["total_mb"] = float(parts[1][:-1]) * self.get_as_MB(parts[1])
                 storage["used_mb"] = float(parts[2][:-1]) * self.get_as_MB(parts[2])
                 storage["available_mb"] = float(parts[3][:-1]) * self.get_as_MB(parts[3])
@@ -77,7 +89,7 @@ class SlurmServices(object):
                     storage["alert"] = "info"
 
                 storage["status"] = "up"
-            except NoValidConnectionsError:
+            except (NoValidConnectionsError, SSHException, OSError):
                 storage["status"] = "down"
             storages.append(storage)
         return storages
@@ -116,7 +128,7 @@ class SlurmServices(object):
         items = []
 
         try:
-            connection = Connection("frontend")
+            connection = self._get_connection("frontend")
             result = connection.run(args, hide=True)
             lines = result.stdout.strip().split("\n")
             for output in lines:
@@ -125,7 +137,7 @@ class SlurmServices(object):
 
                 else:
                     items.append(self.get_item(attributes, output))
-        except NoValidConnectionsError:
+        except (NoValidConnectionsError, SSHException, OSError):
             pass
         return items
 
