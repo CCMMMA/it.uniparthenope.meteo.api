@@ -1,8 +1,11 @@
+"""Response-formatting helpers for weather-report services."""
+
 import feedparser
 from flask import jsonify
 
 
 def get_field_lwr_jsonify(field):
+    """Serialize one latest-weather-report field into a Flask JSON response."""
     news_feed = feedparser.parse("https://meteo.uniparthenope.it/rss/weatherreports")
     entry = news_feed.entries[0]
 
@@ -14,6 +17,7 @@ def get_field_lwr_jsonify(field):
 
 
 def get_latest_weather_report_jsonify():
+    """Serialize the latest weather report into a Flask JSON response."""
     news_feed = feedparser.parse("https://meteo.uniparthenope.it/rss/weatherreports")
     # le entries rappresentano un elenco ordinato come appare nel feed.
     # consideriamo la entries[0] corrisponde alla prima previsione , ovvero quella piu recente
@@ -43,6 +47,7 @@ def get_latest_weather_report_jsonify():
 
 
 def get_all_weather_reports_jsonify():
+    """Serialize the weather-report collection into a Flask JSON response."""
     # sanitizer = Sanitizer()
     news_feed = feedparser.parse("https://meteo.uniparthenope.it/rss/weatherreports")
     weather_reports = []

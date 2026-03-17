@@ -1,3 +1,5 @@
+"""Plot-generation helpers for image-based forecast products."""
+
 import sys
 from core.Logger import logger
 
@@ -26,9 +28,11 @@ import io
 
 
 class DataNotAvailableException(Exception):
+    """Exception raised when a requested dataset cannot be plotted."""
     pass
 
 class Plotter(object):
+    """Service or helper that encapsulates plotter behavior."""
     maps = None
     config = None
     places = None
@@ -39,6 +43,7 @@ class Plotter(object):
 
     # Constructor
     def __init__(self, config):
+        """Initialize plotter state."""
 
         # Set the configuration object
         self.config= config
@@ -95,6 +100,7 @@ class Plotter(object):
 
     # Add a shaded layer to the basemap
     def _add_shaded(self, basemap, values, lons, lats, data, colors, legend_title, position_legend, size="2%",pad="5%", label_size=8, ticks_position="right", draw_colorbars = True):
+        """Internal helper for add shaded."""
         
         # Convert the colormap from 0-255 RGBA to 0.0-1.0 RGBA
         colors = [[j / 255 for j in i] for i in colors]
@@ -138,6 +144,7 @@ class Plotter(object):
 
     # Add a shapefiles layer to the basemap
     def _add_shapefiles(self, basemap, shapefiles):
+        """Internal helper for add shapefiles."""
 
         # For each shapefile in the shapefiles array...
         for shapefile in shapefiles:
@@ -240,6 +247,7 @@ class Plotter(object):
                    
     
     def _add_watermark(self, fig, watermarks, result_file):
+        """Internal helper for add watermark."""
         for watermark in watermarks: 
             buf = io.BytesIO()
             fig.savefig(buf, dpi=300, bbox_inches='tight', format='png')
@@ -271,6 +279,7 @@ class Plotter(object):
 
     
     def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
+        """Implement render for plotter."""
         # Get place information by id
         place_info = self.places.get_place_by_id(place)
         # place_info = self.places.get_place_by_id(place, params)

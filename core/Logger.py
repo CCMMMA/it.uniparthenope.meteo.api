@@ -1,3 +1,5 @@
+"""Logging helpers used across the meteorological API."""
+
 import logging
 from logging.config import dictConfig
 

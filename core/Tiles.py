@@ -1,3 +1,5 @@
+"""Tile-generation helpers for application-facing geospatial endpoints."""
+
 import math
 import datetime
 import requests
@@ -10,20 +12,25 @@ import json
 
 
 class Tiles(object):
+    """Service or helper that encapsulates tiles behavior."""
     config = {}
     places = None
 
     def __init__(self, config):
+        """Initialize tiles state."""
         self.config = config
         self.places = Places(config)
 
     def num(self, zoom):
+        """Implement num for tiles."""
         return math.pow(2, zoom)
 
     def to_lon(self, x, zoom):
+        """Implement to lon for tiles."""
         return x / self.num(zoom) * 360.0 - 180.0
 
     def to_bb(self, zoom, x, y):
+        """Implement to bb for tiles."""
         result = {
             "lon_min": self.to_lon(x, zoom),
             "lon_max": self.to_lon(x + 1, zoom),
@@ -33,11 +40,13 @@ class Tiles(object):
         return result
 
     def to_lat(self, y, zoom):
+        """Implement to lat for tiles."""
         n = math.pi * (1 - 2 * y / self.num(zoom))
         return math.degrees(math.atan(math.sinh(n)))
 
      # funzione effettuata dal singolo thread
     def do_stuff(self, prod, params, item):
+        """Implement do stuff for tiles."""
         feature = {}
         country = "it"
         place = item['id']
@@ -66,6 +75,7 @@ class Tiles(object):
     # x : '' ''
     # y : '' ''
     def get_weather_ex(self, prod, placeprefix, params, z, x, y):
+        """Return weather ex."""
         # setto la data esatta della chiamata
         if params['date'] is None:
             now = datetime.datetime.now()

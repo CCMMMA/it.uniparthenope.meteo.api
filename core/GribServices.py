@@ -1,3 +1,5 @@
+"""Services for reading GRIB-backed meteorological products and exports."""
+
 import simplejson
 import time
 from datetime import timedelta, date, datetime
@@ -13,6 +15,7 @@ from scipy.interpolate import griddata
 from core.Logger import logger
 
 class GribServices:
+    """Service or helper that encapsulates grib services behavior."""
     default_domain = 'd01'
     default_prod = 'wrf5'
     config = {}
@@ -23,6 +26,7 @@ class GribServices:
                     '401': {'code': '401', 'msg': 'Unauthorized'}, '404': {'code': '404', 'msg': 'Not Found'}}
 
     def __init__(self, config):
+        """Initialize grib services state."""
         self.config = config
         self.products = None
         self.maps = None
@@ -31,10 +35,12 @@ class GribServices:
         self.products = self.maps["products"]
 
     def getStatusCode(self, code):
+        """Implement get status code for grib services."""
         return self.__statusCode[code]
 
     @staticmethod
     def _resolve_datetime(timeref=None):
+        """Internal helper for resolve datetime."""
         if timeref is None:
             now = datetime.utcnow()
             hour = int(round(now.hour + now.minute / 60.0))
@@ -49,18 +55,21 @@ class GribServices:
 
     @staticmethod
     def _datetime_strings(date):
+        """Internal helper for datetime strings."""
         data_ora = date.strftime("%Y-%m-%d %H:%M:00")
         date_time = date.strftime("%Y%m%dZ%H%M")
         date_time_path = date.strftime("%Y/%m/%d")
         return data_ora, date_time, date_time_path
 
     def _cache_path(self, folder, domain, prod, date_time_path, filename):
+        """Internal helper for cache path."""
         relative_path = os.path.join(folder, domain, prod, date_time_path)
         full_dir = os.path.join(self.config['BASE_PRODUCTS'], relative_path)
         os.makedirs(full_dir, exist_ok=True)
         return relative_path, os.path.join(full_dir, filename)
 
     def asText(self, params=None):
+        """Implement as text for grib services."""
         retval = ""
 
         prod = self.default_prod
@@ -143,6 +152,7 @@ class GribServices:
         return retval
 
     def asJson(self, params=None):
+        """Implement as json for grib services."""
         
         # logger.error(f"AsJson : {params}")
     

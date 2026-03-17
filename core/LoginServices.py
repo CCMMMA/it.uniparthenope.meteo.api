@@ -1,3 +1,5 @@
+"""Authentication helpers for legacy login flows."""
+
 import base64
 import hashlib
 
@@ -7,6 +9,7 @@ from core.MongoDbHandlers import MongoDBHandlers
 
 
 class LoginServices:
+    """Service or helper that encapsulates login services behavior."""
     config = {}
     path = ""
     __statusCode = {'200': {'code': '200', 'msg': 'OK'}, '205': {'code': '205', 'msg': 'No Content'},
@@ -14,9 +17,11 @@ class LoginServices:
                     '401': {'code': '401', 'msg': 'Unauthorized'}, '404': {'code': '404', 'msg': 'Not Found'}}
 
     def __init__(self, config):
+        """Initialize login services state."""
         self.cfg = config
 
     def authentication_login(self, user, password):
+        """Implement authentication login for login services."""
         retval = {}
         headers = {"Content-type": "application/json"}
         payload = {"name": user, "pass": password}
@@ -32,6 +37,7 @@ class LoginServices:
 
 
     def fill_invalid_token(self):
+        """Implement fill invalid token for login services."""
         # Auth service not found
         retval = {
             "errMsg": "Token not valid.",
@@ -40,6 +46,7 @@ class LoginServices:
         return retval
 
     def fill_user_not_recognized(self):
+        """Implement fill user not recognized for login services."""
         # User not recognised
         retval = {
             "errMsg": "Invalid Username or Password!",
@@ -48,6 +55,7 @@ class LoginServices:
         return retval
 
     def fill_auth_service_not_found(self):
+        """Implement fill auth service not found for login services."""
         # Auth service not found
         retval = {
             "errMsg": "Auth service not found!",
@@ -56,6 +64,7 @@ class LoginServices:
         return retval
 
     def fill_local_user(self,result):
+        """Implement fill local user for login services."""
         # The user is a local user
         retval = {
             "user": {"userId": result["_id"]},
@@ -64,6 +73,7 @@ class LoginServices:
         return retval
 
     def fill_infrastructure_user(self, userId):
+        """Implement fill infrastructure user for login services."""
 
         # print "fill_infrastructure_user"
         # print "userId", str(userId)
@@ -115,6 +125,7 @@ class LoginServices:
         return retval
 
     def auth2Token(self, token):
+        """Implement auth2 token for login services."""
         url = 'https://api.uniparthenope.it/auth/v1/login'
         retval = self.fill_invalid_token()
         if token is None or token == "":

@@ -1,3 +1,5 @@
+"""RESTX namespace implementing legacy login endpoints."""
+
 from flask_restx import Namespace, fields, Resource
 from flask import jsonify
 from core.LoginServices import LoginServices
@@ -13,6 +15,7 @@ user_model = api.model("user", {
 # TESTED AND WORKING -- NO CACHE USE
 @api.route('/login')
 class UserLogin(Resource):
+    """Resource handler for user login operations."""
     @api.doc(
         summary="Authenticate a user",
         responses={200: "Authentication payload returned", 400: "Invalid payload", 401: "Authentication failed"}

@@ -1,6 +1,10 @@
+"""Helpers for retrieving box-oriented place content."""
+
 class Box(object):
+    """Service or helper that encapsulates box behavior."""
 
     def get_today(self, params):
+        """Return today."""
         result = {
             "placeLabel": "Provincia di NAPOLI",
             "placeUrl": "http:\/\/ccmmma.uniparthenope.it\/?q=forecast\/weather&region=prov063",

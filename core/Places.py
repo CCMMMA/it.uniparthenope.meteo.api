@@ -1,3 +1,5 @@
+"""Place lookup services used by the public API endpoints."""
+
 import json
 import netCDF4
 import pymongo
@@ -9,14 +11,17 @@ from core.MongoDbHandlers import MongoDBHandlers
 from core.Logger import logger
 
 class Places(object):
+    """Service or helper that encapsulates places behavior."""
     config = {}
     proj = {"_id": 0, "id": 1, "name": 1, "long_name": 1, "pos": 1, "bbox": 1, "country": 1}
 
     def __init__(self, cfg):
+        """Initialize places state."""
         self.config = cfg
 
     @staticmethod
     def is_in_bb(lon_min, lat_min, lon_max, lat_max, lon, lat):
+        """Return whether in bb."""
         if lon_min <= lon <= lon_max:
             if lat_min <= lat <= lat_max:
                 return True
@@ -63,9 +68,11 @@ class Places(object):
     
     
     def get_all_places(self, place):
+        """Return all places."""
         return MongoDBHandlers(self.config).get_query(place, all_places=True)
 
     def get_domain_and_indeces_by_product_and_place(self, product, place_id, date=None):
+        """Return domain and indeces by product and place."""
         # conn = pymongo.MongoClient()
         # db = conn[self.config['DATABASE']]  # connessione databse
         # places = db['places']  # richiesta collezione 'places'
@@ -161,6 +168,7 @@ class Places(object):
         return None
 
     def get_places_by_bb(self, lon_min, lat_min, lon_max, lat_max, options=None):
+        """Return places by bb."""
         # result = []
         # conn = pymongo.MongoClient()
         # db = conn[self.config['DATABASE']]
@@ -230,6 +238,7 @@ class Places(object):
         return MongoDBHandlers(self.config).get_query('places', query, self.proj)
 
     def get_places_by_ll(self, lon, lat, options=None):
+        """Return places by ll."""
         result = []
         range = -1
         filter = ""
@@ -277,6 +286,7 @@ class Places(object):
         #return MongoDBHandlers(self.config).get_query('places', query, self.proj, limit)
 
     def get_place_by_id(self, id, options=None):
+        """Return place by id."""
         # conn = pymongo.MongoClient()
         # db = conn[self.config['DATABASE']]
         # places = db['places']
@@ -292,6 +302,7 @@ class Places(object):
         return MongoDBHandlers(self.config).get_query_find_one('places', query, {"_id": 0})
 
     def get_places_by_name(self, name, options=None):
+        """Return places by name."""
         result = []
         range = -1
         filter = ""
@@ -336,6 +347,7 @@ class Places(object):
 
 
     def get_domain_by_product_and_ll(self, prod, lat, lon, options=None):
+        """Return domain by product and ll."""
         place = self.get_places_by_ll(lon, lat)
         logger.info(f"place : {place}")
         domain_indeces = self.get_domain_and_indeces_by_product_and_place(prod, place['id'])

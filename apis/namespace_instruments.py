@@ -1,3 +1,5 @@
+"""RESTX namespace exposing instrument inventory endpoints."""
+
 #################################################
 #   
 #   Università Degli Studi di Napoli Parthenope 
@@ -23,6 +25,7 @@ api = Namespace('instruments', description='Instrument inventory and instrument-
 
 @api.route('')
 class Instruments(Resource):
+    """Resource handler for instruments operations."""
     @api.doc(
         summary="List instruments",
         responses={200: "Instrument catalog returned successfully", 502: "Upstream instrument service unavailable"}
@@ -52,6 +55,7 @@ class Instruments(Resource):
 
 @api.route('/<string:identification>')
 class InstrumentsContext(Resource):
+    """Resource handler for instruments context operations."""
     @api.doc(
         summary="Get a specific instrument",
         params={"identification": "Instrument identifier to resolve from the upstream instruments payload"},

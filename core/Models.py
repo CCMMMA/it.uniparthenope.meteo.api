@@ -1,8 +1,11 @@
+"""Database models used by the meteorological API."""
+
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
 class Instrument(db.Model):
+    """Service or helper that encapsulates instrument behavior."""
     __tablename__ = 'instruments'
 
     id = db.Column(db.String(50), primary_key=True, unique=True, nullable=False)
@@ -18,6 +21,7 @@ class Instrument(db.Model):
     status = db.Column(db.String, default='offline')
 
     def __init__(self, id, name, airlinkID, image, organization, installation_date, latitude, longitude, variables, instrument_type):
+        """Initialize instrument state."""
         self.id = id
         self.name = name
         self.airlinkID = airlinkID
@@ -31,6 +35,7 @@ class Instrument(db.Model):
 
     @classmethod
     def get_airlinkID_by_id(cls, id):
+        """Return airlink id by id."""
         instrument = cls.query.filter_by(id=id).first()
         if instrument:
             return instrument.airlinkID
@@ -38,6 +43,7 @@ class Instrument(db.Model):
 
     @classmethod
     def get_variables_by_id(cls, id):
+        """Return variables by id."""
         instrument = cls.query.filter_by(id=id).first()
         if instrument:
             return instrument.variables

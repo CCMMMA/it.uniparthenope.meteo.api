@@ -1,3 +1,5 @@
+"""RESTX namespace for box-oriented place summaries."""
+
 from flask_restx import Namespace, Resource
 from core.Box import Box
 from flask import jsonify
@@ -9,6 +11,7 @@ api = Namespace('box', description='Box-oriented content endpoints.')
 # TESTED AND WORKING -- NO CACHE USE
 @api.route('/today/<string:place>')
 class BoxToday(Resource):
+    """Resource handler for box today operations."""
     @api.doc(
         summary="Get today's box payload for a place",
         params={"place": "Place identifier used by the box service"},

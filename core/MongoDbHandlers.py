@@ -1,13 +1,18 @@
+"""MongoDB access helpers for place and metadata queries."""
+
 import pymongo.errors
 from core.Logger import logger
 
 class MongoDBHandlers(object):
+    """Service or helper that encapsulates mongo dbhandlers behavior."""
     config = {}
 
     def __init__(self, config):
+        """Initialize mongo dbhandlers state."""
         self.config = config
 
     def get_query(self, name_collection, query=None, proj=None, limit=None, order_flag=None, all_places=False):
+        """Return query."""
         out = []
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
@@ -31,6 +36,7 @@ class MongoDBHandlers(object):
         return out
 
     def get_query_find_one(self, name_collection, query, proj):
+        """Return query find one."""
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:
@@ -44,6 +50,7 @@ class MongoDBHandlers(object):
         return out
 
     def call_insert_one(self, name_collection, data):
+        """Implement call insert one for mongo dbhandlers."""
         try:
             client = pymongo.MongoClient("mongodb://db:27017/", connect=False)
         except pymongo.errors.ConnectionFailure as connection_failure:

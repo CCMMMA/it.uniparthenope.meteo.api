@@ -1,3 +1,5 @@
+"""RESTX namespace exposing legal and privacy content."""
+
 from flask_restx import Namespace, Resource
 from flask import jsonify
 from core.MeteoServices import MeteoServices
@@ -10,6 +12,7 @@ api = Namespace('legal', description='Legal and compliance content endpoints.')
 # TESTED AND WORKING -- NO CACHE USE 
 @api.route('/disclaimer')
 class LegalDiscaimer(Resource):
+    """Resource handler for legal discaimer operations."""
     @api.doc(
         summary="Get disclaimer content",
         responses={200: "Disclaimer payload returned successfully"}
@@ -30,6 +33,7 @@ class LegalDiscaimer(Resource):
 # TESTED AND WORKING -- NO CACHE USE 
 @api.route('/privacy')
 class LegalPrivacy(Resource):
+    """Resource handler for legal privacy operations."""
     @api.doc(
         summary="Get privacy content",
         responses={200: "Privacy payload returned successfully"}

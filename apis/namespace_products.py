@@ -1,3 +1,5 @@
+"""RESTX namespace for forecast products, plots, legends, and time series."""
+
 #################################################
 #   
 #   Università Degli Studi di Napoli Parthenope 
@@ -30,6 +32,7 @@ api = Namespace('products', description='Forecast products, plots, time series, 
 
 
 def _cache_request_with_default_date():
+    """Build a cache-key request object with a default forecast date when one is omitted."""
     cache_url = request.url
     if "date" not in request.args:
         ncep_date = datetime.utcnow().strftime("%Y%m%dZ%H00")
@@ -40,6 +43,7 @@ def _cache_request_with_default_date():
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('')
 class Products(Resource):
+    """Resource handler for products operations."""
     @api.doc(summary="List products", responses={200: "Product catalog returned successfully"})
     def get(self):
         """
@@ -54,6 +58,7 @@ class Products(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/<string:place>/avail')
 class ProductsAvailable(Resource):
+    """Resource handler for products available operations."""
     @api.doc(summary="Get product availability for a place", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Availability payload returned successfully"})
     def get(self, prod, place):
         """
@@ -76,6 +81,7 @@ class ProductsAvailable(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/<string:place>/avail/calendar')
 class ProductsAvailableCalendar(Resource):
+    """Resource handler for products available calendar operations."""
     @api.doc(summary="Get product availability as a calendar payload", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Availability calendar returned successfully"})
     def get(self, prod, place):
         """
@@ -99,6 +105,7 @@ class ProductsAvailableCalendar(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/maps')
 class ProductsMap(Resource):
+    """Resource handler for products map operations."""
     @api.doc(summary="Get maps metadata", responses={200: "Maps metadata returned successfully"})
     def get(self):
         """
@@ -114,6 +121,7 @@ class ProductsMap(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/maps/themes')
 class ProductsThemesByProd(Resource):
+    """Resource handler for products themes by prod operations."""
     @api.doc(summary="Get themes for a product", params={"prod": "Product code"}, responses={200: "Theme metadata returned successfully"})
     def get(self, prod):
         """
@@ -129,6 +137,7 @@ class ProductsThemesByProd(Resource):
 # TESTED AND WORKING - NO CACHE USE
 @api.route('/<string:prod>')
 class ProductsOutputsByProd(Resource):
+    """Resource handler for products outputs by prod operations."""
     @api.doc(summary="Get product metadata", params={"prod": "Product code"}, responses={200: "Product metadata returned successfully"})
     def get(self, prod):
         """
@@ -148,6 +157,7 @@ class ProductsOutputsByProd(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/outputs')
 class ProductsOutputsByProd(Resource):
+    """Resource handler for products outputs by prod operations."""
     @api.doc(summary="List outputs for a product", params={"prod": "Product code"}, responses={200: "Outputs returned successfully"})
     def get(self, prod):
         """
@@ -163,6 +173,7 @@ class ProductsOutputsByProd(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/fields')
 class ProductsFieldsByProd(Resource):
+    """Resource handler for products fields by prod operations."""
     @api.doc(summary="List fields for a product", params={"prod": "Product code"}, responses={200: "Field metadata returned successfully"})
     def get(self, prod):
         """
@@ -177,6 +188,7 @@ class ProductsFieldsByProd(Resource):
 # TESTED AND WORKING - USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/forecast/<string:place>')
 class ProductsForecastByProdAndPlace(Resource):
+    """Resource handler for products forecast by prod and place operations."""
     @api.doc(summary="Get forecast data for a product and place", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Forecast returned successfully", 404: "Forecast not available"})
     def get(self, prod, place):
         """
@@ -257,6 +269,7 @@ class ProductsForecastByProdAndPlace(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/<string:prod>/forecast/<string:place>/plot/image')
 class ProductsForecastMapByProdAndPlace(Resource):
+    """Resource handler for products forecast map by prod and place operations."""
     @api.doc(summary="Get rendered forecast plot image", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "PNG image returned successfully"})
     def get(self, prod, place):
         """
@@ -376,6 +389,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
 # @api.route('/wrf5/forecast/<string:place>/<float:lat>/<float:lon>/plot/SkewT/image')
 @api.route('/wrf5/forecast/plot/SkewT/image')
 class ProductSkewTByProdAndPlace(Resource):
+    """Resource handler for product skew tby prod and place operations."""
     @api.doc(summary="Get a Skew-T plot image", params={"date": "Optional forecast reference time as query parameter"}, responses={200: "Skew-T image returned successfully"})
     def get(self):
         """
@@ -421,6 +435,7 @@ class ProductSkewTByProdAndPlace(Resource):
 
 @api.route('/<string:prod>/forecast/<string:place>/plot/alt')
 class ProductsForecastPlotAndAlt(Resource):
+    """Resource handler for products forecast plot and alt operations."""
     @api.doc(summary="Get plot alternative text payload", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Alternative text payload returned successfully"})
     def get(self, prod, place, language="en-US"):
         """
@@ -453,6 +468,7 @@ class ProductsForecastPlotAndAlt(Resource):
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/<string:domain>/grib/text')
 class ProductsForecastGribJsonByProdAndDomain(Resource):
+    """Resource handler for products forecast grib json by prod and domain operations."""
     @api.doc(summary="Get GRIB-oriented text export", params={"prod": "Product code", "domain": "Forecast domain code"}, responses={200: "Text export returned successfully"})
     def get(self, prod, domain):
         """
@@ -480,6 +496,7 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
 # ERROR -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/<string:domain>/grib/json')
 class ProductsForecastGribJsonByProdAndDomain(Resource):
+    """Resource handler for products forecast grib json by prod and domain operations."""
     @api.doc(summary="Get GRIB-oriented JSON export", params={"prod": "Product code", "domain": "Forecast domain code"}, responses={200: "JSON export returned successfully"})
     def get(self, prod, domain):
         """
@@ -505,6 +522,7 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/forecast/<string:place>/plot')
 class ProductsForecastMapByProdAndPlace(Resource):
+    """Resource handler for products forecast map by prod and place operations."""
     @api.doc(summary="Get forecast plot metadata or inline image", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Plot payload returned successfully"})
     def get(self, prod, place):
         """
@@ -657,6 +675,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/legend/<string:position>/<string:output>')
 class ProductsForecastBarByProdAndPositionAndOutput(Resource):
+    """Resource handler for products forecast bar by prod and position and output operations."""
     @api.doc(summary="Get a legend image", params={"prod": "Product code", "position": "Legend position", "output": "Output code"}, responses={200: "Legend image returned successfully"})
     def get(self, prod, position, output):
         """
@@ -689,6 +708,7 @@ class ProductsForecastBarByProdAndPositionAndOutput(Resource):
 # ORIGINAL : Internal Server Error -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/legend/<string:position>/<string:output>/ncwms')
 class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
+    """Resource handler for products forecast bar by prod and position and output from nc wms operations."""
     @api.doc(summary="Get a legend image through ncWMS-related generation", params={"prod": "Product code", "position": "Legend position", "output": "Output code"}, responses={200: "Legend image returned successfully"})
     def get(self, prod, position, output):
         """
@@ -720,6 +740,7 @@ class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
 
 @api.route('/<string:prod>/plot/<string:output>/metacharts')
 class ProductsPlotMetacharts(Resource):
+    """Resource handler for products plot metacharts operations."""
     @api.doc(summary="Get plot metadata charts", params={"prod": "Product code", "output": "Output code"}, responses={200: "Metacharts payload returned successfully"})
     def get(self, prod, output):
         """
@@ -753,6 +774,7 @@ class ProductsPlotMetacharts(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/timeseries/<string:place>')
 class ProductsTimeseriesByProdAndPlace(Resource):
+    """Resource handler for products timeseries by prod and place operations."""
     @api.doc(summary="Get timeseries data", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Timeseries returned successfully"})
     def get(self, prod, place):
         """
@@ -849,6 +871,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/<string:prod>/timeseries/<string:place>/csv')
 class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
+    """Resource handler for products time series by prod and place by csv operations."""
     @api.doc(summary="Get timeseries as CSV", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "CSV returned successfully"})
     def get(self, prod, place):
         """
@@ -989,6 +1012,7 @@ class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
 # USE MEMCACHE
 @api.route('/<prod>/forecast/<place>/map/image')
 class ProductsForecastMapByProdAndPlace(Resource):
+    """Resource handler for products forecast map by prod and place operations."""
     @api.doc(summary="Get the legacy forecast map image endpoint", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "PNG image returned successfully"})
     def get(self,prod,place ):
         """
@@ -1018,6 +1042,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
 
 @api.route('/resource/forecast/<string:icon>')
 class ProductsForecastIconsPng(Resource):
+    """Resource handler for products forecast icons png operations."""
     @api.doc(summary="Get a static forecast icon", params={"icon": "Static icon filename"}, responses={200: "Icon returned successfully", 404: "Icon not found"})
     def get(self, icon):
         """

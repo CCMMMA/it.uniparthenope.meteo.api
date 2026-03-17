@@ -1,3 +1,5 @@
+"""Application bootstrap for the meteorological API service."""
+
 from flask import Flask
 from flask_cors import CORS
 from apis import api

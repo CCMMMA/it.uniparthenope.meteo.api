@@ -1,3 +1,5 @@
+"""Flask-RESTX API configuration and namespace registration."""
+
 from flask_restx import Api
 
 from .namespace_login import api as ns_login

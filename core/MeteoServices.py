@@ -1,3 +1,5 @@
+"""Meteorological formatting and conversion helpers used by product endpoints."""
+
 #################################################
 #   
 #   Università Degli Studi di Napoli Parthenope 
@@ -48,6 +50,7 @@ from core.SkewTServices import SkewTServices
 ################
 
 def statusByConc(args):
+    """Map a concentration value to its configured status label."""
     con = args[0]
     sts = 0
     if 18 < con <= 230:
@@ -64,6 +67,7 @@ def statusByConc(args):
     return sts
 
 def northDirection(args):
+    """Convert a directional angle into a named compass sector."""
     u = args[0]
     v = args[1]
     direction = math.atan2(v, u) / math.pi * 180
@@ -73,11 +77,13 @@ def northDirection(args):
     return direction
 
 def modulus(args):
+    """Return the vector modulus for the provided components."""
     u = args[0]
     v = args[1]
     return (u * u + v * v) ** .5
 
 def windS(args):
+    """Format wind speed and direction into a compact human-readable string."""
     if type(args) is list:
         direction = args[0]
     else:
@@ -117,6 +123,7 @@ def windS(args):
         return "N"
 
 def currS(args):
+    """Format current speed and direction into a compact human-readable string."""
     direction = northDirection(args)
     if 11.25 <= direction < 33.75:
         return "SSW"
@@ -152,6 +159,7 @@ def currS(args):
         return "S"
 
 def weatherText(args):
+    """Return a human-readable weather description for a condition code."""
     crh = args[0]
     clf = args[1]
 
@@ -210,6 +218,7 @@ def weatherText(args):
 
 
 def weatherIcon(args):
+    """Return the icon identifier associated with a weather condition code."""
     date13 = args[0]
     crh = args[1]
     clf = args[2]
@@ -244,11 +253,13 @@ def weatherIcon(args):
 
 
 def knt2kmh(args):
+    """Convert a speed from knots to kilometers per hour."""
     kt = args[0]
     return kt * 1.852
 
 
 def windChill(args):
+    """Estimate the wind chill temperature from air temperature and wind speed."""
     t2c = args[0]
     ws10 = args[1]
     wind = pow(knt2kmh([float(ws10)]), 0.16)
@@ -257,6 +268,7 @@ def windChill(args):
 
 #### CSVFY ####
 def csvfy(data):
+    """Convert a Python value into a CSV-safe textual representation."""
     logger.debug("csvfy input type: %s", type(data))
     result = ""
     timeseries = data['timeseries']
@@ -287,10 +299,12 @@ def csvfy(data):
 
 
 def knt2Beaufort(args):
+    """Convert a speed in knots to the Beaufort scale."""
     wind_speed = args[0]
     return int(0.725 * ( wind_speed ** 2 ) ** (1/3))
 
 def beaufortText(wind_speed):
+    """Return the descriptive label for a Beaufort scale value."""
 
     beaufort = knt2Beaufort(wind_speed)
 
@@ -306,6 +320,7 @@ def beaufortText(wind_speed):
     return out
 
 def iconText(current):
+    """Return the text label associated with an icon identifier."""
     wtext = [
         {"it-IT":"Sereno","en-US":"Clear"},
         {"it-IT":"Poco nuvoloso","en-US":"Partly Cloudy"},
@@ -353,6 +368,7 @@ def iconText(current):
     return ('shower3' + suf), wtext[7]
 
 def significantHeightIcon(args):
+    """Choose an icon for the provided significant wave height."""
     hs = round(args[0], 2)
     hs_icons = ["glassy.png", "rippled.png", "smooth.png", "slight.png", "moderate.png", "rough.png", "veryrough.png", "high.png", "veryhigh.png", "phenomenal.png"]
     index = -1
@@ -381,6 +397,7 @@ def significantHeightIcon(args):
     return hs_icons[index]
 
 def surfaceCurrentIcon(args):
+    """Choose an icon for the provided surface current magnitude."""
     scm = args[0]
     scm_icons = [ "current_very_weak.png", "current_weak.png", "current_low.png", "current_low_medium.png", "current_medium.png", "current_medium_high.png", "current_high.png", "current_very_high.png", "current_extremely_high.png", "current_maximum.png"]
     index = -1
@@ -410,6 +427,7 @@ def surfaceCurrentIcon(args):
     return scm_icons[index]
 
 def concentrationParticles(args):
+    """Classify particle concentration into the configured categories."""
     if int(args[0]) > 10:
         sts = statusByConc([int(args[0])])
     else:
@@ -419,12 +437,14 @@ def concentrationParticles(args):
     return sts_icons[sts]
 
 def musselContaminationIcon(args):
+    """Choose an icon representing mussel contamination risk."""
     mci = args[0]
     mci_icons = ["absent.png", "verylow.png", "low.png", "medium.png", "high.png", "veryhigh.png", "critical.png"]
 
     return mci_icons[int(mci) + 1]
 
 class MeteoServices:
+    """Service or helper that encapsulates meteo services behavior."""
     places = None
     plotter = None
     default_domain = 'd01'
@@ -444,6 +464,7 @@ class MeteoServices:
                     '401': {'code': '401', 'msg': 'Unauthorized'}, '404': {'code': '404', 'msg': 'Not Found'}}
 
     def __init__(self, config):
+        """Initialize meteo services state."""
         self.config = config
         self.maps = None
         self.legal = None
@@ -457,15 +478,19 @@ class MeteoServices:
         self.plotter = Plotter(self.config)
 
     def getMaps(self):
+        """Implement get maps for meteo services."""
         return self.maps
 
     def printMaps(self):
+        """Implement print maps for meteo services."""
         logger.info("maps: %s", self.maps)
 
     def getThemes(self, prod):
+        """Implement get themes for meteo services."""
         return self.maps['products'][prod]
 
     def getProds(self, prod=None):
+        """Implement get prods for meteo services."""
         result = {}
         if prod is None:
             result = self.maps["products"]
@@ -477,10 +502,12 @@ class MeteoServices:
         return result
 
     def printProducts(self):
+        """Implement print products for meteo services."""
         for item in self.maps["products"]:
             logger.info("product: %s", item)
 
     def __getFullLink(self, url, fields):
+        """Internal helper for get full link."""
         fields_string = ''
         for key, value in fields.items():
             fields_string = fields_string + key + '=' + value + '&'
@@ -489,6 +516,7 @@ class MeteoServices:
         return full_link
 
     def __executeRequest(self, url):
+        """Internal helper for execute request."""
         data = urllib_request.urlopen(url)
         data = data.read()
 
@@ -501,6 +529,7 @@ class MeteoServices:
             return data
 
     def calc_boundaries(self, west_east_dim, south_north_dim, XLONG, XLAT):
+        """Implement calc boundaries for meteo services."""
         xlon_a = [XLONG[0, 0], XLONG[south_north_dim - 1, 0], XLONG[0, west_east_dim - 1],
                   XLONG[south_north_dim - 1, west_east_dim - 1]]
 
@@ -532,22 +561,26 @@ class MeteoServices:
         return lon_min, lat_min, lon_max, lat_max, round(dxll, 6), round(dyll, 6)
 
     def printSpecificProducts(self, prod):
+        """Implement print specific products for meteo services."""
         for item in self["products"][prod]:
             logger.info("specific product entry: %s", item)
 
     def getFields(self, prod):
+        """Implement get fields for meteo services."""
         result = {}
         if prod in self.maps["products"] and 'fields' in self.maps["products"][prod]:
             result = self.maps["products"][prod]['fields']
         return result
 
     def getOutputs(self, prod):
+        """Implement get outputs for meteo services."""
         result = {}
         if prod in self.maps["products"] and 'outputs' in self.maps["products"][prod]:
             result = self.maps["products"][prod]['outputs']
         return result
 
     def getProductAvail(self, params):
+        """Implement get product avail for meteo services."""
         items = []
         prod = None
         place = None
@@ -581,11 +614,13 @@ class MeteoServices:
             (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
             def daterange(start_date, end_date):
+                """Yield ten-minute timestamps across the requested interval."""
                 N = abs((end_date - start_date).days * 1440)
                 for n in range(0, N, 10):
                     yield start_date + timedelta(n / 1440.0)
 
             def check_date(date):
+                """Build one availability item when the expected NetCDF file exists."""
                 item = None
                 dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(
                     date.hour, '02') + format(date.minute, '02')
@@ -629,6 +664,7 @@ class MeteoServices:
         return items
 
     def getLegalDisclaimer(self, options=None):
+        """Implement get legal disclaimer for meteo services."""
         lang = "en-US"
         if options is not None:
             if "lang" in options and options['lang'] is not None:
@@ -644,6 +680,7 @@ class MeteoServices:
         return result
 
     def getLegalPrivacy(self, options=None):
+        """Implement get legal privacy for meteo services."""
         lang = "en-US"
         if options is not None:
             if "lang" in options and options['lang'] is not None:
@@ -659,10 +696,12 @@ class MeteoServices:
         return result
     
     def convert_f_to_c(self, temp_in_fahrenheit):
+        """Implement convert f to c for meteo services."""
         convert = (temp_in_fahrenheit - 32) * 5 / 9
         return float("{:.2f}".format(convert))
     
     def getInstruments(self):
+        """Implement get instruments for meteo services."""
         signalk_url = "https://signalk.meteo.uniparthenope.it"
         signalk_meteo = f"{signalk_url}/signalk/v1/api/meteo/"
 
@@ -745,6 +784,7 @@ class MeteoServices:
 
 
     def getProductAvailCalendar(self, params):
+        """Implement get product avail calendar for meteo services."""
         calendar_items = []
         baseUrl = ""
         prod = "wrf5"
@@ -813,11 +853,13 @@ class MeteoServices:
             (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
             def daterange(start_date, end_date):
+                """Yield ten-minute timestamps across the requested interval."""
                 N = abs((end_date - start_date).days * 1440)
                 for n in range(0, N, 10):
                     yield start_date + timedelta(n / 1440.0)
 
             def check_date(date):
+                """Build one calendar item and note whether history or archive data exists."""
                 item = None
                 dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(
                     date.hour, '02') + format(date.minute, '02')
@@ -871,6 +913,7 @@ class MeteoServices:
 
     
     def modelOutput(self, params=None, use_disk_cached=True,):
+        """Implement model output for meteo services."""
         import time as t
 
         retval = {}
@@ -1568,6 +1611,7 @@ class MeteoServices:
 
     
     def ModelPlotUrl(self, use_disk_cached=True, params=None):
+        """Implement model plot url for meteo services."""
 
         months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
         retval = {}
@@ -1733,6 +1777,7 @@ class MeteoServices:
 
     
     def ModelPlotImage(self, use_disk_cached=True, params=None):
+        """Implement model plot image for meteo services."""
 
         months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
         retval = {}
@@ -1989,6 +2034,7 @@ class MeteoServices:
     '''   
 
     def ModelPlotSkewT(self, use_disk_cached=True, params=None):
+        """Implement model plot skew t for meteo services."""
 
         retval = {}
 
@@ -2097,6 +2143,7 @@ class MeteoServices:
 
 
     def getlegenddata(self, prod, position, output, params=None):
+        """Implement getlegenddata for meteo services."""
         data = None
         width = self.default_xdim
         height = self.default_ydim
@@ -2143,6 +2190,7 @@ class MeteoServices:
         return data
 
     def getlegenddata1(self, prod, position, output, params=None):
+        """Implement getlegenddata1 for meteo services."""
         place = "ca004"
         data = None
         legendTheme = None
@@ -2258,6 +2306,7 @@ class MeteoServices:
         return data
 
     def plotmetacharts(self, prod, output):
+        """Implement plotmetacharts for meteo services."""
      
             
         retval = {"meta-chart": {}}
@@ -2278,6 +2327,7 @@ class MeteoServices:
         return retval
     
     def timeseries(self, params=None):
+        """Implement timeseries for meteo services."""
 
         retval = {}
 
@@ -2589,6 +2639,7 @@ class MeteoServices:
         return retval
 
     def modelcharturl(self, params=None):
+        """Implement modelcharturl for meteo services."""
         # log.info("modelcharturl")
         # url = self.base_url + 'charts.php'
         url = self.config['BASE_URL'] + '/charts.php'
@@ -2649,6 +2700,7 @@ class MeteoServices:
     
     # funziona aggiunta dalle vecchie API 
     def modelmapurl_or_image(self, use_disk_cached=True, params = None):
+        """Implement modelmapurl or image for meteo services."""
         retval = {}
 
         # places = Places(app.application.config)
@@ -2876,6 +2928,7 @@ class MeteoServices:
 
 
     def MakeJsonAlt(self, prod, place, params=None): 
+        """Implement make json alt for meteo services."""
         prod = prod
         place = place
         output = 'gen'

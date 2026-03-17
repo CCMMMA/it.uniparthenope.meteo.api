@@ -1,3 +1,5 @@
+"""Disk-cache management helpers for generated API resources."""
+
 #################################################
 #   
 #   Università Degli Studi di Napoli Parthenope 
@@ -18,15 +20,19 @@ import hashlib  # hash function for 128bit encryption
 from core.Logger import logger
 
 class ManageDiskCache:
+    """Service or helper that encapsulates manage disk cache behavior."""
 
     def __init__(self, path_diskcache):
+        """Initialize manage disk cache state."""
         self.base_diskcace = path_diskcache
 
     def _daily_cache_dir(self, day=None):
+        """Internal helper for daily cache dir."""
         day = day or datetime.today()
         return Path(self.base_diskcace) / str(day.year) / str(day.month) / str(day.day)
     
     def get(self, request, ttl, path_archive=None, flag_diskcache=True):
+        """Implement get for manage disk cache."""
         res_out = None
 
         if not flag_diskcache:
@@ -70,6 +76,7 @@ class ManageDiskCache:
 
     # type --> plot - json - csv
     def set(self, request, res, type_file='plot'): 
+        """Implement set for manage disk cache."""
         res_out = None
         m = hashlib.md5(request.url.encode('utf-8'))
 

@@ -1,3 +1,5 @@
+"""Worker-pool helpers for parallel processing tasks."""
+
 #################################################
 #   
 #   Università Degli Studi di Napoli Parthenope 
@@ -15,6 +17,7 @@ import certifi
 _session = None
 
 def _init_session():
+    """Initialize a reusable HTTP session for worker processes."""
     global _session
     _session = Session()
 
@@ -43,6 +46,7 @@ def _init_session():
 
 
 def work_worker(method: str, url: str, *, json=None, params=None, headers=None, timeout=(5, 60)):
+    """Execute one worker task and return its processed result."""
     global _session
     if not _session:
         _session = _init_session()
@@ -59,4 +63,5 @@ def work_worker(method: str, url: str, *, json=None, params=None, headers=None, 
         #return response.text
 
 def dispatch(m, u, kw):
+    """Dispatch work items across the configured worker pool."""
     return work_worker(m, u, **kw)

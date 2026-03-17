@@ -1,3 +1,5 @@
+"""RESTX namespace serving the latest webcam imagery."""
+
 from flask_restx import Namespace, Resource
 from flask import send_file
 import os
@@ -10,6 +12,7 @@ api = Namespace('webcam', description='Latest webcam image retrieval endpoints.'
 # I DON'T HAVE WEBCAM DIRECTORY
 @api.route("/<string:place>/<string:location>/<string:cam>")
 class Webcam(Resource):
+    """Resource handler for webcam operations."""
     @api.doc(
         summary="Get the latest webcam image",
         params={

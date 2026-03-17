@@ -1,3 +1,5 @@
+"""Shared data structures for version 2 API responses."""
+
 
 
 # -------------------------------- BASE MAPS ------------------------------------------------

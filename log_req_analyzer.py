@@ -1,3 +1,5 @@
+"""Utilities for analyzing request logs produced by the API deployment."""
+
 import re
 import logging
 

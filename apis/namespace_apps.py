@@ -1,3 +1,5 @@
+"""Application-facing endpoints for tiles and SAIS integration data."""
+
 from datetime import datetime
 from flask_restx import Namespace, Resource
 from flask import jsonify, request
@@ -34,6 +36,7 @@ api = Namespace('apps', description='Application-facing integration endpoints an
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/owm/<string:prod>/<string:placeprefix>/<int:z>/<int:x>/<int:y>.geojson', methods=['GET', 'OPTIONS'])
 class AppsOwmWeatherProdPlacePrefix(Resource):
+    """Resource handler for apps owm weather prod place prefix operations."""
     @api.doc(
         summary="Get application weather tile data",
         params={
@@ -105,6 +108,7 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
 # TESTED AND WORKING -- NO CACHE USE 
 @api.route('/sais/index')
 class AppsSaisRisk(Resource):
+    """Resource handler for apps sais risk operations."""
     @api.doc(
         summary="Get SAIS index payload",
         responses={200: "SAIS index returned successfully", 503: "Source file unavailable"}

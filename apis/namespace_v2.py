@@ -1,3 +1,5 @@
+"""RESTX namespace for version 2 endpoints, CMS content, and protected resources."""
+
 import base64
 import hashlib
 from functools import wraps
@@ -24,8 +26,10 @@ page_model = api.model("page", {
 
 
 def token_required(f):
+    """Protect an endpoint by requiring a valid authorization token."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        """Implement decorated function."""
         token = None
         if 'Authorization' in request.headers:
             token = request.headers['Authorization'].split()[1]
@@ -36,8 +40,10 @@ def token_required(f):
 
 
 def roles_from_token(f):
+    """Extract role information from an authorization token."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        """Implement decorated function."""
         token = None
         roles = []
         userId = None
@@ -62,6 +68,7 @@ def roles_from_token(f):
 # TESTED AND WORKING
 @api.route('/weatherreports/latest/json')
 class WeatherReportsLatestJson(Resource):
+    """Resource handler for weather reports latest json operations."""
     @api.doc(summary="Get the latest weather report payload", responses={200: "Latest weather report returned"})
     def get(self):
         """
@@ -76,6 +83,7 @@ class WeatherReportsLatestJson(Resource):
 # ORIGINAL : Internal server error
 @api.route('/weatherreports/latest/<string:field>/json')
 class WeatherReportsLatestJson(Resource):
+    """Resource handler for weather reports latest json operations."""
     @api.doc(summary="Get a field from the latest weather report", params={"field": "Weather report field name"}, responses={200: "Weather report field returned", 404: "Field not found"})
     def get(self, field):
         """
@@ -91,6 +99,7 @@ class WeatherReportsLatestJson(Resource):
 # TESTED AND WORKING
 @api.route('/weatherreports/json')
 class WeatherReportsJson(Resource):
+    """Resource handler for weather reports json operations."""
     @api.doc(summary="Get all weather reports", responses={200: "Weather reports returned"})
     def get(self):
         """
@@ -105,6 +114,7 @@ class WeatherReportsJson(Resource):
 # TESTED - 1 problem
 @api.route('/slurm/storage')
 class SlurmStorage(Resource):
+    """Resource handler for slurm storage operations."""
     @api.doc(summary="Get Slurm storage status", responses={200: "Storage status returned"})
     def get(self):
         """
@@ -121,6 +131,7 @@ class SlurmStorage(Resource):
 # TESTED AND WORKING
 @api.route('/slurm/info')
 class SlurmInfo(Resource):
+    """Resource handler for slurm info operations."""
     @api.doc(summary="Get Slurm cluster information", responses={200: "Slurm information returned"})
     def get(self):
         """
@@ -137,6 +148,7 @@ class SlurmInfo(Resource):
 # TESTED AND WORKING
 @api.route('/slurm/queue')
 class SlurmInfo(Resource):
+    """Resource handler for slurm info operations."""
     @api.doc(summary="Get Slurm queue information", responses={200: "Slurm queue returned"})
     def get(self):
         """
@@ -153,9 +165,11 @@ class SlurmInfo(Resource):
 # TESTED AND WORKING
 @api.route('/carousel')
 class Carousel(Resource):
+    """Resource handler for carousel operations."""
     @api.doc(summary="Get carousel content", security='Bearer', responses={200: "Carousel content returned"})
     @roles_from_token
     def get(self, **kwargs):
+        """Handle GET requests for this resource."""
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
         cms = CMS(app.application.config)
@@ -166,9 +180,11 @@ class Carousel(Resource):
 # TESTED AND WORKING
 @api.route('/cards')
 class Cards(Resource):
+    """Resource handler for cards operations."""
     @api.doc(summary="Get card content", security='Bearer', responses={200: "Cards content returned"})
     @roles_from_token
     def get(self, **kwargs):
+        """Handle GET requests for this resource."""
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
         cms = CMS(app.application.config)
@@ -179,24 +195,30 @@ class Cards(Resource):
 # TESTED AND WORKING
 @api.route('/basemaps')
 class BaseMaps(Resource):
+    """Resource handler for base maps operations."""
     @api.doc(summary="List basemaps", responses={200: "Basemap catalog returned"})
     def get(self):
+        """Handle GET requests for this resource."""
         return jsonify(baseMaps)
 
 
 # TESTED AND WORKING
 @api.route('/basemaps/<string:name>')
 class BaseMapsByName(Resource):
+    """Resource handler for base maps by name operations."""
     @api.doc(summary="Get a basemap by name", params={"name": "Basemap identifier"}, responses={200: "Basemap returned", 404: "Basemap not found"})
     def get(self, name):
+        """Handle GET requests for this resource."""
         return jsonify(baseMaps[name])
 
 
 # TESTED AND WORKING
 @api.route('/layers')
 class Layers(Resource):
+    """Resource handler for layers operations."""
     @api.doc(summary="List layers", responses={200: "Layer catalog returned"})
     def get(self):
+        """Handle GET requests for this resource."""
         return jsonify(layers)
 
 
@@ -204,16 +226,20 @@ class Layers(Resource):
 # example : name = info
 @api.route('/layers/<string:name>')
 class LayersByName(Resource):
+    """Resource handler for layers by name operations."""
     @api.doc(summary="Get a layer by name", params={"name": "Layer identifier"}, responses={200: "Layer returned", 404: "Layer not found"})
     def get(self, name):
+        """Handle GET requests for this resource."""
         return jsonify(layers[name])
 
 
 # TESTED AND WORKING
 @api.route('/maps')
 class Maps(Resource):
+    """Resource handler for maps operations."""
     @api.doc(summary="List maps", responses={200: "Map catalog returned"})
     def get(self):
+        """Handle GET requests for this resource."""
         return jsonify(maps)
 
 
@@ -221,14 +247,17 @@ class Maps(Resource):
 # example : name = weather
 @api.route('/maps/<string:name>')
 class MapsByName(Resource):
+    """Resource handler for maps by name operations."""
     @api.doc(summary="Get a map definition by name", params={"name": "Map identifier"}, responses={200: "Map definition returned", 404: "Map not found"})
     def get(self, name):
+        """Handle GET requests for this resource."""
         return jsonify(maps[name])
 
 
 # TESTED AND WORKING
 @api.route('/navbar')
 class NavBar(Resource):
+    """Resource handler for nav bar operations."""
     @api.doc(summary="Get navbar content", security='Bearer', responses={200: "Navbar content returned"})
     @roles_from_token
     def get(self, **kwargs):
@@ -248,6 +277,7 @@ class NavBar(Resource):
 # TESTED AND WORKING
 @api.route('/pages')
 class Pages(Resource):
+    """Resource handler for pages operations."""
     @api.doc(summary="List pages", security='Bearer', responses={200: "Pages list returned"})
     @roles_from_token
     def get(self, **kwargs):
@@ -267,6 +297,7 @@ class Pages(Resource):
 # TESTED AND WORKING
 @api.route('/pages/<string:page>')
 class PageByPageId(Resource):
+    """Resource handler for page by page id operations."""
     @api.doc(summary="Get a page by identifier", security='Bearer', params={"page": "Page identifier"}, responses={200: "Page returned", 404: "Page not found"})
     @roles_from_token
     def get(self, page, **kwargs):
@@ -303,6 +334,7 @@ class PageByPageId(Resource):
 
 @api.route('/auth/login')
 class AuthLoginByToken(Resource):
+    """Resource handler for auth login by token operations."""
     @api.doc(summary="Resolve authentication information from a bearer token", security='Bearer', responses={200: "Authentication information returned", 401: "Missing or invalid token"})
     @token_required
     def get(self, **kwargs):

@@ -1,3 +1,5 @@
+"""Services for exposing Slurm-related operational data."""
+
 # import subprocess
 from fabric import Connection
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
@@ -10,10 +12,12 @@ from datetime import datetime
 
 
 class SlurmServices(object):
+    """Service or helper that encapsulates slurm services behavior."""
     cfg = {}
 
     # Constructor
     def __init__(self, cfg):
+        """Initialize slurm services state."""
 
         self.cfg = cfg
 
@@ -33,6 +37,7 @@ class SlurmServices(object):
         ]
 
     def get_as_MB(self, part):
+        """Return as mb."""
         result = 1
         if "G" in part:
             result = 1000.0
@@ -43,6 +48,7 @@ class SlurmServices(object):
         return result
 
     def get_storage_status(self):
+        """Return storage status."""
         storages = []
         for storage_device in self.storage_devices:
             storage = {
@@ -77,6 +83,7 @@ class SlurmServices(object):
         return storages
 
     def get_attributes(self, output):
+        """Return attributes."""
         attributes = []
         parts = output.strip().split("|")
         for part in parts:
@@ -86,6 +93,7 @@ class SlurmServices(object):
         return attributes
 
     def get_item(self, attributes, output):
+        """Return item."""
         index = 0
         item = {}
         parts = output.strip().split("|")
@@ -103,6 +111,7 @@ class SlurmServices(object):
         return item
 
     def command(self, args):
+        """Implement command for slurm services."""
         attributes = None
         items = []
 
@@ -121,10 +130,12 @@ class SlurmServices(object):
         return items
 
     def sinfo(self):
+        """Implement sinfo for slurm services."""
         result = self.command('sinfo -o "%all"')
         return result
 
     def squeue(self):
+        """Implement squeue for slurm services."""
         result = self.command('squeue -o "%all"')
         return result
 

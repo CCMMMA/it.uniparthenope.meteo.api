@@ -1,3 +1,5 @@
+"""Memcached helpers for serializing and retrieving cached resources."""
+
 #################################################
 #
 # Author: Dario Caramiello
@@ -14,6 +16,7 @@ import datetime
 from core.Logger import logger
 
 def _decode_cached_value(value):
+    """Normalize cached byte payloads into Python strings when possible."""
     if value is None:
         return None
     if isinstance(value, bytes):
@@ -22,6 +25,7 @@ def _decode_cached_value(value):
 
 
 def load_cached_json(value, fallback=None):
+    """Decode a cached JSON payload while preserving a fallback value on failure."""
     value = _decode_cached_value(value)
     if value is None:
         return fallback
@@ -36,6 +40,7 @@ def load_cached_json(value, fallback=None):
 
 # request the resource from the cache
 def get_resource(request_in, cache, use_pymemcache):
+    """Fetch a resource from memcached and normalize its representation."""
     if use_pymemcache is False:
         return None
 
@@ -53,6 +58,7 @@ def get_resource(request_in, cache, use_pymemcache):
 
 # set resource to cache
 def set_resource(request_in, res, cache, use_pymemcache, ttl):
+    """Serialize and store a resource in memcached."""
     if use_pymemcache is False:
         return
 

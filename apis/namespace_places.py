@@ -1,3 +1,5 @@
+"""RESTX namespace for place discovery and geospatial lookup."""
+
 import json
 
 import pymemcache
@@ -16,6 +18,7 @@ api = Namespace('places', description='Place discovery, lookup, and geospatial s
 
 @api.route('')
 class GetAllPlaces(Resource):
+    """Resource handler for get all places operations."""
     @api.doc(summary="List all places", responses={200: "Places collection returned successfully"})
     def get(self):
         """
@@ -51,6 +54,7 @@ class GetAllPlaces(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/search/byname/<string:name>')
 class PlacesSearchByName(Resource):
+    """Resource handler for places search by name operations."""
     @api.doc(summary="Search places by name", params={"name": "Free-text place name to search"}, responses={200: "Matching places returned successfully"})
     def get(self, name):
         """
@@ -111,6 +115,7 @@ class PlacesSearchByName(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/search/byname/autocomplete')
 class PlacesSearchByNameAutocomplete(Resource):
+    """Resource handler for places search by name autocomplete operations."""
     @api.doc(summary="Autocomplete places by term", params={"term": "Autocomplete term supplied as a query parameter"}, responses={200: "Autocomplete results returned successfully"})
     def get(self):
         """
@@ -183,6 +188,7 @@ class PlacesSearchByNameAutocomplete(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:identifier>')
 class PlacesByIdentifier(Resource):
+    """Resource handler for places by identifier operations."""
     @api.doc(summary="Get a place by identifier", params={"identifier": "Canonical place identifier"}, responses={200: "Place returned successfully", 404: "Place not found"})
     def get(self, identifier):
         """
@@ -245,6 +251,7 @@ class PlacesByIdentifier(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/search/bycoords/<float:latitude>/<float:longitude>')
 class PlacesSearchByCoords(Resource):
+    """Resource handler for places search by coords operations."""
     @api.doc(summary="Search places near coordinates", params={"latitude": "Latitude in decimal degrees", "longitude": "Longitude in decimal degrees"}, responses={200: "Nearby places returned successfully"})
     def get(self, latitude, longitude):
         """
@@ -301,6 +308,7 @@ class PlacesSearchByCoords(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/search/byboundingbox/<float:minLatitude>/<float:minLongitude>/<float:maxLatitude>/<float:maxLongitude>')
 class PlacesSearchByBoundingBox(Resource):
+    """Resource handler for places search by bounding box operations."""
     @api.doc(
         summary="Search places inside a bounding box",
         params={

@@ -1,3 +1,5 @@
+"""RESTX namespace exposing API version metadata."""
+
 from flask_restx import Namespace, Resource
 from flask import jsonify
 import app
@@ -8,6 +10,7 @@ api = Namespace('version', description='Service version and runtime environment 
 # TESTED AND WORKING -- NO CACHE USE
 @api.route('')
 class Version(Resource):
+    """Resource handler for version operations."""
     @api.doc(
         summary="Get service version information",
         responses={200: "Version payload returned successfully"}

@@ -1,15 +1,20 @@
+"""CMS access helpers used by the version 2 endpoints."""
+
 # import pymongo
 # import core.MongoDbHandlers
 from core.MongoDbHandlers import MongoDBHandlers
 
 
 class CMS(object):
+    """Service or helper that encapsulates cms behavior."""
     conf = {}
 
     def __init__(self, cfg):
+        """Initialize cms state."""
         self.conf = cfg
 
     def get_navbar(self, roles, options=None):
+        """Return navbar."""
         result = []
         lang = self.conf["LANG"]
         # conn = pymongo.MongoClient()g
@@ -55,6 +60,7 @@ class CMS(object):
         return result
 
     def get_pages(self, roles, options=None):
+        """Return pages."""
         result = []
 
         lang = self.conf["LANG"]
@@ -78,12 +84,14 @@ class CMS(object):
         return result
 
     def set_page_by_id(self, roles, _id, payload, options=None):
+        """Store page by id."""
         # print(str(payload))
         # print(str(options))
         retval = {"errMsg": "Stub ok"}
         return retval
 
     def get_page_by_id(self, roles, _id, options=None):
+        """Return page by id."""
         # Set the userId
         userId = None
 
@@ -161,6 +169,7 @@ class CMS(object):
         return result
 
     def get_carousel(self, roles, options=None):
+        """Return carousel."""
         result = []
 
         lang = self.conf["LANG"]
@@ -194,6 +203,7 @@ class CMS(object):
         return result
 
     def get_cards(self, roles, options=None):
+        """Return cards."""
         result = []
         userId = None
 
