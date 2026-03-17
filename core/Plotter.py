@@ -44,6 +44,8 @@ class Plotter(object):
     # Constructor
     def __init__(self, config):
         """Initialize plotter state."""
+        self._basemap_cache = {}
+        self._watermark_image_cache = {}
 
         # Set the configuration object
         self.config= config
@@ -97,6 +99,42 @@ class Plotter(object):
                 logger.critical(config_file + " not found!")
         else:
             logger.critical("MAPS not set in the json configuration file.")
+
+    def _get_basemap(self, place, min_lon, min_lat, max_lon, max_lat):
+        """Return a cached basemap instance for the requested place bounds."""
+        basemap = self._basemap_cache.get(place)
+        if basemap is not None:
+            return basemap
+
+        basemap_key = self.cache_path + os.path.sep + place + '.pkl'
+        if os.path.exists(basemap_key):
+            with open(basemap_key, 'rb') as f:
+                basemap = pickle.load(f)
+        else:
+            basemap = Basemap(
+                projection='merc',
+                llcrnrlon=min_lon, llcrnrlat=min_lat,
+                urcrnrlon=max_lon, urcrnrlat=max_lat
+            )
+            with open(basemap_key, 'wb') as f:
+                pickle.dump(basemap, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        self._basemap_cache[place] = basemap
+        return basemap
+
+    def _read_variable(self, nc, variable_name, time_index=None, level_index=None):
+        """Read only the requested slice from a NetCDF variable."""
+        if variable_name is None or variable_name == "":
+            return None
+
+        variable = nc.variables[variable_name]
+        if time_index is not None and level_index is not None:
+            return variable[time_index, level_index]
+        if time_index is not None:
+            return variable[time_index]
+        if level_index is not None:
+            return variable[level_index]
+        return variable[:]
 
     # Add a shaded layer to the basemap
     def _add_shaded(self, basemap, values, lons, lats, data, colors, legend_title, position_legend, size="2%",pad="5%", label_size=8, ticks_position="right", draw_colorbars = True):
@@ -248,13 +286,18 @@ class Plotter(object):
     
     def _add_watermark(self, fig, watermarks, result_file):
         """Internal helper for add watermark."""
+        buf = io.BytesIO()
+        fig.savefig(buf, dpi=300, bbox_inches='tight', format='png')
+        buf.seek(0)
+        plot_image = Image.open(buf).convert("RGBA")
+
         for watermark in watermarks: 
-            buf = io.BytesIO()
-            fig.savefig(buf, dpi=300, bbox_inches='tight', format='png')
-            buf.seek(0)
-            
-            plot_image = Image.open(buf).convert("RGBA")
-            logo = Image.open(watermark['path']).convert("RGBA")
+            logo = self._watermark_image_cache.get(watermark['path'])
+            if logo is None:
+                logo = Image.open(watermark['path']).convert("RGBA")
+                self._watermark_image_cache[watermark['path']] = logo
+            else:
+                logo = logo.copy()
 
             logo_width = int(plot_image.width * watermark['dim'])  
             logo = logo.resize((logo_width, int(logo_width * (logo.height / logo.width))), Image.ANTIALIAS)
@@ -274,597 +317,245 @@ class Plotter(object):
             logo_position = positions.get(watermark['position'], "top-right")
 
             plot_image.paste(logo, logo_position, logo)
-            plot_image.save(result_file)    
+        plot_image.save(result_file)
+        buf.close()
 
 
     
     def render(self, place, prod, output, dateTime, language="en-US", draw_colorbars=True):
         """Implement render for plotter."""
-        # Get place information by id
         place_info = self.places.get_place_by_id(place)
-        # place_info = self.places.get_place_by_id(place, params)
-
-        if (place_info is None) or (str(place_info['long_name']['it']) == "Italia" and prod == "rms3") or (str(place_info['long_name']['it']) == "Italia" and prod == "aiq3") or (str(place_info['long_name']['it']) == "Italia" and prod == "wcm3"):
+        if (
+            place_info is None
+            or (str(place_info['long_name']['it']) == "Italia" and prod in {"rms3", "aiq3", "wcm3"})
+        ):
             relative_path = self.config['NOIMAGE_PATH']
             image_name = "noimage.png"
             return relative_path, image_name
 
-        # Get bounding box of the place
         minLat = place_info["minLat"]
         maxLat = place_info["maxLat"]
         minLon = place_info["minLon"]
         maxLon = place_info["maxLon"]
 
-        
-        # Calculate the distance between the two opposite vertex of the bounding box
         diag = haversine.haversine((minLat, minLon), (maxLat, maxLon))
-
-        # The the domain id by the product and the place
-        # domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place)[0] 
         domainId = self.places.get_domain_and_indeces_by_product_and_place(prod, place, dateTime)[0]
-        
-        # Get the year (YYYY)
+
         year = dateTime[:4]
-
-        # Get the month (01-12)
-        month = dateTime[4:6] 
-
-        # Get the day in the month (01-31)
+        month = dateTime[4:6]
         day = dateTime[6:8]
-
-        # Get the hours (00-23)
         hour = dateTime[9:11]
-
-        # Get the minutes (00-59, usually 00)
         minute = dateTime[11:13]
 
-        # Assemble the path where data is located
         data_file = self.data_path + \
             prod + os.path.sep + domainId + os.path.sep +"archive" + \
             os.path.sep + year + os.path.sep  + month + os.path.sep + \
             day + os.path.sep  + prod + "_" + domainId + "_" + dateTime + ".nc"
 
-        # Check if the the file not exists
         if os.path.exists(data_file) is False:
-            # Raise an exception
             logger.error('data_file : ' + str(data_file))
             raise DataNotAvailableException
-        
-        # Assemble the relative path
-        relative_path = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + year + os.path.sep  + month + os.path.sep  + day 
 
-        # Assemble the image name
-        image_name = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png" 
-
-        # Assemble the path where the image will be written
+        relative_path = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep + year + os.path.sep + month + os.path.sep + day
+        image_name = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png"
         result_file = self.result_path + os.path.sep + relative_path + os.path.sep + image_name
+        os.makedirs(os.path.dirname(result_file), exist_ok=True)
 
-        # Check if the destination path exists
-        if os.path.exists(os.path.dirname(result_file)) is False:
-
-            # Create the destination path
-            os.makedirs(os.path.dirname(result_file))
-
-        # Define the netcdf file
         nc = None
+        fig = None
         try:
             nc = NetCDFFile(data_file)
-        except:
-            raise Exception
+            lat = nc.variables['latitude'][:]
+            lon = nc.variables['longitude'][:]
+            skip = 20
+            scale = 1
+            hpa_tick = 1
+            barb_length = 1
+
+            basemap = self._get_basemap(place, minLon, minLat, maxLon, maxLat)
+            fig = plt.figure()
+            self.ax = fig.add_subplot(111)
+
+            if "shapefiles" in self.maps:
+                self._add_shapefiles(basemap, self.maps["shapefiles"])
+
+            lat_step = max((maxLat - minLat) / 4, 0.1)
+            lon_step = max((maxLon - minLon) / 4, 0.1)
+            parallels = np.arange(minLat, maxLat, lat_step)
+            meridians = np.arange(minLon, maxLon, lon_step)
+            basemap.drawparallels(parallels, labels=[1, 0, 0, 0], fontsize=4, linewidth=0.1)
+            basemap.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=4, linewidth=0.1)
+            lons, lats = np.meshgrid(lon, lat)
+
+            product_maps = self.maps.get("products")
+            if product_maps is None:
+                raise Exception("The products key missing in the configuration file")
+            if prod not in product_maps:
+                raise Exception("The " + prod + " key is missing in the products definition")
+            product_map = product_maps[prod]
         
-        # Get the latitude array
-        lat = nc.variables['latitude'][:]
-
-        # Get the longitude array
-        lon = nc.variables['longitude'][:]
-
-        # Get the time array
-        time = nc.variables['time'][:]
-
-        # Set default subsampling skip
-        skip = 20
-
-        # Set default scale factor
-        scale = 1
-
-        # Set default hepto Pascal tick
-        hpa_tick = 1
-
-        # Set default wind barb lenght
-        barb_length = 1
-
-        # Assemble the basemap 
-        basemap_key = self.cache_path + os.path.sep + place + '.pkl'
-
-        # Initialize the basemap object
-        basemap = None
-
-        # Check if the map is cached on disk
-        if os.path.exists(basemap_key):
-            
-            # Open the cached file
-            with open(basemap_key, 'rb') as f:
-
-                # Load the cached file
-                basemap = pickle.load(f)
-
-        else:
-            # Create the basemap
-            basemap = Basemap(
-                projection='merc',
-                llcrnrlon=minLon, llcrnrlat=minLat, urcrnrlon=maxLon, urcrnrlat=maxLat)
-
-            # Open the chacked file
-            with open(basemap_key, 'wb') as f:
-
-                # Write the file to the cache
-                pickle.dump(basemap, f)
-
-        # Add a subplot 
-        self.ax  = plt.figure().add_subplot(111)
-
-        # Check if a shapefiles object is defined in the configuration file
-        if "shapefiles" in self.maps:
-
-            # Add all the shapefiles as basemap
-            self._add_shapefiles(basemap, self.maps["shapefiles"]) 
-        
-        # Set the number of map paralles
-        parallels = np.arange(minLat, maxLat, (maxLat - minLat) / 4)
-
-        # Set the number of map meridians
-        meridians = np.arange(minLon, maxLon, (maxLat - minLat) / 4)
-
-        # Draw the parallels
-        basemap.drawparallels(parallels, labels=[1, 0, 0, 0], fontsize=4, linewidth=0.1)
-
-        # Draw the meridians
-        basemap.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=4, linewidth=0.1)
-
-        # Create a mesh grid using nongitudes and latitudes
-        lons, lats = np.meshgrid(lon, lat)
-
-        # Initialize the title string
-        title = None
-
-        # Check if products is in the configuration files
-        if "products" not in self.maps:
-            raise Exception("The products key missing in the configuration file")
-        
-        if prod not in self.maps["products"]:
-            raise Exception("The " + prod + " key is missing in the products definition")
-        
-        # Check if a configuration is present for the selected product and domain
-        if "config" in self.maps["products"][prod] and domainId in self.maps["products"][prod]["config"]:
-
-            # Get the configuration items array for the product and domain
-            items = self.maps["products"][prod]["config"][domainId]
-            
-            # For each item in the items array...
-            for item in items:
-                # Check if the place bounding box diagonal is withn a close or open boundary
-                if (
-                    "ge" in item and "lt" in item and item["ge"] <= diag < item["lt"]
-                ) or (
-                    "ge" in item and "lt" not in item and item["ge"] <= diag
-                ):
-                    # Check if the values is defined
-                    if "values" in item:
-
-                        # Get the values definition
-                        values = item["values"]
-
-                        # Check if the skip is defined
-                        if "skip" in values:
-
-                            # Set the skip
-                            skip = values["skip"]
-
-                        # Check if the scale is defined
-                        if "scale" in values:
-
-                            # Set the scale
-                            scale = values["scale"]
-
-                        # Check if the hpa tick is defined
-                        if "hpa_tick" in values:
-
-                            # Set the hpa tick
-                            hpa_tick = values["hpa_tick"]
-
-                        # Check if the barb lenght is defined
-                        if "barb_length" in values:
-
-                            # Set the barb lenght
-                            barb_length = values["barb_length"]
+            product_config = product_map.get("config", {})
+            if domainId in product_config:
+                items = product_config[domainId]
+                for item in items:
+                    if (
+                        "ge" in item and "lt" in item and item["ge"] <= diag < item["lt"]
+                    ) or (
+                        "ge" in item and "lt" not in item and item["ge"] <= diag
+                    ):
+                        if "values" in item:
+                            values = item["values"]
+                            if "skip" in values:
+                                skip = values["skip"]
+                            if "scale" in values:
+                                scale = values["scale"]
+                            if "hpa_tick" in values:
+                                hpa_tick = values["hpa_tick"]
+                            if "barb_length" in values:
+                                barb_length = values["barb_length"]
                         break
-            
-            # Modify the if condition in order to find the correct configuration into maps.json
-            #if output == 'wn1' : 
-            #if place == 'med000':
-            #    logger.info("values : " + str(values))
-            #    logger.info("scale : " + str(scale)) 
-            #    logger.info("hpa_tick : " + str(hpa_tick) )
-            #    logger.info("barb_length : " + str(barb_length))
 
-        # Check if the outputs key is defined        
-        if "outputs" not in self.maps["products"][prod]:
-            raise Exception("The outputs key is missing in products."+prod)
+            if "outputs" not in product_map:
+                raise Exception("The outputs key is missing in products."+prod)
+            outputs = product_map["outputs"]
+            if output not in outputs:
+                raise Exception("The " + output + " key is missing in products."+prod+".outputs")
+            outputs_output = outputs[output]
+            if "plot" not in outputs_output:
+                raise Exception("The plot key is missing in products."+prod+".outputs." + output)
+            plot = outputs_output["plot"]
+            title = ""
+            if "title" in outputs_output:
+                if language not in outputs_output["title"]:
+                    language = "en-US"
+            title = outputs_output["title"][language]
 
-        # Get the outputs dictionary
-        outputs = self.maps["products"][prod]["outputs"]
-
-        # Check if the selected output is in the output dictionary
-        if output not in outputs:
-            raise Exception("The " + output + " key is missing in products."+prod+".outputs")
-
-        # Get the output object        
-        outputs_output = outputs[output]
-            
-        # Check if the plot key is in the output 
-        if "plot" not in outputs_output:
-            raise Exception("The plot key is missing in products."+prod+".outputs." + output)
-        
-    
-        # Get the plot object
-        plot = outputs_output["plot"]
-
-        # Set the default title
-        title = ""
-
-        # Check if the title key is in the output object
-        if "title" in outputs_output:
-
-            # Check if title in the selected language is not present
-            if language not in outputs_output["title"]:
-
-                # Set the language as english by default
-                language = "en-US"
-                # language = "it-IT"
-            
-            # Get the title
-   
-        
-        title = outputs_output["title"][language]
-
-
-        place_name = ""
-        if language in place_info["name"]:
-            place_name = place_info["name"][language]
-        elif language[:2] in place_info["name"]:
-            place_name = place_info["name"][language[:2]]
-        else:
-            place_name = place_info["name"][next(iter(place_info["name"]))]
-
-        plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name)
-        plt.title(plot_title)
-      
-            
-        # Check if the layers key is present in the plot object
-        if "layers" not in plot:
-            raise Exception("The layers key is not present in products."+prod+".outputs." + output+".plot")
-        
-        # Set the layers object
-        layers = plot["layers"]
-
-        #Flag to watermarks
-        watermarks = False
-        watermark_layer = None
-
-        # For each layer in layers...
-        for layer in layers:
-
-            # Define var1 name
-            var1_name = None
-
-            # Define var2 name 
-            var2_name = None
-
-            # Define the time index
-            time = None
-
-            # Define the level index
-            level = None
-
-            # Define default layer type 
-            layer_type = "contourf"
-
-            # Define default layer title
-            text = ""
-
-            # Define default pad
-            pad = "10%"
-
-            # Define default color bar position
-            position = "left"
-
-            # Define default ticks position
-            ticks_position = "left"
-
-            # Define default label size
-            label_size = 8
-
-            # Define colormap name
-            colormap_name = None
-
-            # Define colormap object
-            colormap = None
-
-            # Define default minimum contour level
-            clev_min = 0
-
-            # Define default maximum contour level 
-            clev_max = 100
-
-            # Check if the var1 key is defined in layer
-            if "var1" in layer:
-
-                # Set the var1 name
-                var1_name = layer["var1"]
-
-            # Check if the var2 key is defined in layer
-            if "var2" in layer:
-
-                # Set the var2 name
-                var2_name = layer["var2"]
-
-            # Check if the time key is defined 
-            if "time" in layer:
-                time = layer["time"]
-
-            # Check if the level key is defined 
-            if "level" in layer:
-                level = layer["level"]
-
-            # Check if the type key is defined 
-            if "type" in layer:
-                layer_type = layer["type"]
-
-            # Check if the text key is defined 
-            if "text" in layer:
-                text = layer["text"][language]
-                # text = layer["text"]["it-IT"]
-
-            # Check if the pad key is defined 
-            if "pad" in layer:
-                pad = layer["pad"]
-
-            # Check if the position key is defined 
-            if "position" in layer:
-                position = layer["position"]
-                # position = "bottom"
-
-            # Check if the ticks_position key is defined 
-            if "ticks_position" in layer:
-                ticks_position = layer["ticks_position"]
-
-            # Check if the label_size key is defined
-            if "label_size" in layer:
-                label_size = layer["label_size"]
-
-            # Check if the colormap key is defined
-            if "colormap" in layer:
-                colormap_name = layer["colormap"]
-
-            # Check if the clev_min key is defined
-            if "clev_min" in layer:
-                clev_min = layer["clev_min"]
-
-            # Check if the clev_max key is defined
-            if "clev_max" in layer:
-                clev_max = layer["clev_max"]
-
-            # Check if the colors key is defined
-            if "colors" in layer:
-                colors = layer["colors"]
-
-            # Check if the colormap name is present and not empity
-            if colormap_name is not None and colormap_name != "":
-
-                # Check if the colormap is not present
-                if colormap_name not in self.maps["colormaps"]:
-                    raise Exception("The " + colormap_name + " is not present in the configuration json file")
-                
-                # Set the colormap object    
-                colormap = self.maps["colormaps"][colormap_name]
-
-            # Set the var1 reference to None
-            var1 = None
-
-            # Set the var2 reference to None
-            var2 = None
-
-            # Check if both time and level are defined
-            if time is not None and level is not None:
-
-                # Check if var1 name is defined and not empty
-                if var1_name is not None and var1_name != "":
-
-                    # Read the var1 from the netcdf file
-                    var1 = nc.variables[var1_name][:][time][level]
-
-                # Check if var2 name is defined and not empty
-                if var2_name is not None and var1_name != "":
-
-                    # Read the var2 from the netcdf file
-                    var2 = nc.variables[var2_name][:][time][level]
-
-            # Check if only the time is defined
-            elif time is not None and level is None:
-
-                # Check if var 1 is defined and not empty
-                if var1_name is not None and var1_name != "":
-
-                    # Read the var1 from the netcdf file
-                    var1 = nc.variables[var1_name][:][time]
-
-                # Check if var 2 is defined and not empty
-                if var2_name is not None and var1_name != "":
-
-                    # Read the var2 from the netcdf file
-                    var2 = nc.variables[var2_name][:][time]
-
-            # Check if only level is defined
-            elif time is None and level is not None:
-
-                # Check if var 1 is defined and not empty
-                if var1_name is not None and var1_name != "":
-
-                    # Read the var1 from the netcdf file
-                    var1 = nc.variables[var1_name][:][level]
-
-                # Check if var 2 is defined and not empty
-                if var2_name is not None and var1_name != "":
-
-                    # Read the var2 from the netcdf file
-                    var2 = nc.variables[var2_name][:][level]
-
-            # Both time and level are not defined 
+            place_name = ""
+            if language in place_info["name"]:
+                place_name = place_info["name"][language]
+            elif language[:2] in place_info["name"]:
+                place_name = place_info["name"][language[:2]]
             else:
-                # Check if var 1 is defined and not empty
-                if var1_name is not None and var1_name != "":
+                place_name = place_info["name"][next(iter(place_info["name"]))]
 
-                    # Read the var1 from the netcdf file
-                    var1 = nc.variables[var1_name][:]
+            plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name)
+            plt.title(plot_title)
 
-                # Check if var 2 is defined and not empty
-                if var2_name is not None and var1_name != "":
+            if "layers" not in plot:
+                raise Exception("The layers key is not present in products."+prod+".outputs." + output+".plot")
+            layers = plot["layers"]
+            watermarks = False
+            watermark_layer = None
 
-                    # Read the var2 from the netcdf file
-                    var2 = nc.variables[var2_name][:]
+            for layer in layers:
+                var1_name = layer.get("var1")
+                var2_name = layer.get("var2")
+                time = layer.get("time")
+                level = layer.get("level")
+                layer_type = layer.get("type", "contourf")
+                text = layer.get("text", {}).get(language, "")
+                pad = layer.get("pad", "10%")
+                position = layer.get("position", "left")
+                ticks_position = layer.get("ticks_position", "left")
+                label_size = layer.get("label_size", 8)
+                colormap_name = layer.get("colormap")
+                colormap = None
+                clev_min = layer.get("clev_min", 0)
+                clev_max = layer.get("clev_max", 100)
+                colors = layer.get("colors")
 
-            # Check the a parameter is defined 
-            if "a" in layer:
+                if colormap_name:
+                    if colormap_name not in self.maps["colormaps"]:
+                        raise Exception("The " + colormap_name + " is not present in the configuration json file")
+                    colormap = self.maps["colormaps"][colormap_name]
 
-                # Multiply var 1 by a is it is defined 
-                if var1 is not None: var1 = var1 * layer["a"]
+                var1 = self._read_variable(nc, var1_name, time, level)
+                var2 = self._read_variable(nc, var2_name, time, level)
 
-                # Multiply var 2 by a is it is defined
-                if var2 is not None: var2 = var2 * layer["a"]
+                if "a" in layer:
+                    if var1 is not None:
+                        var1 = var1 * layer["a"]
+                    if var2 is not None:
+                        var2 = var2 * layer["a"]
 
-            # Check the b parameter is defined
-            if "b" in layer:
+                if "b" in layer:
+                    if var1 is not None:
+                        var1 = var1 + layer["b"]
+                    if var2 is not None:
+                        var2 = var2 + layer["b"]
 
-                # Add var 1 by b is it is defined 
-                if var1 is not None: var1 = var1 + layer["b"]
+                if colormap is not None and "clevs" in colormap and "ccols" in colormap:
+                    clevs = colormap["clevs"]
+                    colors = [tuple(x) for x in colormap["ccols"]]
 
-                # Add var 2 by b is it is defined
-                if var2 is not None: var2 = var2 + layer["b"]
+                if "shaded" in layer_type:
+                    var = np.hypot(var1, var2) if var2 is not None else var1
+                    self._add_shaded(
+                        basemap, clevs, lons, lats, var, colors, text, position,
+                        pad=pad, ticks_position=ticks_position, label_size=label_size,
+                        draw_colorbars=draw_colorbars
+                    )
+                elif "contour" in layer_type:
+                    var = np.hypot(var1, var2) if var2 is not None else var1
+                    if output == 'wn2':
+                        hpa_tick = 140
+                    clevs = np.arange(clev_min, clev_max, hpa_tick)
+                    cs = basemap.contour(lons, lats, var, clevs, colors=colors, linewidths=0.5, latlon=True)
+                    clabels = plt.clabel(cs, fontsize=6, inline=1, fmt='%1.0f')
+                    for txt in clabels:
+                        txt.set_bbox(dict(facecolor='white', edgecolor='none', pad=0))
+                elif "angle" in layer_type:
+                    skip2 = (slice(None, None, skip), slice(None, None, skip))
+                    var = 90 - var1[skip2]
+                    var[var < 0] += 360
+                    var[var > 360] -= 360
+                    var[var == 360] = 0
+                    var = np.deg2rad(var)
+                    basemap.quiver(
+                        lons[skip2], lats[skip2], np.cos(var), np.sin(var),
+                        latlon=True, scale=scale, scale_units="inches",
+                        pivot='middle', linewidths=.01, edgecolors='gray'
+                    )
+                elif "versor" in layer_type:
+                    skip2 = (slice(None, None, skip), slice(None, None, skip))
+                    var = np.hypot(var1[skip2], var2[skip2])
+                    basemap.quiver(
+                        lons[skip2], lats[skip2],
+                        var1[skip2] / var, var2[skip2] / var,
+                        latlon=True, scale=scale, scale_units="inches",
+                        pivot='middle', linewidths=.01, edgecolors='gray'
+                    )
+                elif "vector" in layer_type:
+                    skip2 = (slice(None, None, skip), slice(None, None, skip))
+                    basemap.quiver(
+                        lons[skip2], lats[skip2], var1[skip2], var2[skip2],
+                        latlon=True, scale=scale, scale_units="inches", pivot='middle'
+                    )
+                elif "barbs" in layer_type:
+                    skip2 = (slice(None, None, skip), slice(None, None, skip))
+                    basemap.barbs(
+                        lons[skip2], lats[skip2], var1[skip2], var2[skip2],
+                        latlon=True, pivot='middle', barbcolor='#666666',
+                        length=barb_length, linewidths=0.3
+                    )
+                elif "shapefiles" in layer_type:
+                    if "shapefiles" in layer:
+                        self._add_shapefiles(basemap, layer["shapefiles"])
+                elif "watermark" in layer_type:
+                    watermarks = True
+                    watermark_layer = layer["watermarks"]
 
-            # Check check colormap is defined
-            if colormap is not None and "clevs" in colormap and "ccols" in colormap:
+            if watermarks is True:
+                self._add_watermark(fig, watermark_layer, result_file)
+            else:
+                fig.savefig(result_file, bbox_inches='tight', dpi=300)
 
-                # Get the color levels
-                clevs = colormap["clevs"]
-
-                # Get the colors definition 
-                colors = [tuple(x) for x in colormap["ccols"]]
-
-
-            
-            # Check if the layer type is shaded 
-            if "shaded" in layer_type:
-                var = None
-                
-                if var2 is not None:
-                    var = np.hypot(var1, var2)
-                else:
-                    var = var1
-
-                self._add_shaded(
-                    basemap,
-                    clevs,
-                    lons, lats,
-                    var, colors,
-                    text, position, pad=pad, ticks_position=ticks_position, label_size=label_size, draw_colorbars=draw_colorbars)
-
-            elif "contour" in layer_type:
-
-                var = None
-                if var2 is not None:
-                    var = np.hypot(var1, var2)
-                else:
-                    var = var1
-                
-                # aggiunto if 
-                if output == 'wn2':
-                    hpa_tick=140
-                
-                clevs = np.arange(clev_min, clev_max, hpa_tick)
-                cs = basemap.contour(lons, lats, var, clevs, colors=colors, linewidths=0.5, latlon=True)
-                clabels = plt.clabel(cs, fontsize=6, inline=1, fmt='%1.0f')
-                [txt.set_bbox(dict(facecolor='white', edgecolor='none', pad=0)) for txt in clabels]
-
-            elif "angle" in layer_type:
-                skip2 = (slice(None, None, skip), slice(None, None, skip))
-                var = 90-var1[skip2]
-                var[var<0]+=360
-                var[var>360]-=360
-                var[var==360]=0
-                var = var * 0.0174533 
-                var1 = np.cos(var)
-                var2 = np.sin(var)
-                basemap.quiver(
-                    lons[skip2], lats[skip2],
-                    var1, var2,
-                    latlon=True, scale=scale, scale_units="inches", pivot='middle', linewidths=.01,  edgecolors='gray'
-                )
-
-            elif "versor" in layer_type:
-                skip2 = (slice(None, None, skip), slice(None, None, skip))
-                var = np.hypot(var1[skip2], var2[skip2])
-                basemap.quiver(
-                    lons[skip2], lats[skip2],
-                    var1[skip2] / var, var2[skip2] / var,
-                    latlon=True, scale=scale, scale_units="inches", pivot='middle', linewidths=.01,  edgecolors='gray'
-                )
-            elif "vector" in layer_type:
-                skip2 = (slice(None, None, skip), slice(None, None, skip))
-                basemap.quiver(
-                    lons[skip2], lats[skip2],
-                    var1[skip2], var2[skip2],
-                    latlon=True, scale=scale, scale_units="inches", pivot='middle'
-                )
-            elif "barbs" in layer_type:
-                skip2 = (slice(None, None, skip), slice(None, None, skip))
-                basemap.barbs(
-                    lons[skip2], lats[skip2],
-                    var1[skip2], var2[skip2],
-                    latlon=True, pivot='middle',  barbcolor='#666666', length=barb_length, linewidths=0.3
-                )
-            elif "shapefiles" in layer_type:
-                if "shapefiles" in layer:
-                    self._add_shapefiles(basemap,layer["shapefiles"])
-            elif "watermark" in layer_type:     
-                watermarks = True     
-                watermark_layer = layer["watermarks"]      
-                # self._add_watermark(plt.gcf(), layer["watermarks"], result_file)
-            
-        
-        #place_name = ""
-        #if language in place_info["name"]:
-        #    place_name = place_info["name"][language]
-        #elif language[:2] in place_info["name"]:
-        #    place_name = place_info["name"][language[:2]]
-        #else:
-        #    place_name = place_info["name"][next(iter(place_info["name"]))]
-        
-        # plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name).replace("__title__", title).replace("__product__",prod).replace("__output__",output).replace("__place__",place).replace("__domain__",domainId)
-        #plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name)
-        #plt.title( plot_title )
-        #plt.show()
-    
-            
-        # if not os.path.exists(result_file): 
-        #    plt.savefig(result_file, bbox_inches='tight', dpi=300)
-
-        if watermarks is True:
-            self._add_watermark(plt.gcf(), watermark_layer, result_file)
-        else:
-            plt.savefig(result_file, bbox_inches='tight', dpi=300)
-
-
-        return relative_path, image_name
+            return relative_path, image_name
+        finally:
+            if nc is not None:
+                nc.close()
+            if fig is not None:
+                plt.close(fig)
     
     
     '''
