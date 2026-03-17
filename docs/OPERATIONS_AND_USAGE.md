@@ -10,6 +10,7 @@ Related documents:
 
 - Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
 - Production setup checklist: [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md)
+- Cache guide: [CACHE.md](CACHE.md)
 - Python usage tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
 - Android usage tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 - iOS usage tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
@@ -154,7 +155,7 @@ Use a repeatable update workflow:
 3. Rebuild the container image if dependencies or code changed.
 4. Run syntax checks and smoke tests.
 5. Deploy to staging first when practical.
-6. Warm or clear caches if response-shape changes could invalidate cached content.
+6. Warm or clear caches if response-shape changes could invalidate cached content. Use [CACHE.md](CACHE.md) to choose between TTL-only cleanup, selective invalidation, and full cache reset.
 7. Promote to production only after validating product, place, and `v2` endpoints.
 
 ## Best Practices
@@ -254,7 +255,8 @@ When the code changes:
 1. Update `README.md` if architecture or usage changed.
 2. Update this file when deployment or operational behavior changed.
 3. Update `docs/PRODUCTION_SETUP.md` when production setup assumptions change.
-4. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.
-5. Update `docs/PYTHON_API_TUTORIAL.md` when beginner-facing examples or recommended usage patterns change.
-6. Update the Android and iOS tutorial documents when mobile integration guidance changes.
-7. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.
+4. Update `docs/CACHE.md` when cache architecture, TTL strategy, invalidation behavior, or cleanup guidance changes.
+5. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.
+6. Update `docs/PYTHON_API_TUTORIAL.md` when beginner-facing examples or recommended usage patterns change.
+7. Update the Android and iOS tutorial documents when mobile integration guidance changes.
+8. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.

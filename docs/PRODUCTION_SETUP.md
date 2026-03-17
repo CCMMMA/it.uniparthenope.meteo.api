@@ -3,6 +3,7 @@
 Related documents:
 
 - Operational guide: [OPERATIONS_AND_USAGE.md](OPERATIONS_AND_USAGE.md)
+- Cache guide: [CACHE.md](CACHE.md)
 - Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
 - Python tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
 - Android tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
@@ -154,6 +155,8 @@ Production recommendations:
 - place disk cache on fast local or attached storage
 - clear caches during major response-shape or serialization changes
 - monitor cache volume growth over time
+
+For a detailed cache architecture, tuning, and cleanup strategy, see [CACHE.md](CACHE.md).
 
 ## Deployment Procedure
 
