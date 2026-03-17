@@ -1,15 +1,13 @@
 """Services for reading GRIB-backed meteorological products and exports."""
 
+import csv
 import simplejson
 import time
-from datetime import timedelta, date, datetime
+from datetime import datetime
 import os
 import os.path
-# import ConfigParser
-import os
 import netCDF4
-from netCDF4 import Dataset
-from wrf import getvar, ALL_TIMES, get_basemap, latlon_coords, geo_bounds, to_np, get_cartopy, destagger, ll_to_xy
+from wrf import getvar, ALL_TIMES
 import numpy as np
 from scipy.interpolate import griddata
 from core.Logger import logger
@@ -68,10 +66,32 @@ class GribServices:
         os.makedirs(full_dir, exist_ok=True)
         return relative_path, os.path.join(full_dir, filename)
 
+    @staticmethod
+    def _read_text(path):
+        """Return the textual contents of a cached file."""
+        with open(path, 'r', encoding='utf-8') as content_file:
+            return content_file.read()
+
+    @staticmethod
+    def _cache_is_expired(path, ttl):
+        """Return whether a cache file is missing or older than the provided TTL."""
+        return (not os.path.isfile(path)) or ((time.time() - os.path.getmtime(path)) > ttl)
+
+    @staticmethod
+    def _replace_invalid(value):
+        """Return a CSV-safe value for a scalar, replacing NaN with a placeholder."""
+        if isinstance(value, np.generic):
+            value = value.item()
+        if isinstance(value, float) and np.isnan(value):
+            return "?"
+        return value
+
+    def _dataset_path(self, base_path, prod, domain, area, date_time_path, date_time):
+        """Return the fully qualified path of a NetCDF source file."""
+        return os.path.join(base_path, prod, domain, area, date_time_path, f"{prod}_{domain}_{date_time}.nc")
+
     def asText(self, params=None):
         """Implement as text for grib services."""
-        retval = ""
-
         prod = self.default_prod
         domain = self.default_domain
 
@@ -92,72 +112,46 @@ class GribServices:
         csvName = domain + "_" + prod + "_" + dateTime + ".csv"
         _, csvPath = self._cache_path("csv", domain, prod, dateTimePath, csvName)
 
-        # Check if the file already exists and it is valid
-        if os.path.isfile(csvPath) is False or (os.path.isfile(csvPath) is True and (time.time() - os.path.getmtime(csvPath)) > self.config['CACHE_TIMEOUT']):
-            # Set the local path of the data file
-            # url = self.cfg['BASE_PATH'] + "/" + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-            url = self.config['BASE_PATH'] + prod + "/" + domain + "/archive/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-            # print(url)
-            ncfile = None
+        if not self._cache_is_expired(csvPath, self.config['CACHE_TIMEOUT']):
             try:
-                # Open the data file
-                ncfile = netCDF4.Dataset(url)
+                return self._read_text(csvPath)
             except Exception as e:
                 logger.error(str(e))
-                pass
 
-            if ncfile is not None:
+        url = self._dataset_path(self.config['BASE_PATH'], prod, domain, "archive", dateTimePath, dateTime)
+        try:
+            with netCDF4.Dataset(url) as ncfile:
                 if "wrf5" in prod:
-                    T2C = ncfile.variables["T2C"][0][:]
-                    SLP = ncfile.variables["SLP"][0][:]
-                    RH2 = ncfile.variables["RH2"][0][:]
-                    DELTA_RAIN = ncfile.variables["DELTA_RAIN"][0][:]
-                    UH = ncfile.variables["UH"][0][:]
-                    MCAPE = ncfile.variables["MCAPE"][0][:]
-                    TC500 = ncfile.variables["TC500"][0][:]
-                    TC850 = ncfile.variables["TC850"][0][:]
-                    GPH500 = ncfile.variables["GPH500"][0][:]
-                    GPH850 = ncfile.variables["GPH850"][0][:]
-                    WSPD10 = ncfile.variables["WSPD10"][0][:]
-                    WDIR10 = ncfile.variables["WDIR10"][0][:]
-                    DELTA_WSPD10 = ncfile.variables["DELTA_WSPD10"][0][:]
-                    DELTA_WDIR10 = ncfile.variables["DELTA_WDIR10"][0][:]
-                    CLDFRA_TOTAL = ncfile.variables["CLDFRA_TOTAL"][0][:]
-                    U10M = ncfile.variables["U10M"][0][:]
-                    V10M = ncfile.variables["V10M"][0][:]
+                    field_names = [
+                        "T2C", "SLP", "WSPD10", "WDIR10", "RH2", "UH", "MCAPE", "TC500",
+                        "TC850", "GPH500", "GPH850", "CLDFRA_TOTAL", "U10M", "V10M",
+                        "DELTA_WSPD10", "DELTA_WDIR10", "DELTA_RAIN"
+                    ]
+                    fields = {name: np.asarray(ncfile.variables[name][0]) for name in field_names}
+                    nLats, nLons = fields["T2C"].shape
 
-                    nLats = len(T2C)
-                    nLons = len(T2C[0])
-
-                    with open(csvPath, 'w') as f:
-                        f.write("j;i;T2C;SLP;WSPD10;WDIR10;RH2;UH;MCAPE;TC500;TC850;GPH500;GPH850;CLDFRA_TOTAL;U10M;V10M;DELTA_WSPD10;DELTA_WDIR10;DELTA_RAIN\n")
+                    with open(csvPath, 'w', newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f, delimiter=';')
+                        writer.writerow(["j", "i"] + field_names)
                         for j in range(nLats):
                             for i in range(nLons):
-                                line = str(j) + ";" + str(i) + ";"
-                                line = line + str(T2C[j][i]) + ";" + str(SLP[j][i]) + ";" + str(WSPD10[j][i]) + ";" + str(
-                                    WDIR10[j][i]) + ";" + str(RH2[j][i]) + ";" + str(UH[j][i]) + ";" + str(
-                                    MCAPE[j][i]) + ";" + str(TC500[j][i]) + ";" + str(TC850[j][i]) + ";" + str(
-                                    GPH500[j][i]) + ";" + str(GPH850[j][i]) + ";" + str(CLDFRA_TOTAL[j][i]) + ";" + str(
-                                    U10M[j][i]) + ";" + str(V10M[j][i]) + ";" + str(DELTA_WSPD10[j][i]) + ";" + str(
-                                    DELTA_WDIR10[j][i]) + ";" + str(DELTA_RAIN[j][i])
-                                f.write(line.replace("--", "?").replace("nan", "?") + "\n")
-
-        try:
-            with open(csvPath, 'r') as content_file:
-                retval = content_file.read()
+                                row = [j, i]
+                                row.extend(self._replace_invalid(fields[name][j, i]) for name in field_names)
+                                writer.writerow(row)
         except Exception as e:
             logger.error(str(e))
-            pass
 
-        return retval
+        try:
+            return self._read_text(csvPath)
+        except Exception as e:
+            logger.error(str(e))
+            return ""
 
     def asJson(self, params=None):
         """Implement as json for grib services."""
         
         # logger.error(f"AsJson : {params}")
     
-        retval = {}
-
         prod = self.default_prod
         domain = self.default_domain
 
@@ -178,30 +172,21 @@ class GribServices:
         jsonName = domain + "_" + prod + "_" + dateTime + ".json"
         _, jsonPath = self._cache_path("jsn", domain, prod, dateTimePath, jsonName)
 
-        # Check if the file already exists and it is valid
-        if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['TTL_DISKCACHE']):
-            
-            # Set the local path of the data file 
-            url =  self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-            
-            #url = self.config['BASE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-
-            logger.info("url_data : " + str(url))
-            
-            ncfile = None
+        if not self._cache_is_expired(jsonPath, self.config['TTL_DISKCACHE']):
             try:
-                # Open the data file
-                ncfile = netCDF4.Dataset(url)
+                return simplejson.loads(self._read_text(jsonPath))
             except Exception as e:
                 logger.error(str(e))
-                pass
 
-            if ncfile is not None:
+        url = self._dataset_path(self.config['BASE_STORAGE_PATH'], prod, domain, "history", dateTimePath, dateTime)
+        logger.info("url_data : " + str(url))
+
+        try:
+            with netCDF4.Dataset(url) as ncfile:
                 result = {}
                 if "wrf5" in prod:
-
-                    Xlat = getvar(ncfile, "XLAT", timeidx=ALL_TIMES)
-                    Xlon = getvar(ncfile, "XLONG", timeidx=ALL_TIMES)
+                    Xlat = np.asarray(getvar(ncfile, "XLAT", timeidx=ALL_TIMES))
+                    Xlon = np.asarray(getvar(ncfile, "XLONG", timeidx=ALL_TIMES))
 
                     row_lat = len(Xlat) - 1
                     col_lat = len(Xlat[0]) - 1
@@ -262,14 +247,12 @@ class GribServices:
                     minLon = min_long.item()
                     maxLon = max_long.item()
 
-                    minimo = ll_to_xy(ncfile, minLat, minLon, timeidx=0, squeeze=True, meta=True, stagger=None, as_int=True)
-                    massimo = ll_to_xy(ncfile, maxLat, maxLon, timeidx=0, squeeze=True, meta=True, stagger=None, as_int=True)
-
                     py = np.array(Xlat).flatten()
                     px = np.array(Xlon).flatten()
+                    points = np.column_stack((px, py))
 
-                    uvmet10 = getvar(ncfile, "uvmet10", meta=True)
-                    z = np.array(uvmet10[0]).flatten()
+                    uvmet10 = np.asarray(getvar(ncfile, "uvmet10", meta=True))
+                    z = uvmet10[0].ravel()
 
                     xi = np.linspace(minLon, maxLon, len(uvmet10[0][0]))
 
@@ -280,15 +263,15 @@ class GribServices:
 
                     X, Y = np.meshgrid(xi, yi)
 
-                    U10i = griddata((px, py), z, (X, Y), method='cubic')
+                    U10i = griddata(points, z, (X, Y), method='cubic')
 
                     xi = np.linspace(minLon, maxLon, len(uvmet10[1][0]))
                     yi = np.linspace(minLat, maxLat, len(uvmet10[1]))
                     X, Y = np.meshgrid(xi, yi)
 
-                    z = np.array(uvmet10[1]).flatten()
+                    z = uvmet10[1].ravel()
 
-                    V10i = griddata((px, py), z, (X, Y), method='cubic')
+                    V10i = griddata(points, z, (X, Y), method='cubic')
 
                     nrows = len(U10i)
                     ncols = len(U10i[0])
@@ -309,7 +292,7 @@ class GribServices:
                             "refTime": data_ora,
                             "lo1": minLon
                         },
-                        "data": []
+                        "data": np.round(U10i[::-1].ravel(), 1).tolist()
                     }, {
                         "header": {
                             "parameterUnit": "m.s-1",
@@ -326,31 +309,19 @@ class GribServices:
                             "refTime": data_ora,
                             "lo1": minLon
                         },
-                        "data": []
+                        "data": np.round(V10i[::-1].ravel(), 1).tolist()
                     }
                     ]
-
-                N = len(U10i) - 1
-                for i in range(N, -1, -1):
-                    for j in range(len(U10i[i])):
-                        result[0]["data"].append(round(U10i[i][j], 1))
-
-                M = len(V10i) - 1
-                for i in range(M, -1, -1):
-                    for j in range(len(V10i[i])):
-                        result[1]["data"].append(round(V10i[i][j], 1))
-
                 with open(jsonPath, 'w') as f:
                     simplejson.dump(result, f)
-                    f.close()
+                return result
+        except Exception as e:
+            logger.error(str(e))
 
         try:
-            with open(jsonPath, 'r') as content_file:
-                retval = content_file.read()
-        except:
-            pass
-
-        return simplejson.loads(retval)
+            return simplejson.loads(self._read_text(jsonPath))
+        except Exception:
+            return {}
 
 
 # if __name__ == "__main__":
