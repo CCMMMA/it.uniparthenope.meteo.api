@@ -389,39 +389,26 @@ class ProductSkewTByProdAndPlace(Resource):
             request.url = f"{request.url}?date={ncep_date}"
         
         res = get_resource(request, app.cache, app.use_pymemcache)
-        
 
         if res is None:
             
-            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
-            
+            params = get_params({
+                'prod': "wrf5",
+                'lat': 40.856,
+                'lon': 14.352,
+                'date': None,
+            })
 
-            if res is None:
+            (mapData, imageName) = app.meteo_services.ModelPlotSkewT(app.use_disk_cached, params)
 
-                params = get_params({
-                    'prod': "wrf5",
-                    'lat': 40.856,
-                    'lon': 14.352,
-                    'date': None,
-                })
+            res = {
+                'plot': base64.b64encode(mapData).decode('utf-8'),
+                # 'plot': mapData,
+                'imageName': imageName
+            }
 
-                (mapData, imageName) = app.meteo_services.ModelPlotSkewT(app.use_disk_cached, params)
-
-                res = {
-                    'plot': base64.b64encode(mapData).decode('utf-8'),
-                    # 'plot': mapData,
-                    'imageName': imageName
-                }
-
-                app.diskcache.set(request, base64.b64encode(mapData).decode('utf-8'), 'plot')
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-            
-            else:
-                # Data in Diskcache
-                res = {
-                    'plot': res,
-                    # 'imageName': imageName
-                }
+            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+  
         else:
             # Data in Memcache
             res = eval(res)
