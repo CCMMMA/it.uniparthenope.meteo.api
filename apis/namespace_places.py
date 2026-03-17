@@ -10,14 +10,17 @@ from core.MemcachedMethodHandlers import get_resource, set_resource
 import app
 from core.Logger import logger
 
-api = Namespace('places', description='Palces API')
+api = Namespace('places', description='Place discovery, lookup, and geospatial search endpoints.')
 
 
 
 @api.route('')
 class GetAllPlaces(Resource):
-    @api.doc()
+    @api.doc(summary="List all places", responses={200: "Places collection returned successfully"})
     def get(self):
+        """
+        Return the complete place collection available to the API.
+        """
 
         res = get_resource(request, app.cache, app.use_pymemcache)
 
@@ -45,7 +48,7 @@ class GetAllPlaces(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/search/byname/<string:name>')
 class PlacesSearchByName(Resource):
-    @api.doc()
+    @api.doc(summary="Search places by name", params={"name": "Free-text place name to search"}, responses={200: "Matching places returned successfully"})
     def get(self, name):
         """Returns place information you are looking for.
         :example: /places/search/byname/Napoli
@@ -106,12 +109,10 @@ class PlacesSearchByName(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/search/byname/autocomplete')
 class PlacesSearchByNameAutocomplete(Resource):
-    @api.doc()
+    @api.doc(summary="Autocomplete places by term", params={"term": "Autocomplete term supplied as a query parameter"}, responses={200: "Autocomplete results returned successfully"})
     def get(self):
-        """Returns ......................
-        :example: /places/search/byname/autocomplete
-        :returns: json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Return a compact list of autocomplete suggestions filtered for frontend search use.
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
 
@@ -177,7 +178,7 @@ class PlacesSearchByNameAutocomplete(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:identifier>')
 class PlacesByIdentifier(Resource):
-    @api.doc()
+    @api.doc(summary="Get a place by identifier", params={"identifier": "Canonical place identifier"}, responses={200: "Place returned successfully", 404: "Place not found"})
     def get(self, identifier):
         """Returns the place information you are looking for.
         :example: /places/byid/ca001
@@ -240,7 +241,7 @@ class PlacesByIdentifier(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/search/bycoords/<float:latitude>/<float:longitude>')
 class PlacesSearchByCoords(Resource):
-    @api.doc()
+    @api.doc(summary="Search places near coordinates", params={"latitude": "Latitude in decimal degrees", "longitude": "Longitude in decimal degrees"}, responses={200: "Nearby places returned successfully"})
     def get(self, latitude, longitude):
         """
         :example: /places/search/bycoords/40.78783/14.352
@@ -296,7 +297,16 @@ class PlacesSearchByCoords(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/search/byboundingbox/<float:minLatitude>/<float:minLongitude>/<float:maxLatitude>/<float:maxLongitude>')
 class PlacesSearchByBoundingBox(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Search places inside a bounding box",
+        params={
+            "minLatitude": "Southern boundary latitude",
+            "minLongitude": "Western boundary longitude",
+            "maxLatitude": "Northern boundary latitude",
+            "maxLongitude": "Eastern boundary longitude"
+        },
+        responses={200: "Places inside the bounding box returned successfully"}
+    )
     def get(self, minLatitude, minLongitude, maxLatitude, maxLongitude):
         """
         :example: /places/search/byboundingbox/40.78/14.35/41.22/16.87

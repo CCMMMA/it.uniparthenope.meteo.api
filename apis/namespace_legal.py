@@ -4,18 +4,19 @@ from core.MeteoServices import MeteoServices
 from core.GetParams import get_params
 import app
 
-api = Namespace('legal', description='Legal API')
+api = Namespace('legal', description='Legal and compliance content endpoints.')
 
 
 # TESTED AND WORKING -- NO CACHE USE 
 @api.route('/disclaimer')
 class LegalDiscaimer(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Get disclaimer content",
+        responses={200: "Disclaimer payload returned successfully"}
+    )
     def get(self):
-        """Returns the Disclaimer.
-        :example: /legal/disclaimer
-        :returns:  json -- the return json.
-        -------------------------------------------------------------------------------------------
+        """
+        Return the legal disclaimer content configured for the platform.
         """
         ms = MeteoServices(app.application.config)
         params = get_params({'lang': 'en-US'})
@@ -26,12 +27,13 @@ class LegalDiscaimer(Resource):
 # TESTED AND WORKING -- NO CACHE USE 
 @api.route('/privacy')
 class LegalPrivacy(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Get privacy content",
+        responses={200: "Privacy payload returned successfully"}
+    )
     def get(self):
-        """Returns the Privacy.
-        :example: /legal/privacy
-        :returns:  json -- the return json.
-        -------------------------------------------------------------------------------------------
+        """
+        Return the privacy information configured for the platform.
         """
         ms = MeteoServices(app.application.config)
         params = get_params({'lang': 'en-US'})

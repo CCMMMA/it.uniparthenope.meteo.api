@@ -19,15 +19,17 @@ from core.MemcachedMethodHandlers import get_resource, set_resource
 import json
 import app
 
-api = Namespace('instruments', description='Instruments API')
+api = Namespace('instruments', description='Instrument inventory and instrument-detail endpoints.')
 
 @api.route('')
 class Instruments(Resource):
-    @api.doc()
+    @api.doc(
+        summary="List instruments",
+        responses={200: "Instrument catalog returned successfully", 502: "Upstream instrument service unavailable"}
+    )
     def get(self):
-        """Returns the avaliable instruments.
-        :example: /products
-        :returns:  json -- the return json.
+        """
+        Return the available instruments payload retrieved from the upstream Signal K integration.
         """
 
         ms = MeteoServices(app.application.config)
@@ -40,17 +42,22 @@ class Instruments(Resource):
         '''
 
         for elem in res.items():
-            print("\n\n")
-            logger.info(f"elem : {elem}")
-            print("\n\n")
+            logger.debug("instrument entry: %s", elem)
 
         return jsonify(res)
 
 
 @api.route('/<string:identification>')
 class InstrumentsContext(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Get a specific instrument",
+        params={"identification": "Instrument identifier to resolve from the upstream instruments payload"},
+        responses={200: "Instrument payload returned successfully", 404: "Instrument not found"}
+    )
     def get(self, identification):
+        """
+        Return a single instrument record selected by identifier from the upstream instruments payload.
+        """
 
         ms = MeteoServices(app.application.config)
         res = ms.getInstruments()
@@ -59,7 +66,7 @@ class InstrumentsContext(Resource):
             if ws_id == identification:
                 return ws_data
         
-        return "Identification not found!"
+        return "Identification not found!", 404
 
 '''
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 

@@ -3,7 +3,7 @@ from flask import jsonify
 from core.LoginServices import LoginServices
 import app
 
-api = Namespace('users', description='Login API')
+api = Namespace('users', description='Authentication endpoints for legacy user login flows.')
 
 user_model = api.model("user", {
     "name": fields.String("The user name."),
@@ -13,20 +13,16 @@ user_model = api.model("user", {
 # TESTED AND WORKING -- NO CACHE USE
 @api.route('/login')
 class UserLogin(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Authenticate a user",
+        responses={200: "Authentication payload returned", 400: "Invalid payload", 401: "Authentication failed"}
+    )
     @api.expect(user_model)
     def post(self):
-        """Returns the roles of an authenticated users (if any)
-        :example: /user/login
-        :param user: The user name.
-        :type prod: str.
-        :param pass: The user password.
-        :type place: str.
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Authenticate a user and return the downstream role and profile payload produced by the login service.
         """
         params = api.payload
         ms = LoginServices(app.application.config)
         res = ms.authentication_login(params['name'], params['pass'])
         return jsonify(res)
-

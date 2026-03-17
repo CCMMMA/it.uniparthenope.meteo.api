@@ -1,4 +1,3 @@
-import memcache.errors
 from flask import Flask
 from flask_cors import CORS
 from apis import api
@@ -40,12 +39,10 @@ use_pymemcache = True
 try:
     cache = Client('memcached:11211')
     # cache = Client([('172.18.0.10', 11211)])
-except Execption as memcache_error:
-    print("[*]Memcached Error : " + str(memcache_error))
-    logging.error("[*]Memcached Error : " + str(memcache_error))
+except Exception as memcache_error:
+    logger.error("[*]Memcached Error : %s", memcache_error)
     use_pymemcache = False
 
 meteo_services = MeteoServices(application.config)
 grib_services = GribServices(application.config)
 tiles = Tiles(application.config)
-

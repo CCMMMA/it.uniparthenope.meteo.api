@@ -1,4 +1,7 @@
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 path = 'var/log/uwsgi/req-log/req.log'
 path_out = 'var/log/uwsgi/log-analys-results/out.txt'
@@ -30,7 +33,7 @@ try:
 
     req_log_file.close()
 except Exception as e:
-    print("Error extract first and last line to file : " + str(e))
+    logger.exception("Error extracting first and last timestamp from request log")
 
 
 # Collect all GET requests for '/products'
@@ -58,7 +61,7 @@ try:
     req_log_file.close()
 
 except Exception as e:
-    print("error open file - read : " + str(e))
+    logger.exception("Error reading request log")
 
 # Creating out structure for counting and sorting 
 out = []
@@ -88,8 +91,7 @@ try:
         file_out.write("route : " + elem[0] + " - count : " + str(elem[1]) + '\n') 
     file_out.close() 
 except Exception as e:
-    print('error open file - write : ' + str(e))
-
+    logger.exception("Error writing log analysis output")
 
 
 

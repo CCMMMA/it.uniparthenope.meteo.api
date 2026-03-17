@@ -15,7 +15,7 @@ from core.CMS import CMS
 from core.GetParams import get_params
 from core.DataStructuresV2 import maps, baseMaps, layers
 
-api = Namespace('v2', description='V2 API')
+api = Namespace('v2', description='Version 2 endpoints for weather reports, CMS content, Slurm data, and authenticated resources.')
 
 page_model = api.model("page", {
     "_id": fields.String("Page unique id"),
@@ -62,6 +62,7 @@ def roles_from_token(f):
 # TESTED AND WORKING
 @api.route('/weatherreports/latest/json')
 class WeatherReportsLatestJson(Resource):
+    @api.doc(summary="Get the latest weather report payload", responses={200: "Latest weather report returned"})
     def get(self):
         return core.RRSResponseHandlers.get_latest_weather_report_jsonify()
 
@@ -69,6 +70,7 @@ class WeatherReportsLatestJson(Resource):
 # ORIGINAL : Internal server error
 @api.route('/weatherreports/latest/<string:field>/json')
 class WeatherReportsLatestJson(Resource):
+    @api.doc(summary="Get a field from the latest weather report", params={"field": "Weather report field name"}, responses={200: "Weather report field returned", 404: "Field not found"})
     def get(self, field):
         # sanitizer = Sanitizer()  da studiare
         return core.RRSResponseHandlers.get_field_lwr_jsonify(field)
@@ -77,6 +79,7 @@ class WeatherReportsLatestJson(Resource):
 # TESTED AND WORKING
 @api.route('/weatherreports/json')
 class WeatherReportsJson(Resource):
+    @api.doc(summary="Get all weather reports", responses={200: "Weather reports returned"})
     def get(self):
         return core.RRSResponseHandlers.get_all_weather_reports_jsonify()
 
@@ -84,6 +87,7 @@ class WeatherReportsJson(Resource):
 # TESTED - 1 problem
 @api.route('/slurm/storage')
 class SlurmStorage(Resource):
+    @api.doc(summary="Get Slurm storage status", responses={200: "Storage status returned"})
     def get(self):
         ss = SlurmServices(app.application.config)
         res = ss.get_storage_status()
@@ -93,6 +97,7 @@ class SlurmStorage(Resource):
 # TESTED AND WORKING
 @api.route('/slurm/info')
 class SlurmInfo(Resource):
+    @api.doc(summary="Get Slurm cluster information", responses={200: "Slurm information returned"})
     def get(self):
         ss = SlurmServices(app.application.config)
         res = ss.sinfo()
@@ -102,6 +107,7 @@ class SlurmInfo(Resource):
 # TESTED AND WORKING
 @api.route('/slurm/queue')
 class SlurmInfo(Resource):
+    @api.doc(summary="Get Slurm queue information", responses={200: "Slurm queue returned"})
     def get(self):
         ss = SlurmServices(app.application.config)
         res = ss.squeue()
@@ -111,7 +117,7 @@ class SlurmInfo(Resource):
 # TESTED AND WORKING
 @api.route('/carousel')
 class Carousel(Resource):
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="Get carousel content", security='Bearer', responses={200: "Carousel content returned"})
     @roles_from_token
     def get(self, **kwargs):
         roles = kwargs["roles"]
@@ -124,7 +130,7 @@ class Carousel(Resource):
 # TESTED AND WORKING
 @api.route('/cards')
 class Cards(Resource):
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="Get card content", security='Bearer', responses={200: "Cards content returned"})
     @roles_from_token
     def get(self, **kwargs):
         roles = kwargs["roles"]
@@ -137,6 +143,7 @@ class Cards(Resource):
 # TESTED AND WORKING
 @api.route('/basemaps')
 class BaseMaps(Resource):
+    @api.doc(summary="List basemaps", responses={200: "Basemap catalog returned"})
     def get(self):
         return jsonify(baseMaps)
 
@@ -144,6 +151,7 @@ class BaseMaps(Resource):
 # TESTED AND WORKING
 @api.route('/basemaps/<string:name>')
 class BaseMapsByName(Resource):
+    @api.doc(summary="Get a basemap by name", params={"name": "Basemap identifier"}, responses={200: "Basemap returned", 404: "Basemap not found"})
     def get(self, name):
         return jsonify(baseMaps[name])
 
@@ -151,6 +159,7 @@ class BaseMapsByName(Resource):
 # TESTED AND WORKING
 @api.route('/layers')
 class Layers(Resource):
+    @api.doc(summary="List layers", responses={200: "Layer catalog returned"})
     def get(self):
         return jsonify(layers)
 
@@ -159,6 +168,7 @@ class Layers(Resource):
 # example : name = info
 @api.route('/layers/<string:name>')
 class LayersByName(Resource):
+    @api.doc(summary="Get a layer by name", params={"name": "Layer identifier"}, responses={200: "Layer returned", 404: "Layer not found"})
     def get(self, name):
         return jsonify(layers[name])
 
@@ -166,6 +176,7 @@ class LayersByName(Resource):
 # TESTED AND WORKING
 @api.route('/maps')
 class Maps(Resource):
+    @api.doc(summary="List maps", responses={200: "Map catalog returned"})
     def get(self):
         return jsonify(maps)
 
@@ -174,6 +185,7 @@ class Maps(Resource):
 # example : name = weather
 @api.route('/maps/<string:name>')
 class MapsByName(Resource):
+    @api.doc(summary="Get a map definition by name", params={"name": "Map identifier"}, responses={200: "Map definition returned", 404: "Map not found"})
     def get(self, name):
         return jsonify(maps[name])
 
@@ -181,13 +193,11 @@ class MapsByName(Resource):
 # TESTED AND WORKING
 @api.route('/navbar')
 class NavBar(Resource):
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="Get navbar content", security='Bearer', responses={200: "Navbar content returned"})
     @roles_from_token
     def get(self, **kwargs):
-        """Returns the navbar
-        :example: /navbar
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Return the CMS-derived navigation bar payload filtered by the caller roles.
         """
         roles = kwargs["roles"]
         cms = CMS(app.application.config)
@@ -199,13 +209,11 @@ class NavBar(Resource):
 # TESTED AND WORKING
 @api.route('/pages')
 class Pages(Resource):
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="List pages", security='Bearer', responses={200: "Pages list returned"})
     @roles_from_token
     def get(self, **kwargs):
-        """Returns the pages list
-        :example: /pages
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Return the list of CMS-managed pages available to the caller.
         """
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
@@ -217,13 +225,11 @@ class Pages(Resource):
 # TESTED AND WORKING
 @api.route('/pages/<string:page>')
 class PageByPageId(Resource):
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="Get a page by identifier", security='Bearer', params={"page": "Page identifier"}, responses={200: "Page returned", 404: "Page not found"})
     @roles_from_token
     def get(self, page, **kwargs):
-        """Returns the page content by a given id
-        :example: /pages/about_us
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Return a CMS page payload by page identifier.
         """
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
@@ -232,14 +238,12 @@ class PageByPageId(Resource):
         res = cms.get_page_by_id(roles, page, params)
         return jsonify(res)
 
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="Create or update a page by identifier", security='Bearer', params={"page": "Page identifier"}, responses={200: "Page persisted successfully", 400: "Invalid page payload", 403: "User not allowed"})
     @api.expect(page_model)
     @roles_from_token
     def post(self, page, **kwargs):
-        """Returns the page content by a given id
-        :example: /pages/about_us
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Persist a CMS page payload for the specified page identifier.
         """
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
@@ -251,13 +255,11 @@ class PageByPageId(Resource):
 
 @api.route('/auth/login')
 class AuthLoginByToken(Resource):
-    @api.doc(security='Basic Auth')
+    @api.doc(summary="Resolve authentication information from a bearer token", security='Bearer', responses={200: "Authentication information returned", 401: "Missing or invalid token"})
     @token_required
     def get(self, **kwargs):
-        """Returns the roles of an authenticated users (if any)
-        :example: /v2/auth/loginToken
-        :param value: The token value.
-        :type prod: str.
+        """
+        Validate the bearer token received in the `Authorization` header and return the associated authentication payload.
         :returns:  json -- the return josn.
         -------------------------------------------------------------------------------------------
         """

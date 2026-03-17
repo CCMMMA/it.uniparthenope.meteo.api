@@ -18,6 +18,7 @@ import pandas as pd
 import metpy.calc as mpcalc
 from metpy.units import units
 from metpy.plots import SkewT, Hodograph
+from core.Logger import logger
 
 
 class SkewTServices:
@@ -38,7 +39,7 @@ class SkewTServices:
         v1 = wrf.getvar(wrfin,"va",timeidx=0)
         z1 = wrf.getvar(wrfin,"z",timeidx=0)
         hght = wrf.getvar(wrfin,"height",timeidx=0)
-        print(T1)
+        logger.debug("SkewT temperature field loaded")
 
         hg = hght[:,x_y[0],x_y[1]].values * units.hPa
         p = p1[:,x_y[0],x_y[1]].values * units.hPa
@@ -52,23 +53,23 @@ class SkewTServices:
         # aggiunta Profilo parcel & LCL
         prof = mpcalc.parcel_profile(p, T[0], Td[0]).to('degC')
         lcl_pressure, lcl_temperature = mpcalc.lcl(p[0], T[0], Td[0])
-        print("LCL_P=",lcl_pressure)
-        print("LCL_T=",lcl_temperature)
+        logger.debug("LCL_P=%s", lcl_pressure)
+        logger.debug("LCL_T=%s", lcl_temperature)
 
         parcel_t_start = T[0]
-        print("Pt_start=",parcel_t_start)
+        logger.debug("Pt_start=%s", parcel_t_start)
         parcel_p_start = p[0]
-        print("Pp_start=",parcel_p_start)
+        logger.debug("Pp_start=%s", parcel_p_start)
         try:
             lfc_p, lfc_t = mpcalc.lfc(p, T, Td, prof)
         except Exception:
             lfc_p, lfc_t = lcl_pressure, lcl_temperature
-        print("lfc_p=",lfc_p)
-        print("lfc_t=",lfc_t)
+        logger.debug("lfc_p=%s", lfc_p)
+        logger.debug("lfc_t=%s", lfc_t)
 
         el_p,el_t = mpcalc.el(p,T,Td)
-        print("el_p=",el_p)
-        print("el_t=",el_t)
+        logger.debug("el_p=%s", el_p)
+        logger.debug("el_t=%s", el_t)
 
         try:
             sbcape,sbcin = mpcalc.surface_based_cape_cin(p,T,Td)
@@ -83,17 +84,17 @@ class SkewTServices:
         kindex = mpcalc.k_index(p, T, Td)
         total_totals = mpcalc.total_totals_index(p, T, Td)
 
-        print("SBCAPE=",sbcape)
-        print("SBCIN=",sbcin)
-        print("MUCAPE=",mucape)
-        print("MUCIN=",mucin)
-        print("PWATER=",pwat)
-        print("KINDEX",kindex)
-        print("TT", total_totals)
+        logger.debug("SBCAPE=%s", sbcape)
+        logger.debug("SBCIN=%s", sbcin)
+        logger.debug("MUCAPE=%s", mucape)
+        logger.debug("MUCIN=%s", mucin)
+        logger.debug("PWATER=%s", pwat)
+        logger.debug("KINDEX=%s", kindex)
+        logger.debug("TT=%s", total_totals)
 
-        print("p range:", p.min(), p.max())
-        print("T surface:", T[0], "Td surface:", Td[0])
-        print("Numero livelli:", len(p))
+        logger.debug("pressure range: %s %s", p.min(), p.max())
+        logger.debug("surface values: T=%s Td=%s", T[0], Td[0])
+        logger.debug("number of levels: %s", len(p))
 
 
         #fine aggiunte

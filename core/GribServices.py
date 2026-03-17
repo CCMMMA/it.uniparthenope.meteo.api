@@ -33,6 +33,33 @@ class GribServices:
     def getStatusCode(self, code):
         return self.__statusCode[code]
 
+    @staticmethod
+    def _resolve_datetime(timeref=None):
+        if timeref is None:
+            now = datetime.utcnow()
+            hour = int(round(now.hour + now.minute / 60.0))
+            return datetime(now.year, now.month, now.day, hour, 0)
+
+        year = int(timeref[:4])
+        month = int(timeref[4:6])
+        day = int(timeref[6:8])
+        hour = int(timeref[9:11])
+        minute = int(timeref[11:13]) if len(timeref) == 13 else 0
+        return datetime(year, month, day, hour, minute)
+
+    @staticmethod
+    def _datetime_strings(date):
+        data_ora = date.strftime("%Y-%m-%d %H:%M:00")
+        date_time = date.strftime("%Y%m%dZ%H%M")
+        date_time_path = date.strftime("%Y/%m/%d")
+        return data_ora, date_time, date_time_path
+
+    def _cache_path(self, folder, domain, prod, date_time_path, filename):
+        relative_path = os.path.join(folder, domain, prod, date_time_path)
+        full_dir = os.path.join(self.config['BASE_PRODUCTS'], relative_path)
+        os.makedirs(full_dir, exist_ok=True)
+        return relative_path, os.path.join(full_dir, filename)
+
     def asText(self, params=None):
         retval = ""
 
@@ -40,12 +67,6 @@ class GribServices:
         domain = self.default_domain
 
         timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
-
         if params:
             if 'prod' in params and params['prod'] is not None:
                 prod = params['prod']
@@ -56,42 +77,11 @@ class GribServices:
             if 'date' in params and params['date'] is not None:
                 timeref = params['date']
 
-        if timeref is None:
-            # print "get current utc"
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(round(date.hour + date.minute / 60.0))
-            minute = 0
-        else:
-            # print "Date is provided"
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        date = datetime(year, month, day, hour, minute)
-
-        data_ora = format(date.year, '04') + "-" + format(date.month, '02') + "-" + format(date.day,'02') + " " + format(date.hour, '02') + ":" + format(date.minute, '02') + ":00"
-
-        # Set the dateTime
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-        dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
+        date = self._resolve_datetime(timeref)
+        _, dateTime, dateTimePath = self._datetime_strings(date)
 
         csvName = domain + "_" + prod + "_" + dateTime + ".csv"
-        relativePath = "csv/" + domain + "/" + prod + "/" + dateTimePath
-
-        try:
-            os.makedirs(self.config['BASE_PRODUCTS'] + "/" + relativePath)
-        except Exception as e:
-            logger.error(str(e))
-            pass
-
-        csvPath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + csvName
-        csvUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + csvName
+        _, csvPath = self._cache_path("csv", domain, prod, dateTimePath, csvName)
 
         # Check if the file already exists and it is valid
         if os.path.isfile(csvPath) is False or (os.path.isfile(csvPath) is True and (time.time() - os.path.getmtime(csvPath)) > self.config['CACHE_TIMEOUT']):
@@ -108,7 +98,6 @@ class GribServices:
                 pass
 
             if ncfile is not None:
-                lines = []
                 if "wrf5" in prod:
                     T2C = ncfile.variables["T2C"][0][:]
                     SLP = ncfile.variables["SLP"][0][:]
@@ -128,27 +117,21 @@ class GribServices:
                     U10M = ncfile.variables["U10M"][0][:]
                     V10M = ncfile.variables["V10M"][0][:]
 
-                    lines.append("j;i;T2C;SLP;WSPD10;WDIR10;RH2;UH;MCAPE;TC500;TC850;GPH500;GPH850;CLDFRA_TOTAL;U10M;V10M;DELTA_WSPD10;DELTA_WDIR10;DELTA_RAIN")
-
                     nLats = len(T2C)
                     nLons = len(T2C[0])
 
-                    for j in range(nLats):
-                        for i in range(nLons):
-                            line = str(j) + ";" + str(i) + ";"
-                            # print line
-                            line = line + str(T2C[j][i]) + ";" + str(SLP[j][i]) + ";" + str(WSPD10[j][i]) + ";" + str(
-                                WDIR10[j][i]) + ";" + str(RH2[j][i]) + ";" + str(UH[j][i]) + ";" + str(
-                                MCAPE[j][i]) + ";" + str(TC500[j][i]) + ";" + str(TC850[j][i]) + ";" + str(
-                                GPH500[j][i]) + ";" + str(GPH850[j][i]) + ";" + str(CLDFRA_TOTAL[j][i]) + ";" + str(
-                                U10M[j][i]) + ";" + str(V10M[j][i]) + ";" + str(DELTA_WSPD10[j][i]) + ";" + str(
-                                DELTA_WDIR10[j][i]) + ";" + str(DELTA_RAIN[j][i])
-                            lines.append(line.replace("--", "?").replace("nan", "?"))
-
-                with open(csvPath, 'w') as f:
-                    for line in lines:
-                        f.write(line + "\n")
-                    f.close()
+                    with open(csvPath, 'w') as f:
+                        f.write("j;i;T2C;SLP;WSPD10;WDIR10;RH2;UH;MCAPE;TC500;TC850;GPH500;GPH850;CLDFRA_TOTAL;U10M;V10M;DELTA_WSPD10;DELTA_WDIR10;DELTA_RAIN\n")
+                        for j in range(nLats):
+                            for i in range(nLons):
+                                line = str(j) + ";" + str(i) + ";"
+                                line = line + str(T2C[j][i]) + ";" + str(SLP[j][i]) + ";" + str(WSPD10[j][i]) + ";" + str(
+                                    WDIR10[j][i]) + ";" + str(RH2[j][i]) + ";" + str(UH[j][i]) + ";" + str(
+                                    MCAPE[j][i]) + ";" + str(TC500[j][i]) + ";" + str(TC850[j][i]) + ";" + str(
+                                    GPH500[j][i]) + ";" + str(GPH850[j][i]) + ";" + str(CLDFRA_TOTAL[j][i]) + ";" + str(
+                                    U10M[j][i]) + ";" + str(V10M[j][i]) + ";" + str(DELTA_WSPD10[j][i]) + ";" + str(
+                                    DELTA_WDIR10[j][i]) + ";" + str(DELTA_RAIN[j][i])
+                                f.write(line.replace("--", "?").replace("nan", "?") + "\n")
 
         try:
             with open(csvPath, 'r') as content_file:
@@ -169,12 +152,6 @@ class GribServices:
         domain = self.default_domain
 
         timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
-
         if params:
             if 'prod' in params and params['prod'] is not None:
                 prod = params['prod']
@@ -185,41 +162,11 @@ class GribServices:
             if 'date' in params and params['date'] is not None:
                 timeref = params['date']
 
-        if timeref is None:
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(round(date.hour + date.minute / 60.0))
-            minute = 0
-        else:
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        date = datetime(year, month, day, hour, minute)
-
-        data_ora = format(date.year, '04') + "-" + format(date.month, '02') + "-" + format(date.day, '02') + " " + format(date.hour, '02') + ":" + format(date.minute, '02') + ":00"
-
-        # Set the dateTime
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-        dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
+        date = self._resolve_datetime(timeref)
+        data_ora, dateTime, dateTimePath = self._datetime_strings(date)
 
         jsonName = domain + "_" + prod + "_" + dateTime + ".json"
-        relativePath = "jsn/" + domain + "/" + prod + "/" + dateTimePath
-
-        if os.path.exists(self.config['BASE_PRODUCTS'] + "/" + relativePath) is False:
-            try:
-                os.makedirs(self.config['BASE_PRODUCTS'] + "/" + relativePath)
-            except Exception as e:
-                logger.error(str(e))
-                pass
-
-        jsonPath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + jsonName
-        jsonUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + jsonName
+        _, jsonPath = self._cache_path("jsn", domain, prod, dateTimePath, jsonName)
 
         # Check if the file already exists and it is valid
         if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['TTL_DISKCACHE']):
@@ -316,31 +263,10 @@ class GribServices:
 
                     xi = np.linspace(minLon, maxLon, len(uvmet10[0][0]))
 
-                    dLon = [j - i for i, j in zip(xi[:-1], xi[1:])]
-
-                    temp = 0
-                    somma = 0
-
-                    count = len(xi)
-
-                    for i, j in zip(xi[:-1], xi[1:]):
-                        temp = j - i
-                        somma = somma + temp
-
-                    dLon = somma / count
+                    dLon = float(np.diff(xi).mean()) if len(xi) > 1 else 0.0
 
                     yi = np.linspace(minLat, maxLat, len(uvmet10[0]))
-
-                    temp = 0
-                    somma = 0
-
-                    count = len(yi)
-
-                    for i, j in zip(yi[:-1], yi[1:]):
-                        temp = j - i
-                        somma = somma + temp
-
-                    dLat = somma / count
+                    dLat = float(np.diff(yi).mean()) if len(yi) > 1 else 0.0
 
                     X, Y = np.meshgrid(xi, yi)
 

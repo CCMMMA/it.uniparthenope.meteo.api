@@ -257,7 +257,7 @@ def windChill(args):
 
 #### CSVFY ####
 def csvfy(data):
-    print(type(data))
+    logger.debug("csvfy input type: %s", type(data))
     result = ""
     timeseries = data['timeseries']
     fields = data['fields']
@@ -460,7 +460,7 @@ class MeteoServices:
         return self.maps
 
     def printMaps(self):
-        print(self.maps)
+        logger.info("maps: %s", self.maps)
 
     def getThemes(self, prod):
         return self.maps['products'][prod]
@@ -473,12 +473,12 @@ class MeteoServices:
             try:
                 result = self.maps["products"][prod]
             except ValueError as e:
-                print("[*] Value error : " + str(e))
+                logger.error("[*] Value error : %s", e)
         return result
 
     def printProducts(self):
         for item in self.maps["products"]:
-            print(item)
+            logger.info("product: %s", item)
 
     def __getFullLink(self, url, fields):
         fields_string = ''
@@ -533,7 +533,7 @@ class MeteoServices:
 
     def printSpecificProducts(self, prod):
         for item in self["products"][prod]:
-            print(item)
+            logger.info("specific product entry: %s", item)
 
     def getFields(self, prod):
         result = {}
@@ -675,7 +675,7 @@ class MeteoServices:
             data = response.json()
             return data
         except requests.exceptions.RequestException as e:
-            print(f"Errore nella richiesta: {e}")
+            logger.error("Errore nella richiesta: %s", e)
             return None
 
     '''
@@ -976,7 +976,7 @@ class MeteoServices:
                 # Open the data file
                 dataset = netCDF4.Dataset(url)
             except Exception as e:
-                print("[*] netCDF4 error : " + str(e))
+                logger.error("[*] netCDF4 error : %s", e)
 
             # Check if the product is available and if the filds are defined
             if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
@@ -1317,7 +1317,7 @@ class MeteoServices:
                 # Open the data file
                 dataset = netCDF4.Dataset(url)
             except Exception as e:
-                print("[*] netCDF4 error : " + str(e))
+                logger.error("[*] netCDF4 error : %s", e)
 
             # Check if the product is available and if the filds are defined
             if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
@@ -1720,7 +1720,7 @@ class MeteoServices:
         # relativePath, imageName = self.plotter.render(place, prod, output, dateTime, result_file, language=lang, draw_colorbars=bars)
 
         imageName = self.plotter.render(place, prod, output, dateTime, result_file, language=lang, draw_colorbars=bars)
-        print(f"\n\nimageName : {imageName}\n\n")
+        logger.debug("imageName: %s", imageName)
 
         if imageName is not None:
             #imagePath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + imageName
@@ -2633,7 +2633,7 @@ class MeteoServices:
 
         full_link = self.__getFullLink(url, fields)
         if "DEBUG" in os.environ:
-            print("full_link:%s" % full_link)
+            logger.debug("full_link: %s", full_link)
 
         data = self.__executeRequest(full_link)
         # log.info("full_link: " + str(full_link))
@@ -2842,7 +2842,7 @@ class MeteoServices:
                                     imgLayer = Image.open(io.BytesIO(data))
                                     imgBaseMap.paste(imgLayer, (0, 0), imgLayer)
                             except Exception as e :
-                                print("error : " + str(e))
+                                logger.error("error : %s", e)
                                 #log.error("error : " + str(e))
 
 

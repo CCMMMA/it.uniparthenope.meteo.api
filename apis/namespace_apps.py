@@ -9,7 +9,7 @@ from core.MemcachedMethodHandlers import get_resource, set_resource
 import json
 import app
 
-api = Namespace('apps', description='Apps API')
+api = Namespace('apps', description='Application-facing integration endpoints and tiled payload services.')
 
 
 # @api.route('/test/cache')
@@ -34,12 +34,20 @@ api = Namespace('apps', description='Apps API')
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/owm/<string:prod>/<string:placeprefix>/<int:z>/<int:x>/<int:y>.geojson', methods=['GET', 'OPTIONS'])
 class AppsOwmWeatherProdPlacePrefix(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Get application weather tile data",
+        params={
+            "prod": "Forecast product code",
+            "placeprefix": "Place prefix filter used to constrain the response",
+            "z": "Tile zoom level",
+            "x": "Tile x coordinate",
+            "y": "Tile y coordinate"
+        },
+        responses={200: "GeoJSON-style payload returned successfully", 400: "Unsupported request"}
+    )
     def get(self, prod, placeprefix, z, x, y):
         """
-        :example: /apps/owm/wrf5/prov/10/552/384.geojson
-        :returns: json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        Return an application-oriented weather tile payload for the requested product and tile coordinates.
         """
 
         if placeprefix == "reg":
@@ -94,11 +102,13 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
 # TESTED AND WORKING -- NO CACHE USE 
 @api.route('/sais/index')
 class AppsSaisRisk(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Get SAIS index payload",
+        responses={200: "SAIS index returned successfully", 503: "Source file unavailable"}
+    )
     def get(self):
         """
-        :example: /apps/sais/index
-        :returns: json -- the return josn.
+        Return the SAIS index payload loaded from the configured JSON source.
         """
         try:
             with open("/project/JsonData/sam3.json", "r") as file_sam3:

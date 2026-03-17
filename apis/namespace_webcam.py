@@ -3,20 +3,25 @@ from flask import send_file
 import os
 import app
 
-api = Namespace('webcam', description='Webcam API')
+api = Namespace('webcam', description='Latest webcam image retrieval endpoints.')
 
 
 # TESTED AND WORKING -- NO CACHE USE
 # I DON'T HAVE WEBCAM DIRECTORY
 @api.route("/<string:place>/<string:location>/<string:cam>")
 class Webcam(Resource):
-    @api.doc()
+    @api.doc(
+        summary="Get the latest webcam image",
+        params={
+            "place": "Place code used in the webcam filesystem hierarchy",
+            "location": "Location subdirectory for the webcam",
+            "cam": "Camera identifier without extension"
+        },
+        responses={200: "Image returned successfully", 404: "Image resource not found"}
+    )
     def get(self, place, location, cam):
         """
-        Returns the latest image from the specified webcam.
-        :example: /webcam/com63049/castelsantelmo/nord
-        :returns:  json -- the return json.
-        -------------------------------------------------------------------------------------------
+        Return the latest available JPEG image for the specified webcam path, falling back to the configured no-image asset when necessary.
         """
         f_name = "/home/ccmmma/prometeo/data/webcam/" + place + "/" + location + "/" + cam + ".jpg"
         if not os.path.isfile(f_name):

@@ -11,7 +11,26 @@ from .namespace_version import api as ns_version
 from .namespace_webcam import api as ns_webcam
 from .namespace_instruments import api as ns_instruments
 
-api = Api()
+authorizations = {
+    "Bearer": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Use the format: Bearer <token>"
+    }
+}
+
+api = Api(
+    title="University of Naples Parthenope Meteo API",
+    version="4.01",
+    description=(
+        "Formal API surface for forecast products, places, legal content, application integrations, "
+        "weather reports, and CMS-backed resources used by the Parthenope meteorological platform."
+    ),
+    doc="/swagger",
+    authorizations=authorizations,
+    security="Bearer"
+)
 
 # aggregation of namespace
 api.add_namespace(ns_login)
@@ -24,5 +43,4 @@ api.add_namespace(ns_v2)
 api.add_namespace(ns_version)
 api.add_namespace(ns_webcam)
 api.add_namespace(ns_instruments)
-
 

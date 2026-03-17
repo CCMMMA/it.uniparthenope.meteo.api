@@ -25,12 +25,12 @@ from core.Places import Places
 from core.GribServices import GribServices
 from core.MakeArchivePaths import MakeArchivePaths
 
-api = Namespace('products', description='Products API')
+api = Namespace('products', description='Forecast products, plots, time series, GRIB exports, legends, and static product assets.')
 
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('')
 class Products(Resource):
-    @api.doc()
+    @api.doc(summary="List products", responses={200: "Product catalog returned successfully"})
     def get(self):
         """Returns the avaliable products.
         :example: /products
@@ -42,7 +42,7 @@ class Products(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/<string:place>/avail')
 class ProductsAvailable(Resource):
-    @api.doc()
+    @api.doc(summary="Get product availability for a place", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Availability payload returned successfully"})
     def get(self, prod, place):
         """Returns the avilable products
         :param prod:
@@ -64,7 +64,7 @@ class ProductsAvailable(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/<string:place>/avail/calendar')
 class ProductsAvailableCalendar(Resource):
-    @api.doc()
+    @api.doc(summary="Get product availability as a calendar payload", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Availability calendar returned successfully"})
     def get(self, prod, place):
         """Returns the avaliable products.
         :exampler: /products/rdr1/ca001/avail/calendar
@@ -85,7 +85,7 @@ class ProductsAvailableCalendar(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/maps')
 class ProductsMap(Resource):
-    @api.doc()
+    @api.doc(summary="Get maps metadata", responses={200: "Maps metadata returned successfully"})
     def get(self):
         """Returns the avaliable maps.
         :exampler: /products/maps
@@ -98,7 +98,7 @@ class ProductsMap(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/maps/themes')
 class ProductsThemesByProd(Resource):
-    @api.doc()
+    @api.doc(summary="Get themes for a product", params={"prod": "Product code"}, responses={200: "Theme metadata returned successfully"})
     def get(self, prod):
         """Returns the avaliable themes.
         :example: /produts/wrf5/maps/themes
@@ -111,7 +111,7 @@ class ProductsThemesByProd(Resource):
 # TESTED AND WORKING - NO CACHE USE
 @api.route('/<string:prod>')
 class ProductsOutputsByProd(Resource):
-    @api.doc()
+    @api.doc(summary="Get product metadata", params={"prod": "Product code"}, responses={200: "Product metadata returned successfully"})
     def get(self, prod):
         """Returns all avaliable outputs given a product code
         :example: /products/wrf5/outputs
@@ -130,7 +130,7 @@ class ProductsOutputsByProd(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/outputs')
 class ProductsOutputsByProd(Resource):
-    @api.doc()
+    @api.doc(summary="List outputs for a product", params={"prod": "Product code"}, responses={200: "Outputs returned successfully"})
     def get(self, prod):
         """Returns all avaliable outputs given a product code
         :example: /products/wrf5/outputs
@@ -146,7 +146,7 @@ class ProductsOutputsByProd(Resource):
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('/<string:prod>/fields')
 class ProductsFieldsByProd(Resource):
-    @api.doc()
+    @api.doc(summary="List fields for a product", params={"prod": "Product code"}, responses={200: "Field metadata returned successfully"})
     def get(self, prod):
         """Returns all avaliable fields given a product code
         :example: /products/wrf5/fields
@@ -161,7 +161,7 @@ class ProductsFieldsByProd(Resource):
 # TESTED AND WORKING - USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/forecast/<string:place>')
 class ProductsForecastByProdAndPlace(Resource):
-    @api.doc()
+    @api.doc(summary="Get forecast data for a product and place", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Forecast returned successfully", 404: "Forecast not available"})
     def get(self, prod, place):
         """Returns the forecast for a product given a place
         :example: /products/wrf5/forecast/com63049
@@ -244,7 +244,7 @@ class ProductsForecastByProdAndPlace(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/<string:prod>/forecast/<string:place>/plot/image')
 class ProductsForecastMapByProdAndPlace(Resource):
-    @api.doc()
+    @api.doc(summary="Get rendered forecast plot image", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "PNG image returned successfully"})
     def get(self, prod, place):
         """Returns the forecast plot as image or url given a product code and a place
         :example: /products/ww33/forecast/ca001/plot/image
@@ -370,7 +370,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
 # @api.route('/wrf5/forecast/<string:place>/<float:lat>/<float:lon>/plot/SkewT/image')
 @api.route('/wrf5/forecast/plot/SkewT/image')
 class ProductSkewTByProdAndPlace(Resource):
-    @api.doc()
+    @api.doc(summary="Get a Skew-T plot image", params={"date": "Optional forecast reference time as query parameter"}, responses={200: "Skew-T image returned successfully"})
     def get(self):
         """Returns the forexast plot of SkewT as image or url given a product code and a place
         :example: /products/wrf5/forecast/ca001/plot/SkewT/image
@@ -421,7 +421,7 @@ class ProductSkewTByProdAndPlace(Resource):
 
 @api.route('/<string:prod>/forecast/<string:place>/plot/alt')
 class ProductsForecastPlotAndAlt(Resource):
-    @api.doc()
+    @api.doc(summary="Get plot alternative text payload", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Alternative text payload returned successfully"})
     def get(self, prod, place, language="en-US"):
         
         params = get_params({
@@ -448,7 +448,7 @@ class ProductsForecastPlotAndAlt(Resource):
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/<string:domain>/grib/text')
 class ProductsForecastGribJsonByProdAndDomain(Resource):
-    @api.doc()
+    @api.doc(summary="Get GRIB-oriented text export", params={"prod": "Product code", "domain": "Forecast domain code"}, responses={200: "Text export returned successfully"})
     def get(self, prod, domain):
         """Returns the forecast map as image or url given a product code and a place
         :param domain:
@@ -470,14 +470,14 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
             res = json_data
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         
-        print(f"/grib/text -- res : {res}\n\n")
+        logger.debug("/grib/text response ready: %s bytes", len(res) if res is not None else 0)
         return Response(res, mimetype='text/plain')
 
 
 # ERROR -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/<string:domain>/grib/json')
 class ProductsForecastGribJsonByProdAndDomain(Resource):
-    @api.doc()
+    @api.doc(summary="Get GRIB-oriented JSON export", params={"prod": "Product code", "domain": "Forecast domain code"}, responses={200: "JSON export returned successfully"})
     def get(self, prod, domain):
         """Returns the forecast map as image or url given a product code and a place
         :example: /products/wrf5/forecast/d02/grib/json
@@ -505,7 +505,7 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/forecast/<string:place>/plot')
 class ProductsForecastMapByProdAndPlace(Resource):
-    @api.doc()
+    @api.doc(summary="Get forecast plot metadata or inline image", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Plot payload returned successfully"})
     def get(self, prod, place):
         """Returns the forecast plot as image or url given a product code and a place
         :example: /products/ww33/forecast/ca001/plot
@@ -660,7 +660,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/legend/<string:position>/<string:output>')
 class ProductsForecastBarByProdAndPositionAndOutput(Resource):
-    @api.doc()
+    @api.doc(summary="Get a legend image", params={"prod": "Product code", "position": "Legend position", "output": "Output code"}, responses={200: "Legend image returned successfully"})
     def get(self, prod, position, output):
         """Returns the image bar as image given a product code, a position and an output parameter.
         :example: /products/ww33/forecast/bar/h/crd
@@ -699,7 +699,7 @@ class ProductsForecastBarByProdAndPositionAndOutput(Resource):
 # ORIGINAL : Internal Server Error -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/legend/<string:position>/<string:output>/ncwms')
 class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
-    @api.doc()
+    @api.doc(summary="Get a legend image through ncWMS-related generation", params={"prod": "Product code", "position": "Legend position", "output": "Output code"}, responses={200: "Legend image returned successfully"})
     def get(self, prod, position, output):
         """Returns the image bar as image given a product code, a position and an output parameter.
         :example: /products/ww33/forecast/bar/h/crd/ncwms
@@ -735,17 +735,11 @@ class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
 
 @api.route('/<string:prod>/plot/<string:output>/metacharts')
 class ProductsPlotMetacharts(Resource):
-    @api.doc()
+    @api.doc(summary="Get plot metadata charts", params={"prod": "Product code", "output": "Output code"}, responses={200: "Metacharts payload returned successfully"})
     def get(self, prod, output):
-        """Returns ......................
-            :example: /products/wrf5/plot/gen/metacharts
-            :param prod: The code of the product.
-            :type prod: str.
-            :param place: The code of the place.
-            :type output: str.
-            :returns: json -- the return json.
-            -------------------------------------------------------------------------------------------
-            """
+        """
+        Return plotting metadata used by downstream frontend chart rendering.
+        """
         res = get_resource(request, app.cache, app.use_pymemcache)
        
         if res is None:
@@ -771,16 +765,10 @@ class ProductsPlotMetacharts(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
 @api.route('/<string:prod>/timeseries/<string:place>')
 class ProductsTimeseriesByProdAndPlace(Resource):
-    @api.doc()
+    @api.doc(summary="Get timeseries data", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "Timeseries returned successfully"})
     def get(self, prod, place):
-        """Returns ......................
-        :example: /products/ww33/timeseries/ca001
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns: json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Return the structured time-series payload for the selected product and place.
         """
 
         # Check Memcache
@@ -870,16 +858,10 @@ class ProductsTimeseriesByProdAndPlace(Resource):
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/<string:prod>/timeseries/<string:place>/csv')
 class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
-    @api.doc()
+    @api.doc(summary="Get timeseries as CSV", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "CSV returned successfully"})
     def get(self, prod, place):
-        """Returns ......................
-        :example: /products/wrf3/timeseries/ca001/csv
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns: csv -- the return csv.
-        -------------------------------------------------------------------------------------------
+        """
+        Return the time-series payload rendered as a CSV download.
         """
 
         res = get_resource(request, app.cache, app.use_pymemcache)
@@ -1013,7 +995,7 @@ class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
 # USE MEMCACHE
 @api.route('/<prod>/forecast/<place>/map/image')
 class ProductsForecastMapByProdAndPlace(Resource):
-    @api.doc()
+    @api.doc(summary="Get the legacy forecast map image endpoint", params={"prod": "Product code", "place": "Place identifier"}, responses={200: "PNG image returned successfully"})
     def get(self,prod,place ):
         """Returns the forecast map as image or url given a product code and a place
 
@@ -1048,7 +1030,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
 
 @api.route('/resource/forecast/<string:icon>')
 class ProductsForecastIconsPng(Resource):
-    @api.doc()
+    @api.doc(summary="Get a static forecast icon", params={"icon": "Static icon filename"}, responses={200: "Icon returned successfully", 404: "Icon not found"})
     def get(self, icon):
         """Returns the forecast icon as png image
         :example: /products/resource/forecast/name_icon.png
