@@ -39,7 +39,7 @@ cache = None
 use_pymemcache = True
 
 try:
-    cache = Client('memcached:11211')
+    cache = Client('memcached:11211', connect_timeout=0.2, timeout=0.5, no_delay=True)
     # cache = Client([('172.18.0.10', 11211)])
 except Exception as memcache_error:
     logger.error("[*]Memcached Error : %s", memcache_error)

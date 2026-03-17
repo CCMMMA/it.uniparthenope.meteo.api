@@ -14,13 +14,15 @@ import json
 import os
 import time
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 import hashlib  # hash function for 128bit encryption
 
 from core.Logger import logger
 
 class ManageDiskCache:
     """Service or helper that encapsulates manage disk cache behavior."""
+
+    _KNOWN_EXTENSIONS = (".json", ".csv", ".png")
 
     def __init__(self, path_diskcache):
         """Initialize manage disk cache state."""
@@ -30,67 +32,78 @@ class ManageDiskCache:
         """Internal helper for daily cache dir."""
         day = day or datetime.today()
         return Path(self.base_diskcace) / str(day.year) / str(day.month) / str(day.day)
+
+    def _cache_key(self, request):
+        """Return the stable disk-cache key derived from the request URL."""
+        return hashlib.md5(request.url.encode('utf-8')).hexdigest()
+
+    def _cache_file(self, request, extension, day=None):
+        """Return the full cache-file path for a request and extension."""
+        return self._daily_cache_dir(day) / f"{self._cache_key(request)}{extension}"
+
+    def _find_cached_file(self, request):
+        """Return the first existing cache file for the current day."""
+        for extension in self._KNOWN_EXTENSIONS:
+            candidate = self._cache_file(request, extension)
+            if candidate.exists():
+                return candidate
+        return None
     
     def get(self, request, ttl, path_archive=None, flag_diskcache=True):
         """Implement get for manage disk cache."""
-        res_out = None
+        if isinstance(path_archive, bool) and flag_diskcache is True:
+            flag_diskcache = path_archive
+            path_archive = None
 
         if not flag_diskcache:
-            return res_out
+            return None
 
-        path = self._daily_cache_dir()
+        cached_file = self._find_cached_file(request)
+        if cached_file is None:
+            return None
 
-        m = hashlib.md5(request.url.encode('utf-8'))
+        final_path = str(cached_file)
 
-        if m is not None:
-            hex_file = f"{m.hexdigest()}.*"
-            cached_file = next(path.glob(hex_file), None)
+        if path_archive and os.path.exists(path_archive):
+            if os.path.getmtime(path_archive) > os.path.getmtime(final_path):
+                logger.info("DISK 1 : File '%s' older than archive source, deleting it", final_path)
+                os.remove(final_path)
+                return None
 
-            if cached_file is not None:
-                final_path = str(cached_file)
+        if (time.time() - os.path.getmtime(final_path)) > ttl:
+            logger.info("DISK 1 : File '%s' expired, deleting it", final_path)
+            os.remove(final_path)
+            return None
 
-                # Check if is valid respect to the date of ARCHIVE file 
-                if path_archive is not None: 
-                    if os.path.getmtime(path_archive) > os.path.getmtime(final_path):
-                        logger.info(f"DISK 1 : File '{final_path}' not consistent respect to ARCHIVE file !")
-                        os.remove(final_path)
-                        logger.info(f"DISK 1 : File '{final_path}' deleted !")
-                        return res_out
+        if cached_file.suffix in {".json", ".csv"}:
+            with open(cached_file, 'r', encoding='utf-8') as file:
+                return json.load(file)
 
-                # Check ttl of file , if file is old then ttl hours , must be re-created
-                # logger.info(f"DISK 1 : delta time expired {(time.time() - os.path.getmtime(final_path))} !")
-                if (time.time() - os.path.getmtime(final_path)) > ttl: 
-                    logger.info(f"DISK 1 : File '{final_path}' expired !")
-                    os.remove(final_path)
-                    logger.info(f"DISK 1 : File '{final_path}' deleted !")
-                    return res_out
-
-                if cached_file.suffix in {".json", ".csv"}:
-                    with open(cached_file, 'r') as file:
-                        res_out = json.load(file)
-                else:
-                    # .png case  or .csv case
-                    with open(cached_file, 'rb') as file:
-                        res_out = file.read()
-        return res_out
+        with open(cached_file, 'rb') as file:
+            return file.read()
 
     # type --> plot - json - csv
-    def set(self, request, res, type_file='plot'): 
+    def set(self, request, res, type_file='plot', flag_diskcache=True): 
         """Implement set for manage disk cache."""
-        res_out = None
-        m = hashlib.md5(request.url.encode('utf-8'))
+        if not flag_diskcache:
+            return
 
-        if m is not None:
+        if type_file == 'plot':
+            extension = '.png'
+        elif type_file == 'csv':
+            extension = '.csv'
+        else:
+            extension = '.json'
 
-            if type_file == 'plot':
-                extension = '.png'
-            elif type_file == 'csv':
-                extension = '.csv'
-            else:
-                extension = '.json'
-            
-            cache_dir = self._daily_cache_dir()
-            cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir = self._daily_cache_dir()
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = self._cache_file(request, extension)
 
-            with open(cache_dir / f"{m.hexdigest()}{extension}", 'w') as file:
-                file.write(json.dumps(res))
+        if extension in {'.json', '.csv'}:
+            with open(cache_file, 'w', encoding='utf-8') as file:
+                json.dump(res, file)
+            return
+
+        payload = res.encode('utf-8') if isinstance(res, str) else res
+        with open(cache_file, 'wb') as file:
+            file.write(payload)

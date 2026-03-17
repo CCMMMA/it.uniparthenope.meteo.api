@@ -6,14 +6,15 @@
 #
 #################################################
 
-from time import strftime, gmtime
 import hashlib  # hash function for 128bit encryption
-import memcache
 import json
-import os
-import pickle
-import datetime
 from core.Logger import logger
+
+
+def _cache_key(request_in):
+    """Return the stable memcache key derived from the request URL."""
+    return hashlib.md5(request_in.url.encode('utf-8')).hexdigest()
+
 
 def _decode_cached_value(value):
     """Normalize cached byte payloads into Python strings when possible."""
@@ -44,16 +45,11 @@ def get_resource(request_in, cache, use_pymemcache):
     if use_pymemcache is False:
         return None
 
-    res_out = None
-    m = hashlib.md5(request_in.url.encode('utf-8'))
-    if m is not None:
-        try:
-            res_out = cache.get(m.hexdigest())
-            res_out = _decode_cached_value(res_out)
-
-        except memcache.MemcacheError as e:
-            logger.error(str(e))
-    return res_out
+    try:
+        return _decode_cached_value(cache.get(_cache_key(request_in)))
+    except Exception as exc:
+        logger.error("Unable to read memcache entry: %s", exc)
+        return None
 
 
 # set resource to cache
@@ -62,15 +58,11 @@ def set_resource(request_in, res, cache, use_pymemcache, ttl):
     if use_pymemcache is False:
         return
 
-    m = hashlib.md5(request_in.url.encode('utf-8'))
-    if m is not None:
-        # to_be_cached = False
-        try:
-            if isinstance(res, (dict, list)):
-                res = json.dumps(res).encode('utf-8')
-            cache.set(m.hexdigest(), res, ttl)
-
-        except memcache.MemcacheError as e:
-            logger.error(str(e))
-            # print("[*] MemcacheError : " + str(e))
-
+    try:
+        if isinstance(res, (dict, list)):
+            res = json.dumps(res).encode('utf-8')
+        elif isinstance(res, str):
+            res = res.encode('utf-8')
+        cache.set(_cache_key(request_in), res, ttl)
+    except Exception as exc:
+        logger.error("Unable to write memcache entry: %s", exc)
