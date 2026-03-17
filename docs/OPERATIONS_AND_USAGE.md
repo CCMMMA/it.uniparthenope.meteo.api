@@ -107,7 +107,7 @@ Recommended checks:
 
 ## Container Deployment
 
-The repository already includes a [Dockerfile](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/Dockerfile).
+The repository already includes a [Dockerfile](../Dockerfile).
 
 Deployment behavior:
 
@@ -184,7 +184,7 @@ Use a repeatable update workflow:
 
 ### Swagger / OpenAPI
 
-Flask-RESTX exposes a Swagger interface for interactive endpoint discovery and testing. This should be the primary manual exploration entrypoint for developers and integrators.
+Flask-RESTX exposes a Swagger interface for interactive endpoint discovery and testing at the application root path `/`. This should be the primary manual exploration entrypoint for developers and integrators.
 
 Use Swagger to:
 
@@ -245,5 +245,6 @@ When the code changes:
 
 1. Update `README.md` if architecture or usage changed.
 2. Update this file when deployment or operational behavior changed.
-3. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.
-4. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.
+3. Update `docs/PRODUCTION_SETUP.md` when production setup assumptions change.
+4. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.
+5. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.

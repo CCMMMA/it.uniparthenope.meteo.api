@@ -32,13 +32,15 @@ The project aggregates forecast products, place metadata, legal and CMS content,
 ## Quick Start
 
 1. Review the deployment and development guidance in [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md).
-2. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](etc/ccmmmaapi.conf).
-3. Install the Python dependencies from [requirements.txt](requirements.txt).
-4. Start the service through `uWSGI` or the project container.
-5. Open the Swagger UI exposed by Flask-RESTX to inspect and test the API surface.
+2. Review the production rollout guide in [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md).
+3. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](etc/ccmmmaapi.conf).
+4. Install the Python dependencies from [requirements.txt](requirements.txt).
+5. Start the service through `uWSGI` or the project container.
+6. Open the Swagger UI exposed by Flask-RESTX at `/` to inspect and test the API surface.
 
 ## Documentation
 
 - Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md)
+- Production setup guide: [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md)
 - Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
 - Agent contribution notes: [AGENTS.md](AGENTS.md)

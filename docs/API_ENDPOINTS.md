@@ -106,6 +106,7 @@ The API is organized into the following namespaces:
 
 ## Notes
 
+- Swagger UI is exposed at the API root path `/`.
 - Query parameters are handled dynamically by the route implementations, especially in `products`, `places`, and `v2`.
 - Some endpoints return JSON, while others return PNG or CSV content.
 - A number of routes depend on external data availability and may return fallback or error payloads if storage is unavailable.

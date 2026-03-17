@@ -13,19 +13,29 @@ import hashlib
 import app
 import base64
 import json
+from types import SimpleNamespace
 from flask_restx import Namespace, Resource
 from flask import jsonify, Response, make_response, request, send_from_directory
 from datetime import datetime
 
 from core.Logger import logger
 from core.GetParams import get_params
-from core.MemcachedMethodHandlers import get_resource, set_resource
+from core.MemcachedMethodHandlers import get_resource, set_resource, load_cached_json
 from core.MeteoServices import MeteoServices, csvfy
 from core.Places import Places
 from core.GribServices import GribServices
 from core.MakeArchivePaths import MakeArchivePaths
 
 api = Namespace('products', description='Forecast products, plots, time series, GRIB exports, legends, and static product assets.')
+
+
+def _cache_request_with_default_date():
+    cache_url = request.url
+    if "date" not in request.args:
+        ncep_date = datetime.utcnow().strftime("%Y%m%dZ%H00")
+        separator = '&' if '?' in cache_url else '?'
+        cache_url = f"{cache_url}{separator}date={ncep_date}"
+    return SimpleNamespace(url=cache_url)
 
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('')
@@ -205,7 +215,7 @@ class ProductsForecastByProdAndPlace(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
             
 
-        return jsonify(eval(str(res)))
+        return jsonify(load_cached_json(res, res))
 
 
 '''
@@ -256,18 +266,14 @@ class ProductsForecastMapByProdAndPlace(Resource):
         -------------------------------------------------------------------------------------------
         """
 
-        # To solve the problem of when multiple get requests are made at different times of the day without specifying the 'data' parameter
-        if "date" not in request.url:
-            nowutc_datetime = datetime.utcnow()
-            ncep_date = nowutc_datetime.strftime("%Y%m%dZ%H00")
-            request.url = f"{request.url}?date={ncep_date}"
+        cache_request = _cache_request_with_default_date()
         
         # Check Memecache
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        res = get_resource(cache_request, app.cache, app.use_pymemcache)
 
         if res is None:
 
-            res2 = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
+            res2 = app.diskcache.get(cache_request, app.diskcache_ttl, app.use_disk_cached)
 
             # Check Diskcache 
             if res2 is None:
@@ -294,10 +300,10 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 }
                 
                 # Save on Diskcache
-                app.diskcache.set(request, base64.b64encode(mapData).decode('utf-8'), 'plot')
+                app.diskcache.set(cache_request, base64.b64encode(mapData).decode('utf-8'), 'plot')
 
                 # Save on Memcache 
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+                set_resource(cache_request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
             
             else:
                 # Data in Diskcache
@@ -310,7 +316,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
         else:
             # Data in Memcache
 
-            res = eval(res)
+            res = load_cached_json(res, {})
         
         response = make_response(base64.b64decode(res['plot']))
         # response = make_response(res['plot'])
@@ -383,12 +389,9 @@ class ProductSkewTByProdAndPlace(Resource):
         -------------------------------------------------------------------------------------------
         """
      
-        if "date" not in request.url:
-            nowutc_datetime = datetime.utcnow()
-            ncep_date = nowutc_datetime.strftime("%Y%m%dZ%H00")
-            request.url = f"{request.url}?date={ncep_date}"
+        cache_request = _cache_request_with_default_date()
         
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        res = get_resource(cache_request, app.cache, app.use_pymemcache)
 
         if res is None:
             
@@ -407,11 +410,11 @@ class ProductSkewTByProdAndPlace(Resource):
                 'imageName': imageName
             }
 
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(cache_request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
   
         else:
             # Data in Memcache
-            res = eval(res)
+            res = load_cached_json(res, {})
         
         response = make_response(base64.b64decode(res['plot']))
         # response = make_response(res['plot'])
@@ -572,7 +575,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         
         else:
-           res = eval(res)
+           res = load_cached_json(res, {})
 
         params = get_params({'dry': 'true'})
         if 'dry' in params and params['dry'] is not None and params['dry'].lower() == "false":
@@ -688,7 +691,7 @@ class ProductsForecastBarByProdAndPositionAndOutput(Resource):
             }
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-          res = eval(res)
+          res = load_cached_json(res, {})
 
         response = make_response(base64.b64decode(res['legend']))
         response.headers['Content-Type'] = 'image/png'
@@ -725,7 +728,7 @@ class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
             }
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-          res = eval(res)
+          res = load_cached_json(res, {})
 
         response = make_response(base64.b64decode(res['legend']))
         response.headers['Content-Type'] = 'image/png'
@@ -757,7 +760,7 @@ class ProductsPlotMetacharts(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
                 
         else:
-            res = eval(res)
+            res = load_cached_json(res, {})
         
         return jsonify(res)
 
@@ -813,7 +816,7 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
 
         else:
-            res = json.loads(res) 
+            res = load_cached_json(res, {})
         
         return jsonify(res)
 
@@ -900,7 +903,7 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
 
         else:
-          res = eval(res)
+          res = load_cached_json(res, res)
 
         return csvfy(res)
 
@@ -1020,7 +1023,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
             }
             set_resource(request,res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res, {})
                         
         response = make_response(base64.b64decode(res['map']))
         response.headers['Content-Type'] = 'image/png'

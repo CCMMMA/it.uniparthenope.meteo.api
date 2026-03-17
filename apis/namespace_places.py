@@ -6,7 +6,7 @@ from flask_restx import Namespace, Resource
 from core.GetParams import get_params
 from core.Places import Places
 from flask import request, jsonify
-from core.MemcachedMethodHandlers import get_resource, set_resource
+from core.MemcachedMethodHandlers import get_resource, set_resource, load_cached_json
 import app
 from core.Logger import logger
 
@@ -41,7 +41,7 @@ class GetAllPlaces(Resource):
 
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
 
-        return res
+        return jsonify(load_cached_json(res, res))
 
 
 
@@ -78,7 +78,7 @@ class PlacesSearchByName(Resource):
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
 
         else:
-            res = eval(res)
+            res = load_cached_json(res, [])
         return jsonify(res)
 
 '''
@@ -102,7 +102,7 @@ class PlacesSearchByName(Resource):
             res = places.get_places_by_name(name, params)
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res, [])
         return jsonify(res)
 '''
 
@@ -142,7 +142,7 @@ class PlacesSearchByNameAutocomplete(Resource):
                 # Save on Memcache
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res)
         return jsonify(res)
 
 '''
@@ -171,7 +171,7 @@ class PlacesSearchByNameAutocomplete(Resource):
             res = ret_val
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res, [])
         return jsonify(res)
 '''
 
@@ -209,7 +209,7 @@ class PlacesByIdentifier(Resource):
                 # Save on Memcache
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res)
         return jsonify(res)
 
 '''
@@ -234,7 +234,7 @@ class PlacesByIdentifier(Resource):
                 return jsonify({"details": "Place not found.", "result": "error"})
             set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res, [])
         return jsonify(res)
 '''
 
@@ -268,7 +268,7 @@ class PlacesSearchByCoords(Resource):
                 # Save on Memcache
                 set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res, [])
         return jsonify(res)
 
 '''
@@ -335,9 +335,9 @@ class PlacesSearchByBoundingBox(Resource):
                 app.diskcache.set(request, res, 'json')
 
                 # Save on Memcache
-                set_resource(request, res, app.cache, app.application.config, app.application.config['TTL_MEMCACHED'])
+                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
         else:
-            res = eval(res)
+            res = load_cached_json(res, [])
         return jsonify(res)
 
 '''

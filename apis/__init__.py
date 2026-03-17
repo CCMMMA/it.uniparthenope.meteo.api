@@ -27,7 +27,7 @@ api = Api(
         "Formal API surface for forecast products, places, legal content, application integrations, "
         "weather reports, and CMS-backed resources used by the Parthenope meteorological platform."
     ),
-    doc="/swagger",
+    doc="/",
     authorizations=authorizations,
     security="Bearer"
 )
@@ -43,4 +43,3 @@ api.add_namespace(ns_v2)
 api.add_namespace(ns_version)
 api.add_namespace(ns_webcam)
 api.add_namespace(ns_instruments)
-
