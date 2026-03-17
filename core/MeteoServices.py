@@ -663,6 +663,23 @@ class MeteoServices:
         return float("{:.2f}".format(convert))
     
     def getInstruments(self):
+        signalk_url = "https://signalk.meteo.uniparthenope.it"
+        signalk_meteo = f"{signalk_url}/signalk/v1/api/meteo/"
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        try:
+            response = requests.get(signalk_meteo, headers=headers)
+            data = response.json()
+            return data
+        except requests.exceptions.RequestException as e:
+            print(f"Errore nella richiesta: {e}")
+            return None
+
+    '''
+    def getInstruments(self):
         client = InfluxDBClient(url="http://193.205.230.7:8086", token="__jNBfyWPRNHEau33ebp2PzZSqoaHN5WkCqqZcELncYRpuF13LS-kV-cYmoq7zI3so3rtiFd2Kou6-md06PBdw==", org="Parthenope")
         query_api = client.query_api()
         
@@ -724,7 +741,7 @@ class MeteoServices:
             geojson_data["features"].append(feature)
 
         return geojson_data
-    
+    '''
 
 
     def getProductAvailCalendar(self, params):
@@ -2019,15 +2036,17 @@ class MeteoServices:
 
         date = datetime(year, month, day, hour, minute)
 
+        # Assemble the relative path
+        relativePath = format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
+
         # Set the dateTime
         dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
 
-        # Assemble the relative path
-        relativePath = place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
-
-
         # Assemble the image name
-        imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_1024x768.png" 
+        lat_without_dot = str(lat).replace(".", "")
+        lon_without_dot = str(lon).replace(".", "")
+        imageName = "plt_" + place + "_" + prod + "_" + lat_without_dot + "_" + lon_without_dot + "_" + dateTime + "_1024x768.png"
+        #imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_1024x768.png" 
         imagePath = self.config['BASE_SKEWT'] + os.path.sep + relativePath + os.path.sep + imageName
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName   
 

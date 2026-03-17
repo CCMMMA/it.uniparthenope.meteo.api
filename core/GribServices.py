@@ -222,12 +222,12 @@ class GribServices:
         jsonUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + jsonName
 
         # Check if the file already exists and it is valid
-        if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['CACHE_TIMEOUT']):
+        if os.path.isfile(jsonPath) is False or (os.path.isfile(jsonPath) is True and (time.time() - os.path.getmtime(jsonPath)) > self.config['TTL_DISKCACHE']):
             
             # Set the local path of the data file 
-            # url =  self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            url =  self.config['BASE_STORAGE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
             
-            url = self.config['BASE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
+            #url = self.config['BASE_PATH'] + prod + "/" + domain + "/history/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
             logger.info("url_data : " + str(url))
             
