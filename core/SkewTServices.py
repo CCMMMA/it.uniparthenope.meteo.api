@@ -6,6 +6,7 @@
 
 #Skew-T LogP plot for WRF out file
 import wrf
+import os
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
@@ -156,7 +157,8 @@ class SkewTServices:
         plt.figtext(0.73, 0.25,f"TT-INDEX: {total_totals:.0f~P}", weight="bold", fontsize=15, color="black", ha="left")
         plt.figtext(0.73, 0.22,f"K-INDEX: {kindex:.0f~P}", weight="bold", fontsize=15, color="black", ha="left")
 
-        plt.show()
+        #plt.show()
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
 
 
