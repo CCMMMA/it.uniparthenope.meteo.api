@@ -1,6 +1,7 @@
 """Place lookup services used by the public API endpoints."""
 
 import json
+import os
 import netCDF4
 import pymongo
 import numpy as np
@@ -18,6 +19,64 @@ class Places(object):
     def __init__(self, cfg):
         """Initialize places state."""
         self.config = cfg
+        self.mongo = MongoDBHandlers(self.config)
+        self._domain_grid_cache = {}
+
+    @staticmethod
+    def _normalize_filter(filter_value):
+        """Return a normalized filter list for MongoDB prefix queries."""
+        if filter_value is None:
+            return None
+        if isinstance(filter_value, str) and "[" in filter_value:
+            tmp = json.loads("{ \"filter\": " + filter_value + "}")
+            return tmp['filter']
+        return filter_value
+
+    def _archive_path(self, product, domain, ncep_date):
+        """Return the NetCDF archive path for a product/domain/date tuple."""
+        return os.path.join(
+            self.config['BASE_PATH'],
+            product,
+            domain,
+            self.config.get('ARCHIVE', 'archive'),
+            ncep_date[0:4],
+            ncep_date[4:6],
+            ncep_date[6:8],
+            f"{product}_{domain}_{ncep_date}.nc",
+        )
+
+    def _get_domain_grid(self, product, domain, ncep_date):
+        """Return cached grid metadata for one product/domain/date tuple."""
+        cache_key = (product, domain, ncep_date)
+        cached = self._domain_grid_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        url = self._archive_path(product, domain, ncep_date)
+        with netCDF4.Dataset(url) as dataset:
+            longitudes = dataset.variables["longitude"][:]
+            latitudes = dataset.variables["latitude"][:]
+            ipoints = len(longitudes)
+            jpoints = len(latitudes)
+            lon0 = float(longitudes[0])
+            lat0 = float(latitudes[0])
+            lon1 = float(longitudes[-1])
+            lat1 = float(latitudes[-1])
+            dxll = (lon1 - lon0) / ipoints
+            dyll = (lat1 - lat0) / jpoints
+
+        cached = {
+            "ipoints": ipoints,
+            "jpoints": jpoints,
+            "lon0": lon0,
+            "lat0": lat0,
+            "lon1": lon1,
+            "lat1": lat1,
+            "dxll": dxll,
+            "dyll": dyll,
+        }
+        self._domain_grid_cache[cache_key] = cached
+        return cached
 
     @staticmethod
     def is_in_bb(lon_min, lat_min, lon_max, lat_max, lon, lat):
@@ -69,87 +128,51 @@ class Places(object):
     
     def get_all_places(self, place):
         """Return all places."""
-        return MongoDBHandlers(self.config).get_query(place, all_places=True)
+        return self.mongo.get_query(place, all_places=True)
 
     def get_domain_and_indeces_by_product_and_place(self, product, place_id, date=None):
         """Return domain and indeces by product and place."""
         # conn = pymongo.MongoClient()
         # db = conn[self.config['DATABASE']]  # connessione databse
         # places = db['places']  # richiesta collezione 'places'
-        global domain, url
         query = {"id": place_id, "prods." + product: {"$exists": True}}
         proj = {"_id": 0, "minLon": 1, "minLat": 1, "maxLon": 1, "maxLat": 1, "prods." + product: 1}
-        # result = places.find_one(query, proj)
-        result = MongoDBHandlers(self.config).get_query_find_one('places', query, proj)
+        result = self.mongo.get_query_find_one('places', query, proj)
 
         if result is not None and product in result['prods'] and result['prods'] != {}:
             res = 999
+            domain = None
             for d in result['prods'][product]:
                 if result['prods'][product][d]['res'] < res:
                     res = result['prods'][product][d]['res']
                     domain = d
 
-            if "wrf5" in product or "rms3" in product or "wcm3" in product or "ww33" in product or "aiq3" in product:
-                if date == None:
+            if domain is None:
+                return None
+
+            if product in {"wrf5", "rms3", "wcm3", "ww33", "aiq3"}:
+                if date is None:
                     nowutc_datetime = datetime.utcnow()
                     ncep_date = nowutc_datetime.strftime("%Y%m%dZ%H00")
                 else:
                     ncep_date = date
 
-                
-                yyyy = str(ncep_date[0:4])
-                mm = str(ncep_date[4:6])
-                dd = str(ncep_date[6:8])
-                hh = str(ncep_date[9:11])
-
-
-                url = "/data1/ccmmma/prometeo/data/opendap/" + product + "/" + domain + "/archive/" + yyyy + "/" + mm + "/" + dd + "/" + product + "_" + domain + "_" + ncep_date + ".nc"
-
-                # print("get_domain_and_indices_by_product_and_place() - firt if -  : " + url)
-
-                dataset = netCDF4.Dataset(url)
-                ipoints = len(dataset.dimensions['longitude'])
-                jpoints = len(dataset.dimensions['latitude'])
-                lon0 = dataset.variables["longitude"][0]
-                lat0 = dataset.variables["latitude"][0]
-                lon1 = dataset.variables["longitude"][-1]
-                lat1 = dataset.variables["latitude"][-1]
-                dxll = (lon1 - lon0) / ipoints
-                dyll = (lat1 - lat0) / jpoints
-
-                # print( str(lon0) + "," + str(lat0) )
-                # print( str(ipoints) + "," + str(jpoints) )
-                # print( str(dxll) + "," + str(dyll) )
+                grid = self._get_domain_grid(product, domain, ncep_date)
 
                 minLon = float(result['minLon'])
                 minLat = float(result['minLat'])
                 maxLon = float(result['maxLon'])
                 maxLat = float(result['maxLat'])
 
-                if minLon < lon0:
-                    minLon = lon0
-                if maxLon > lon1:
-                    maxLon = lon1
-                if minLat < lat0:
-                    minLat = lat0
-                if maxLat > lat1:
-                    maxLat = lat1
+                minLon = max(minLon, grid["lon0"])
+                maxLon = min(maxLon, grid["lon1"])
+                minLat = max(minLat, grid["lat0"])
+                maxLat = min(maxLat, grid["lat1"])
 
-                #Imin = int((minLon - lon0) / dxll)
-                #Imax = int((maxLon - lon0) / dxll)
-                #Jmin = int((minLat - lat0) / dyll)
-                #Jmax = int((maxLat - lat0) / dyll)
-
-                Imin = max(0, int((minLon - lon0) / dxll))
-                Imax = min(ipoints - 1, int((maxLon - lon0) / dxll))
-                Jmin = max(0, int((minLat - lat0) / dyll))
-                Jmax = min(jpoints - 1, int((maxLat - lat0) / dyll))
-
-                # print(str(domain))
-                #print(str(Imin) + "," + str(Jmin))
-                #print(str(Imax) + "," + str(Jmax))
-
-                dataset.close()
+                Imin = max(0, int((minLon - grid["lon0"]) / grid["dxll"]))
+                Imax = min(grid["ipoints"] - 1, int((maxLon - grid["lon0"]) / grid["dxll"]))
+                Jmin = max(0, int((minLat - grid["lat0"]) / grid["dyll"]))
+                Jmax = min(grid["jpoints"] - 1, int((maxLat - grid["lat0"]) / grid["dyll"]))
 
                 return domain, Jmin, Jmax, Imin, Imax
 
@@ -195,10 +218,7 @@ class Places(object):
             except:
                 pass
 
-        if filter is not None and type(filter) is not dict and "[" in filter:
-            tmp = "{ \"filter\": " + filter + "}"
-            tmp = json.loads(tmp)
-            filter = tmp['filter']
+        filter = self._normalize_filter(filter)
 
         query = {
             "$and": [
@@ -235,11 +255,10 @@ class Places(object):
         #    result.append(item)
         # conn.close()
         # return  result
-        return MongoDBHandlers(self.config).get_query('places', query, self.proj)
+        return self.mongo.get_query('places', query, self.proj)
 
     def get_places_by_ll(self, lon, lat, options=None):
         """Return places by ll."""
-        result = []
         range = -1
         filter = ""
         prod = ""
@@ -276,14 +295,7 @@ class Places(object):
             query = {"$and": [query, {"id": {'$regex': filter + '.*'}}]}
 
         # items = places.find(query, self.proj).limit(limit)
-        items = MongoDBHandlers(self.config).get_query_find_one('places', query, self.proj)
-        # print "------------->"+str(items)
-        for item in items:
-            result.append(item)
-        # conn.close()
-
-        return items
-        #return MongoDBHandlers(self.config).get_query('places', query, self.proj, limit)
+        return self.mongo.get_query('places', query, self.proj, limit=limit)
 
     def get_place_by_id(self, id, options=None):
         """Return place by id."""
@@ -299,24 +311,16 @@ class Places(object):
         # result = mongo_db.get_query('place', query, {"_id": 0})
         # result = places.find_one(query, {"_id": 0})
         # return result
-        return MongoDBHandlers(self.config).get_query_find_one('places', query, {"_id": 0})
+        return self.mongo.get_query_find_one('places', query, {"_id": 0})
 
     def get_places_by_name(self, name, options=None):
         """Return places by name."""
-        result = []
-        range = -1
         filter = ""
-        prod = ""
-        language = ""
         limit = 9
 
         if options is not None:
             if "filter" in options and options['filter'] is not None:
                 filter = options['filter']
-            if "range" in options and options['range'] is not None:
-                range = float(options['range'])
-            if "prod" in options and options['prod'] is not None:
-                prod = options['prod']
             if "limit" in options and options['limit'] is not None:
                 limit = int(options['limit'])
 
@@ -343,7 +347,7 @@ class Places(object):
         # for item in items:
         #    result.append(item)
         # conn.close()
-        return MongoDBHandlers(self.config).get_query('places', query, self.proj)
+        return self.mongo.get_query('places', query, self.proj, limit=limit)
 
 
     def get_domain_by_product_and_ll(self, prod, lat, lon, options=None):
