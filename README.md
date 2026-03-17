@@ -15,11 +15,11 @@ The project aggregates forecast products, place metadata, legal and CMS content,
 
 ## Architecture Overview
 
-- [app.py](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/app.py): Flask application factory-style bootstrap, cache clients, and service singletons.
-- [apis/](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/apis): Flask-RESTX namespaces used to expose Swagger/OpenAPI documentation and HTTP routes.
-- [core/](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/core): domain logic for products, places, plotting, GRIB/NetCDF processing, CMS, login, Slurm integration, and helpers.
-- [etc/](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/etc): runtime configuration and JSON metadata.
-- [data/](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/data) and [static/](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/static): bundled assets and reference files.
+- [app.py](app.py): Flask application factory-style bootstrap, cache clients, and service singletons.
+- [apis/](apis): Flask-RESTX namespaces used to expose Swagger/OpenAPI documentation and HTTP routes.
+- [core/](core): domain logic for products, places, plotting, GRIB/NetCDF processing, CMS, login, Slurm integration, and helpers.
+- [etc/](etc): runtime configuration and JSON metadata.
+- [data/](data) and [static/](static): bundled assets and reference files.
 
 ## Runtime Characteristics
 
@@ -31,14 +31,14 @@ The project aggregates forecast products, place metadata, legal and CMS content,
 
 ## Quick Start
 
-1. Review the deployment and development guidance in [docs/OPERATIONS_AND_USAGE.md](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/docs/OPERATIONS_AND_USAGE.md).
-2. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/etc/ccmmmaapi.conf).
-3. Install the Python dependencies from [requirements.txt](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/requirements.txt).
+1. Review the deployment and development guidance in [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md).
+2. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](etc/ccmmmaapi.conf).
+3. Install the Python dependencies from [requirements.txt](requirements.txt).
 4. Start the service through `uWSGI` or the project container.
 5. Open the Swagger UI exposed by Flask-RESTX to inspect and test the API surface.
 
 ## Documentation
 
-- Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/docs/OPERATIONS_AND_USAGE.md)
-- Endpoint catalog: [docs/API_ENDPOINTS.md](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/docs/API_ENDPOINTS.md)
-- Agent contribution notes: [AGENTS.md](/Users/raffaelemontella/Documents/New project 2/it.uniparthenope.meteo.api/AGENTS.md)
+- Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md)
+- Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
+- Agent contribution notes: [AGENTS.md](AGENTS.md)
