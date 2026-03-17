@@ -11,12 +11,12 @@
 #
 #################################################
 
-import multiprocessing as mp
 import json
 import math
 import sys
 import calendar
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 import netCDF4
 import numpy as np
 import requests
@@ -28,7 +28,6 @@ import urllib.request as urllib_request
 from flask import make_response
 import time
 import app
-from core.GetWorkers import _init_session, work_worker, dispatch
 
 from PIL import ImageFont
 from PIL import ImageDraw 
@@ -48,6 +47,17 @@ from core.SkewTServices import SkewTServices
 #### Logging ####
 # logger = logging.getLogger('main_logger')
 ################
+
+WEATHER_TEXTS = [
+    {"it-IT": "Sereno", "en-US": "Clear"},
+    {"it-IT": "Poco nuvoloso", "en-US": "Partly Cloudy"},
+    {"it-IT": "Nuvoloso", "en-US": "Cloudy"},
+    {"it-IT": "Molto nuvoloso", "en-US": "Very Cloudy"},
+    {"it-IT": "Coperto", "en-US": "Covered"},
+    {"it-IT": "Rovesci", "en-US": "Showers"},
+    {"it-IT": "Pioggia", "en-US": "Rain"},
+    {"it-IT": "Forti piogge", "en-US": "Heavy Rains"}
+]
 
 def statusByConc(args):
     """Map a concentration value to its configured status label."""
@@ -163,58 +173,23 @@ def weatherText(args):
     crh = args[0]
     clf = args[1]
 
-    wtext = [
-        {
-            "it-IT": "Sereno",
-            "en-US": "Clear"
-        },
-        {
-            "it-IT": "Poco nuvoloso",
-            "en-US": "Partly Cloudy"
-        },
-        {
-            "it-IT": "Nuvoloso",
-            "en-US": "Cloudy"
-        },
-        {
-            "it-IT": "Molto nuvoloso",
-            "en-US": "Very Cloudy"
-        },
-        {
-            "it-IT": "Coperto",
-            "en-US": "Covered"
-        },
-        {
-            "it-IT": "Rovesci",
-            "en-US": "Showers"
-        },
-        {
-            "it-IT": "Pioggia",
-            "en-US": "Rain"
-        },
-        {
-            "it-IT": "Forti piogge",
-            "en-US": "Heavy Rains"
-        }
-    ]
-
     if crh < 0.1:
         if clf < .0625:
-            return wtext[0]
+            return WEATHER_TEXTS[0]
         if clf < .1875:
-            return wtext[1]
+            return WEATHER_TEXTS[1]
         if clf < .625:
-            return wtext[2]
+            return WEATHER_TEXTS[2]
         if clf < .875:
-            return wtext[3]
-        return wtext[4]
+            return WEATHER_TEXTS[3]
+        return WEATHER_TEXTS[4]
 
     if crh < 2:
-        return wtext[5]
+        return WEATHER_TEXTS[5]
 
     if crh < 10:
-        return wtext[6]
-    return wtext[7]
+        return WEATHER_TEXTS[6]
+    return WEATHER_TEXTS[7]
 
 
 def weatherIcon(args):
@@ -321,19 +296,6 @@ def beaufortText(wind_speed):
 
 def iconText(current):
     """Return the text label associated with an icon identifier."""
-    wtext = [
-        {"it-IT":"Sereno","en-US":"Clear"},
-        {"it-IT":"Poco nuvoloso","en-US":"Partly Cloudy"},
-        {"it-IT":"Nuvoloso","en-US":"Cloudy"},
-        {"it-IT":"Molto nuvoloso","en-US":"Very Cloudy"},
-        {"it-IT":"Coperto","en-US":"Covered"},
-        {"it-IT":"Rovesci","en-US":"Showers"},
-        {"it-IT":"Pioggia","en-US":"Rain"},
-        {"it-IT":"Forti piogge","en-US":"Heavy Rains"}
-    ]
-
-    #print "iconText:"+str(current)
-
     crh = float(current['crh'])
     clf = float(current['clf'])
     date13=current['date']
@@ -352,20 +314,20 @@ def iconText(current):
 
     if (crh < 0.1):
         if (clf < .0625):
-            return ('sunny' + suf), wtext[0]
+            return ('sunny' + suf), WEATHER_TEXTS[0]
         if (clf < .1875):
-            return ('cloudy1' + suf), wtext[1]
+            return ('cloudy1' + suf), WEATHER_TEXTS[1]
         if (clf < .625):
-            return ('cloudy2' + suf), wtext[2]
+            return ('cloudy2' + suf), WEATHER_TEXTS[2]
         if (clf < .875):
-            return ('cloudy4' + suf), wtext[3]
-        return ('cloudy5' + suf), wtext[4]
+            return ('cloudy4' + suf), WEATHER_TEXTS[3]
+        return ('cloudy5' + suf), WEATHER_TEXTS[4]
 
     if (crh < 2):
-        return ('shower1' + suf), wtext[5]
+        return ('shower1' + suf), WEATHER_TEXTS[5]
     if (crh < 10):
-        return ('shower2' + suf), wtext[6]
-    return ('shower3' + suf), wtext[7]
+        return ('shower2' + suf), WEATHER_TEXTS[6]
+    return ('shower3' + suf), WEATHER_TEXTS[7]
 
 def significantHeightIcon(args):
     """Choose an icon for the provided significant wave height."""
@@ -468,6 +430,7 @@ class MeteoServices:
         self.config = config
         self.maps = None
         self.legal = None
+        self._numpy_method_cache = {}
 
         with open(self.config["MAPS"]) as f:
             self.maps = simplejson.load(f)
@@ -578,6 +541,37 @@ class MeteoServices:
         if prod in self.maps["products"] and 'outputs' in self.maps["products"][prod]:
             result = self.maps["products"][prod]['outputs']
         return result
+
+    def _parse_datetime_ref(self, timeref, round_to_hour=False, default_midnight=False):
+        """Return a datetime parsed from the API time reference format."""
+        if timeref is None:
+            now = datetime.utcnow()
+            if default_midnight:
+                return datetime(now.year, now.month, now.day, 0, 0)
+            if round_to_hour:
+                return datetime(now.year, now.month, now.day, int(round(now.hour + now.minute / 60.0)), 0)
+            return datetime(now.year, now.month, now.day, now.hour, now.minute)
+
+        minute = int(timeref[11:13]) if len(timeref) == 13 else 0
+        return datetime(
+            int(timeref[:4]),
+            int(timeref[4:6]),
+            int(timeref[6:8]),
+            int(timeref[9:11]),
+            minute
+        )
+
+    def _format_datetime_ref(self, date_value):
+        """Return the API datetime format for a datetime instance."""
+        return date_value.strftime("%Y%m%dZ%H%M")
+
+    def _get_numpy_method(self, method_name):
+        """Return and cache the NumPy reduction function used by field extraction."""
+        method = self._numpy_method_cache.get(method_name)
+        if method is None:
+            method = getattr(np, method_name)
+            self._numpy_method_cache[method_name] = method
+        return method
 
     def getProductAvail(self, params):
         """Implement get product avail for meteo services."""
@@ -922,11 +916,6 @@ class MeteoServices:
         place = self.default_place
 
         timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
 
 
         if params:
@@ -939,40 +928,20 @@ class MeteoServices:
             if 'date' in params and params['date'] is not None:
                 timeref = params['date']
 
-        if timeref is None:
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(round(date.hour + date.minute / 60.0))
-            minute = 0
-        else:
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        date = datetime(year, month, day, hour, minute)
-
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-
-        relativePath = place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
+        date = self._parse_datetime_ref(timeref, round_to_hour=(timeref is None))
+        dateTime = self._format_datetime_ref(date)
+        relativePath = place + os.path.sep + prod + os.path.sep + date.strftime("%Y") + os.path.sep + date.strftime("%m") + os.path.sep + date.strftime("%d")
        
-        #if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
-        #    os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
-
         imageName = "jsn__" + place + "_" + prod + "_" + dateTime + ".json" 
         imagePath = self.config['CACHE_JSON'] + os.path.sep + relativePath + os.path.sep + imageName
-        imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
 
-        if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
-            os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
-        else:
-            if os.path.isfile(imagePath):
+        cache_dir = self.config['CACHE_JSON'] + os.path.sep + relativePath
+        if use_disk_cached:
+            if os.path.exists(cache_dir) is False:
+                os.makedirs(cache_dir)
+            elif os.path.isfile(imagePath):
 
-                path_archive = MakeArchivePaths.makePath(params['prod'], params['place'])
+                path_archive = MakeArchivePaths.makePath(prod, place)
 
                 if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
                     logger.info(f"DISK 2 : File '{imagePath}' not consistent respect to ARCHIVE file !")
@@ -1039,7 +1008,7 @@ class MeteoServices:
 
 
                     # Set the method
-                    method = getattr(sys.modules["numpy"],method)
+                    method = self._get_numpy_method(method)
 
                     # Set time to None
                     time = None
@@ -1252,8 +1221,9 @@ class MeteoServices:
             retval['details'] = "Place not indexed"
         
         # Save retval as .json file into cache_jsn
-        with open(imagePath, "w") as json_file:
-            json.dump(retval, json_file, indent=4)
+        if use_disk_cached:
+            with open(imagePath, "w") as json_file:
+                json.dump(retval, json_file, indent=4)
                 
         # Return the result
         return retval
@@ -2335,11 +2305,8 @@ class MeteoServices:
         place = self.default_place
 
         timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
+        step = 1
+        hours = 0
 
         if params:
 
@@ -2362,23 +2329,7 @@ class MeteoServices:
             else:
                 hours = 0
 
-        if timeref is None:
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            # hour=int(round(date.hour+date.minute/60.0))
-            hour = 0
-            minute = 0
-        else:
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        date = datetime(year, month, day, hour, minute)
+        date = self._parse_datetime_ref(timeref, default_midnight=(timeref is None))
 
 
         # Get the domain and the indeces of the place
@@ -2393,57 +2344,32 @@ class MeteoServices:
 
             retval = {"timeseries": []}
 
-            done = False
-            count = 0
-
             forecast = {}
-            model_outputs = []
-
-            
             items = []
             count = 0
             while count < 168:
-                dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-                dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
+                dateTime = self._format_datetime_ref(date)
+                dateTimePath = date.strftime("%Y/%m/%d")
         
                 #TODO: replace "/" with os.path.sep 
                 url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['ARCHIVE'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
 
                 if os.path.isfile(url):
-                    item = [ {"prod": prod, "place": place, "date": dateTime} ]
-                    items.append(item)
+                    items.append({"prod": prod, "place": place, "date": dateTime})
                 else:
                     break
                 date = date + timedelta(hours=1)
                 count = count + 1
-            
 
-            flat_items = [it[0] for it in items]
-
-            api_calls = [
-                (
-                    "GET",
-                    f"https://api.meteo.uniparthenope.it/products/{prod}/forecast/{place}",
-                    {
-                        "params": {
-                            "date": item["date"]
-                        }
-                    }
-                )
-                for item in flat_items
-            ]
-
-            
-            with mp.Pool(self.config['NUM_THREADS'], initializer=_init_session) as p:
-                model_outputs = p.starmap(dispatch, api_calls)
-
-            '''
-            OLD VERSION
-            with mp.Pool(self.config['NUM_THREADS']) as p: 
-                model_outputs = p.starmap(self.modelOutput, items)
-            '''
-
-            #[ model_outputs ] = self.modelOutput(items)
+            max_workers = max(1, min(self.config['NUM_THREADS'], len(items))) if items else 1
+            if items:
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    model_outputs = list(executor.map(
+                        lambda item: self.modelOutput(item, use_disk_cached=False),
+                        items
+                    ))
+            else:
+                model_outputs = []
 
             for model_output in model_outputs:
                 forecast[model_output["dateTime"]]=model_output
