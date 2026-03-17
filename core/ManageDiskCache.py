@@ -21,8 +21,7 @@ class ManageDiskCache:
 
     def __init__(self, path_diskcache):
         self.base_diskcace = path_diskcache
-
-
+    
     def get(self, request, ttl, path_archive=None, flag_diskcache=True):
         res_out = None
 
