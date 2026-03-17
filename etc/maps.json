@@ -314,6 +314,58 @@
             [ 102,   0,  51, 255 ]
          ]
       },
+      "wcm3.con.fine": {
+         "clevs": [
+            1,3,6,8,11,13,16,18,
+            48,78,109,139,170,200,230,
+            297,364,431,498,565,632,700,
+            1257,1814,2371,2929,3486,4043,4600,
+            10514,16429,22343,28257,34171,40086,46000
+         ], 
+         "ccols": [
+
+            [255,255,255,255],
+            [170,220,245,255],
+            [140,200,235,255],
+            [110,180,225,255],
+            [80,160,215,255],
+            [40,130,205,255],
+            [0,90,200,255],
+            
+            [0,110,180,255],
+            [0,130,160,255],
+            [0,150,140,255],
+            [0,170,120,255],
+            [0,185,100,255],
+            [0,195,80,255],
+            [0,200,60,255],
+            
+            [40,210,50,255],
+            [80,220,40,255],
+            [120,225,30,255],
+            [160,230,20,255],
+            [190,235,10,255],
+            [220,238,5,255],
+            [255,240,0,255],
+            
+            [255,220,0,255],
+            [255,200,0,255],
+            [255,180,0,255],
+            [255,160,0,255],
+            [255,140,0,255],
+            [255,120,0,255],
+            [255,100,0,255],
+            
+            [240,90,20,255],
+            [220,70,30,255],
+            [200,50,35,255],
+            [190,30,38,255],
+            [180,10,40,255],
+            [170,0,50,255],
+            [160,0,55,255],
+            [180,0,40,255]
+         ]  
+      },
       "aiq3.mci": {
          "clevs": [ 0, 1, 2, 3, 4, 5, 6 ],
          "ccols": [
@@ -892,6 +944,50 @@
                "round": 0,
                "unit": "n"
             },
+            "cof":{
+               "title": {
+                  "it-IT": "Concentrazione",
+                  "en-US": "Concentration"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante",
+                  "en-US": "Tracer concentration"
+               },
+               "round": 0,
+               "time": 0,
+               "level": 0,
+               "method": "amax",
+               "var": "conc",
+               "unit": "n",
+               "aggregate": [
+                  "min",
+                  "max"
+                  ]
+            },
+            "cof-min": {
+               "title": {
+                  "it-IT": "Concentrazione min",
+                  "en-US": "Concentration min"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante Minima",
+                  "en-US": "Minimum tracer concentration"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "cof-max": {
+               "title": {
+                  "it-IT": "Concentrazione max",
+                  "en-US": "Concentration max"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante Massima",
+                  "en-US": "Maximum tracer concentration"
+               },
+               "round": 0,
+               "unit": "n"
+            },
             "sts": {
                "title": {
                   "it-IT": "Stato",
@@ -1195,6 +1291,130 @@
                            }
                         ]
                            
+                     }
+                  ]
+               }
+            },
+            "cof": {
+               "title": {
+                  "en-US": "Inert transport and diffusion (fine scale)",
+                  "it-IT": "Diffusione e trasporto traccinti inerti (scala fine)"
+               },
+               "chart": {
+                  "title_chart": "Particle concentration ",
+                  "title_bars": "Number of Particles", 
+                  "var_bars": "cof",
+                  "pos_bars": "left",
+                  "unit_bars": "#",
+                  "clevels": [
+                     1,3,6,8,11,13,16,18,
+                     48,78,109,139,170,200,230,
+                     297,364,431,498,565,632,700,
+                     1257,1814,2371,2929,3486,4043,4600,
+                     10514,16429,22343,28257,34171,40086,46000
+                  ], 
+                  "ccolors": [
+
+                     [200,240,255,255],
+                     [170,220,245,255],
+                     [140,200,235,255],
+                     [110,180,225,255],
+                     [80,160,215,255],
+                     [40,130,205,255],
+                     [0,90,200,255],
+                     
+                     [0,110,180,255],
+                     [0,130,160,255],
+                     [0,150,140,255],
+                     [0,170,120,255],
+                     [0,185,100,255],
+                     [0,195,80,255],
+                     [0,200,60,255],
+                     
+                     [40,210,50,255],
+                     [80,220,40,255],
+                     [120,225,30,255],
+                     [160,230,20,255],
+                     [190,235,10,255],
+                     [220,238,5,255],
+                     [255,240,0,255],
+                     
+                     [255,220,0,255],
+                     [255,200,0,255],
+                     [255,180,0,255],
+                     [255,160,0,255],
+                     [255,140,0,255],
+                     [255,120,0,255],
+                     [255,100,0,255],
+                     
+                     [240,90,20,255],
+                     [220,70,30,255],
+                     [200,50,35,255],
+                     [190,30,38,255],
+                     [180,10,40,255],
+                     [170,0,50,255],
+                     [160,0,55,255],
+                     [180,0,40,255]
+                  ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "conc",
+                        "COLORSCALERANGE": "1,46000",
+                        "NUMCOLORBANDS": "7",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR" :"extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/concBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US":"Concentration [N. of particles]",
+                           "it-IT": "Concentrazione [N. particelle]"
+                        },
+                        "colormap":"wcm3.con.fine",
+                        "var1": "conc",
+                        "type": "shaded",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
                      }
                   ]
                }
