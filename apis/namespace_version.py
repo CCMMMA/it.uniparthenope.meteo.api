@@ -15,6 +15,9 @@ class Version(Resource):
     def get(self):
         """
         Return the deployed API version together with the configured runtime environment label.
+
+        Example:
+        `GET /version`
         """
         res = {'version': '4.01', 'environment': app.application.config['ENV']}
         return jsonify(res)

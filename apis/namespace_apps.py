@@ -48,6 +48,9 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
     def get(self, prod, placeprefix, z, x, y):
         """
         Return an application-oriented weather tile payload for the requested product and tile coordinates.
+
+        Example:
+        `GET /apps/owm/wrf5/prov/10/552/384.geojson`
         """
 
         if placeprefix == "reg":
@@ -109,6 +112,9 @@ class AppsSaisRisk(Resource):
     def get(self):
         """
         Return the SAIS index payload loaded from the configured JSON source.
+
+        Example:
+        `GET /apps/sais/index`
         """
         try:
             with open("/project/JsonData/sam3.json", "r") as file_sam3:

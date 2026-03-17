@@ -30,6 +30,9 @@ class Instruments(Resource):
     def get(self):
         """
         Return the available instruments payload retrieved from the upstream Signal K integration.
+
+        Example:
+        `GET /instruments`
         """
 
         ms = MeteoServices(app.application.config)
@@ -57,6 +60,9 @@ class InstrumentsContext(Resource):
     def get(self, identification):
         """
         Return a single instrument record selected by identifier from the upstream instruments payload.
+
+        Example:
+        `GET /instruments/station-01`
         """
 
         ms = MeteoServices(app.application.config)

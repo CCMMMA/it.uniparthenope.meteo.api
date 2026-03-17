@@ -22,6 +22,9 @@ class Webcam(Resource):
     def get(self, place, location, cam):
         """
         Return the latest available JPEG image for the specified webcam path, falling back to the configured no-image asset when necessary.
+
+        Example:
+        `GET /webcam/com63049/castelsantelmo/nord`
         """
         f_name = "/home/ccmmma/prometeo/data/webcam/" + place + "/" + location + "/" + cam + ".jpg"
         if not os.path.isfile(f_name):

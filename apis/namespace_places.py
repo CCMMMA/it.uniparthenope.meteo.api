@@ -20,6 +20,9 @@ class GetAllPlaces(Resource):
     def get(self):
         """
         Return the complete place collection available to the API.
+
+        Example:
+        `GET /places`
         """
 
         res = get_resource(request, app.cache, app.use_pymemcache)
@@ -50,12 +53,11 @@ class GetAllPlaces(Resource):
 class PlacesSearchByName(Resource):
     @api.doc(summary="Search places by name", params={"name": "Free-text place name to search"}, responses={200: "Matching places returned successfully"})
     def get(self, name):
-        """Returns place information you are looking for.
-        :example: /places/search/byname/Napoli
-        :param name: Place common name.
-        :type name: str.
-        :returns: json -- the return josn.
-        ------------------------------------------------------------------------------------------
+        """
+        Search places whose names match the requested text.
+
+        Example:
+        `GET /places/search/byname/Napoli`
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
         
@@ -113,6 +115,9 @@ class PlacesSearchByNameAutocomplete(Resource):
     def get(self):
         """
         Return a compact list of autocomplete suggestions filtered for frontend search use.
+
+        Example:
+        `GET /places/search/byname/autocomplete?term=nap`
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
 
@@ -180,12 +185,11 @@ class PlacesSearchByNameAutocomplete(Resource):
 class PlacesByIdentifier(Resource):
     @api.doc(summary="Get a place by identifier", params={"identifier": "Canonical place identifier"}, responses={200: "Place returned successfully", 404: "Place not found"})
     def get(self, identifier):
-        """Returns the place information you are looking for.
-        :example: /places/byid/ca001
-        :param identifier: ....
-        :type identifier: str.
-        :returns: json -- the return josn.
-        -------------------------------------------------------------------------------------------
+        """
+        Return a single place by its canonical identifier.
+
+        Example:
+        `GET /places/com63049`
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
 
@@ -244,10 +248,10 @@ class PlacesSearchByCoords(Resource):
     @api.doc(summary="Search places near coordinates", params={"latitude": "Latitude in decimal degrees", "longitude": "Longitude in decimal degrees"}, responses={200: "Nearby places returned successfully"})
     def get(self, latitude, longitude):
         """
-        :example: /places/search/bycoords/40.78783/14.352
-        :param latitude: The latitude.
-        :param longitude: The longitude.
-        :returns: json -- the return JSON.
+        Search places near the given geographic coordinates.
+
+        Example:
+        `GET /places/search/bycoords/40.78783/14.352`
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
 
@@ -309,12 +313,10 @@ class PlacesSearchByBoundingBox(Resource):
     )
     def get(self, minLatitude, minLongitude, maxLatitude, maxLongitude):
         """
-        :example: /places/search/byboundingbox/40.78/14.35/41.22/16.87
-        :param minLatitude:  min latitude
-        :param minLongitude: min longitude
-        :param maxLatitude: max latitude
-        :param maxLongitude: min longitude
-        :returns: json -- the return JSON.
+        Search places contained inside the given bounding box.
+
+        Example:
+        `GET /places/search/byboundingbox/40.78/14.35/41.22/16.87`
         """
         res = get_resource(request, app.cache, app.use_pymemcache)
 

@@ -17,6 +17,9 @@ class LegalDiscaimer(Resource):
     def get(self):
         """
         Return the legal disclaimer content configured for the platform.
+
+        Example:
+        `GET /legal/disclaimer`
         """
         ms = MeteoServices(app.application.config)
         params = get_params({'lang': 'en-US'})
@@ -34,6 +37,9 @@ class LegalPrivacy(Resource):
     def get(self):
         """
         Return the privacy information configured for the platform.
+
+        Example:
+        `GET /legal/privacy`
         """
         ms = MeteoServices(app.application.config)
         params = get_params({'lang': 'en-US'})

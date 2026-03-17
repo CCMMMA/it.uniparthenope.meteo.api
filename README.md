@@ -43,4 +43,5 @@ The project aggregates forecast products, place metadata, legal and CMS content,
 - Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md)
 - Production setup guide: [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md)
 - Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
+- Step-by-step Python tutorial: [docs/PYTHON_API_TUTORIAL.md](docs/PYTHON_API_TUTORIAL.md)
 - Agent contribution notes: [AGENTS.md](AGENTS.md)

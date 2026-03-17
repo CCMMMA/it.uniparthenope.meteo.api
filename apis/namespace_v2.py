@@ -64,6 +64,12 @@ def roles_from_token(f):
 class WeatherReportsLatestJson(Resource):
     @api.doc(summary="Get the latest weather report payload", responses={200: "Latest weather report returned"})
     def get(self):
+        """
+        Return the latest weather report as JSON.
+
+        Example:
+        `GET /v2/weatherreports/latest/json`
+        """
         return core.RRSResponseHandlers.get_latest_weather_report_jsonify()
 
 
@@ -72,6 +78,12 @@ class WeatherReportsLatestJson(Resource):
 class WeatherReportsLatestJson(Resource):
     @api.doc(summary="Get a field from the latest weather report", params={"field": "Weather report field name"}, responses={200: "Weather report field returned", 404: "Field not found"})
     def get(self, field):
+        """
+        Return a single field from the latest weather report.
+
+        Example:
+        `GET /v2/weatherreports/latest/title/json`
+        """
         # sanitizer = Sanitizer()  da studiare
         return core.RRSResponseHandlers.get_field_lwr_jsonify(field)
 
@@ -81,6 +93,12 @@ class WeatherReportsLatestJson(Resource):
 class WeatherReportsJson(Resource):
     @api.doc(summary="Get all weather reports", responses={200: "Weather reports returned"})
     def get(self):
+        """
+        Return all weather reports exposed by the service.
+
+        Example:
+        `GET /v2/weatherreports/json`
+        """
         return core.RRSResponseHandlers.get_all_weather_reports_jsonify()
 
 # FROM ORIGINAL : Internal Server Error
@@ -89,6 +107,12 @@ class WeatherReportsJson(Resource):
 class SlurmStorage(Resource):
     @api.doc(summary="Get Slurm storage status", responses={200: "Storage status returned"})
     def get(self):
+        """
+        Return storage information collected from the Slurm environment.
+
+        Example:
+        `GET /v2/slurm/storage`
+        """
         ss = SlurmServices(app.application.config)
         res = ss.get_storage_status()
         return jsonify(res)
@@ -99,6 +123,12 @@ class SlurmStorage(Resource):
 class SlurmInfo(Resource):
     @api.doc(summary="Get Slurm cluster information", responses={200: "Slurm information returned"})
     def get(self):
+        """
+        Return general cluster information from Slurm.
+
+        Example:
+        `GET /v2/slurm/info`
+        """
         ss = SlurmServices(app.application.config)
         res = ss.sinfo()
         return jsonify(res)
@@ -109,6 +139,12 @@ class SlurmInfo(Resource):
 class SlurmInfo(Resource):
     @api.doc(summary="Get Slurm queue information", responses={200: "Slurm queue returned"})
     def get(self):
+        """
+        Return the current Slurm queue snapshot.
+
+        Example:
+        `GET /v2/slurm/queue`
+        """
         ss = SlurmServices(app.application.config)
         res = ss.squeue()
         return jsonify(res)
@@ -198,6 +234,9 @@ class NavBar(Resource):
     def get(self, **kwargs):
         """
         Return the CMS-derived navigation bar payload filtered by the caller roles.
+
+        Example:
+        `GET /v2/navbar`
         """
         roles = kwargs["roles"]
         cms = CMS(app.application.config)
@@ -214,6 +253,9 @@ class Pages(Resource):
     def get(self, **kwargs):
         """
         Return the list of CMS-managed pages available to the caller.
+
+        Example:
+        `GET /v2/pages`
         """
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
@@ -230,6 +272,9 @@ class PageByPageId(Resource):
     def get(self, page, **kwargs):
         """
         Return a CMS page payload by page identifier.
+
+        Example:
+        `GET /v2/pages/about_us`
         """
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
@@ -244,6 +289,9 @@ class PageByPageId(Resource):
     def post(self, page, **kwargs):
         """
         Persist a CMS page payload for the specified page identifier.
+
+        Example:
+        `POST /v2/pages/about_us`
         """
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
@@ -260,8 +308,9 @@ class AuthLoginByToken(Resource):
     def get(self, **kwargs):
         """
         Validate the bearer token received in the `Authorization` header and return the associated authentication payload.
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
+
+        Example:
+        `GET /v2/auth/login`
         """
         token = kwargs["token"]
         ls = LoginServices(app.application.config)

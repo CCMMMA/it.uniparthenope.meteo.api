@@ -17,6 +17,9 @@ class BoxToday(Resource):
     def get(self, place):
         """
         Return the current box content for the requested place identifier.
+
+        Example:
+        `GET /box/today/com63049`
         """
         params = get_params({place: 'com63049'})
         box = Box()

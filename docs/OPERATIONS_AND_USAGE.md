@@ -247,4 +247,5 @@ When the code changes:
 2. Update this file when deployment or operational behavior changed.
 3. Update `docs/PRODUCTION_SETUP.md` when production setup assumptions change.
 4. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.
-5. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.
+5. Update `docs/PYTHON_API_TUTORIAL.md` when beginner-facing examples or recommended usage patterns change.
+6. Improve the corresponding Flask-RESTX Swagger docstrings or decorators.

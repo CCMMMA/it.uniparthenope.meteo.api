@@ -21,6 +21,9 @@ class UserLogin(Resource):
     def post(self):
         """
         Authenticate a user and return the downstream role and profile payload produced by the login service.
+
+        Example body:
+        `{"name": "student", "pass": "secret"}`
         """
         params = api.payload
         ms = LoginServices(app.application.config)
