@@ -22,6 +22,7 @@ When editing this project:
 3. Keep filesystem paths and cache behavior consistent with the deployment configuration.
 4. Be careful with large NetCDF/GRIB datasets: avoid loading or duplicating more data than needed.
 5. Run at least a syntax-level verification on touched Python files before finishing.
+6. Run the API endpoint unit-test suite with `pytest` whenever you change API handlers, request/response behavior, authentication flow, or shared service wiring.
 
 ## Optimization Priorities
 
@@ -44,3 +45,4 @@ Focus on measurable wins such as:
 - Check which branch is active before assessing repository contents. `main` and `master` differ substantially.
 - Treat `master` as the branch containing the current application code unless the user asks otherwise.
 - If you change cache semantics or path construction, verify the related config keys in `etc/ccmmmaapi.conf`.
+- The standard API test approach in this repository is `pytest` with Flask's test client and mocked service dependencies; keep endpoint coverage up to date when new routes are added.

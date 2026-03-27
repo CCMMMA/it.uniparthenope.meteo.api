@@ -29,3 +29,4 @@ pandas
 metpy
 
 certifi
+pytest

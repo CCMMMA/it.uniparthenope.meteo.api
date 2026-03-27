@@ -36,10 +36,11 @@ The repository includes both operational documentation for deployers and pedagog
 1. Review the deployment and development guidance in [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md).
 2. Review the production rollout guide in [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md).
 3. Read the endpoint reference in [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md) before integrating a client.
-4. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](etc/ccmmmaapi.conf).
-5. Install the Python dependencies from [requirements.txt](requirements.txt).
-6. Start the service through `uWSGI` or the project container.
-7. Open the Swagger UI exposed by Flask-RESTX at `/` to inspect and test the API surface.
+4. Read the testing guide in [docs/TESTING.md](docs/TESTING.md) before validating changes.
+5. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](etc/ccmmmaapi.conf).
+6. Install the Python dependencies from [requirements.txt](requirements.txt).
+7. Start the service through `uWSGI` or the project container.
+8. Open the Swagger UI exposed by Flask-RESTX at `/` to inspect and test the API surface.
 
 ## Learning Paths
 
@@ -47,12 +48,14 @@ The repository includes both operational documentation for deployers and pedagog
 - If you want to build an Android client, start with [docs/ANDROID_KOTLIN_API_TUTORIAL.md](docs/ANDROID_KOTLIN_API_TUTORIAL.md).
 - If you want to build an iPhone app, start with [docs/IOS_SWIFT_API_TUTORIAL.md](docs/IOS_SWIFT_API_TUTORIAL.md).
 - If you need a route-by-route reference, use [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md).
+- If you need to validate endpoint behavior locally, use [docs/TESTING.md](docs/TESTING.md).
 
 ## Documentation
 
 - Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md)
 - Production setup guide: [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md)
 - Cache architecture and tuning guide: [docs/CACHE.md](docs/CACHE.md)
+- Testing and evaluation guide: [docs/TESTING.md](docs/TESTING.md)
 - Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
 - Step-by-step Python tutorial: [docs/PYTHON_API_TUTORIAL.md](docs/PYTHON_API_TUTORIAL.md)
 - Step-by-step Android/Kotlin tutorial: [docs/ANDROID_KOTLIN_API_TUTORIAL.md](docs/ANDROID_KOTLIN_API_TUTORIAL.md)
