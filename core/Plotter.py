@@ -1,21 +1,47 @@
 """Plot-generation helpers for image-based forecast products."""
 
-import sys
 from core.Logger import logger
 
-from matplotlib.colors import ListedColormap, BoundaryNorm
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Polygon
+try:
+    from matplotlib.colors import ListedColormap, BoundaryNorm
+    from matplotlib.collections import PatchCollection
+    from matplotlib.patches import Polygon
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from mpl_toolkits.basemap import Basemap
+    _PLOTTING_IMPORT_ERROR = None
+except ImportError as exc:
+    ListedColormap = BoundaryNorm = PatchCollection = Polygon = None
+    plt = np = Basemap = None
+    _PLOTTING_IMPORT_ERROR = exc
 
-from netCDF4 import Dataset as NetCDFFile
-import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.basemap import Basemap
-import matplotlib.image as mpimg
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+try:
+    from scipy.ndimage import zoom as scipy_zoom
+    _SCIPY_IMPORT_ERROR = None
+except ImportError as exc:
+    scipy_zoom = None
+    _SCIPY_IMPORT_ERROR = exc
 
-from core.Places import Places
-import haversine
+try:
+    from netCDF4 import Dataset as NetCDFFile
+    _NETCDF_IMPORT_ERROR = None
+except ImportError as exc:
+    NetCDFFile = None
+    _NETCDF_IMPORT_ERROR = exc
+
+try:
+    from core.Places import Places
+    _PLACES_IMPORT_ERROR = None
+except ImportError as exc:
+    Places = None
+    _PLACES_IMPORT_ERROR = exc
+
+try:
+    import haversine
+    _HAVERSINE_IMPORT_ERROR = None
+except ImportError as exc:
+    haversine = None
+    _HAVERSINE_IMPORT_ERROR = exc
 
 import pickle
 import json
@@ -23,7 +49,12 @@ import os
 import datetime
 
 # To watermark 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+try:
+    from PIL import Image, ImageEnhance
+    _PIL_IMPORT_ERROR = None
+except ImportError as exc:
+    Image = ImageEnhance = None
+    _PIL_IMPORT_ERROR = exc
 import io
 
 
@@ -44,6 +75,7 @@ class Plotter(object):
     # Constructor
     def __init__(self, config):
         """Initialize plotter state."""
+        self._ensure_dependencies()
         self._basemap_cache = {}
         self._watermark_image_cache = {}
 
@@ -100,6 +132,30 @@ class Plotter(object):
         else:
             logger.critical("MAPS not set in the json configuration file.")
 
+    @staticmethod
+    def _ensure_dependencies():
+        """Fail with a clear message when optional plotting dependencies are missing."""
+        missing_dependencies = []
+
+        if _PLOTTING_IMPORT_ERROR is not None:
+            missing_dependencies.append("matplotlib/basemap")
+        if _NETCDF_IMPORT_ERROR is not None:
+            missing_dependencies.append("netCDF4")
+        if _SCIPY_IMPORT_ERROR is not None:
+            missing_dependencies.append("scipy")
+        if _PLACES_IMPORT_ERROR is not None:
+            missing_dependencies.append("core.Places dependencies")
+        if _HAVERSINE_IMPORT_ERROR is not None:
+            missing_dependencies.append("haversine")
+        if _PIL_IMPORT_ERROR is not None:
+            missing_dependencies.append("Pillow")
+
+        if missing_dependencies:
+            raise RuntimeError(
+                "Plotter requires optional dependencies that are not installed: "
+                + ", ".join(missing_dependencies)
+            )
+
     def _get_basemap(self, place, min_lon, min_lat, max_lon, max_lat):
         """Return a cached basemap instance for the requested place bounds."""
         basemap = self._basemap_cache.get(place)
@@ -135,6 +191,68 @@ class Plotter(object):
         if level_index is not None:
             return variable[level_index]
         return variable[:]
+
+    def _get_localized_value(self, values, language, default=""):
+        """Return the best localized string available for the requested language."""
+        if not isinstance(values, dict) or not values:
+            return default
+
+        if language in values:
+            return values[language]
+
+        language_prefix = language.split("-", 1)[0]
+        if language_prefix in values:
+            return values[language_prefix]
+
+        for key, value in values.items():
+            if key.split("-", 1)[0] == language_prefix:
+                return value
+
+        return next(iter(values.values()), default)
+
+    def _interpolate_scalar_grid(self, lons, lats, data, factor=1.0, max_points=350):
+        """Densify a regular scalar grid to improve shaded and contour rendering quality."""
+        if factor is None or factor <= 1:
+            return lons, lats, data
+
+        scalar_data = np.ma.asarray(data)
+        if scalar_data.ndim != 2 or lons.shape != scalar_data.shape or lats.shape != scalar_data.shape:
+            return lons, lats, data
+
+        if min(scalar_data.shape) < 2:
+            return lons, lats, data
+
+        if np.ma.is_masked(scalar_data) and np.ma.getmaskarray(scalar_data).any():
+            return lons, lats, data
+
+        scalar_values = np.asarray(scalar_data, dtype=float)
+        if not np.isfinite(scalar_values).all():
+            return lons, lats, data
+
+        rows, cols = scalar_values.shape
+        target_rows = min(max_points, max(rows, int(round(rows * factor))))
+        target_cols = min(max_points, max(cols, int(round(cols * factor))))
+
+        if target_rows <= rows and target_cols <= cols:
+            return lons, lats, data
+
+        zoom_factors = (target_rows / rows, target_cols / cols)
+        interpolation_order = 3 if min(rows, cols, target_rows, target_cols) >= 4 else 1
+        dense_values = scipy_zoom(
+            scalar_values,
+            zoom_factors,
+            order=interpolation_order,
+            mode="nearest",
+            prefilter=interpolation_order > 1,
+        )
+
+        lon_axis = np.asarray(lons[0], dtype=float)
+        lat_axis = np.asarray(lats[:, 0], dtype=float)
+        dense_lon_axis = np.linspace(lon_axis[0], lon_axis[-1], target_cols)
+        dense_lat_axis = np.linspace(lat_axis[0], lat_axis[-1], target_rows)
+        dense_lons, dense_lats = np.meshgrid(dense_lon_axis, dense_lat_axis)
+
+        return dense_lons, dense_lats, dense_values
 
     # Add a shaded layer to the basemap
     def _add_shaded(self, basemap, values, lons, lats, data, colors, legend_title, position_legend, size="2%",pad="5%", label_size=8, ticks_position="right", draw_colorbars = True):
@@ -236,6 +354,8 @@ class Plotter(object):
                     if "marker_size" in marker:
 
                         # Set the marker size
+                        marker_size = marker["marker_size"]
+                    elif "size" in marker:
                         marker_size = marker["size"]
 
                     # Read the shapefile
@@ -290,21 +410,27 @@ class Plotter(object):
         fig.savefig(buf, dpi=300, bbox_inches='tight', format='png')
         buf.seek(0)
         plot_image = Image.open(buf).convert("RGBA")
+        resample_filter = getattr(Image, "Resampling", Image).LANCZOS
 
         for watermark in watermarks: 
-            logo = self._watermark_image_cache.get(watermark['path'])
+            watermark_path = watermark.get("path")
+            if not watermark_path or not os.path.exists(watermark_path):
+                logger.warning("Skipping missing watermark asset: %s", watermark_path)
+                continue
+
+            logo = self._watermark_image_cache.get(watermark_path)
             if logo is None:
-                logo = Image.open(watermark['path']).convert("RGBA")
-                self._watermark_image_cache[watermark['path']] = logo
+                logo = Image.open(watermark_path).convert("RGBA")
+                self._watermark_image_cache[watermark_path] = logo
             else:
                 logo = logo.copy()
 
-            logo_width = int(plot_image.width * watermark['dim'])  
-            logo = logo.resize((logo_width, int(logo_width * (logo.height / logo.width))), Image.ANTIALIAS)
+            logo_width = max(1, int(plot_image.width * watermark.get('dim', 0.15)))
+            logo = logo.resize((logo_width, max(1, int(logo_width * (logo.height / logo.width)))), resample_filter)
 
             r, g, b, alpha = logo.split()
           
-            alpha = ImageEnhance.Brightness(alpha).enhance(watermark['opacity'])
+            alpha = ImageEnhance.Brightness(alpha).enhance(watermark.get('opacity', 1))
             logo.putalpha(alpha)
 
             positions = {
@@ -314,7 +440,7 @@ class Plotter(object):
                 "bottom-left": (40, plot_image.height - logo.height - 60) 
             }
 
-            logo_position = positions.get(watermark['position'], "top-right")
+            logo_position = positions.get(watermark.get('position'), positions["top-right"])
 
             plot_image.paste(logo, logo_position, logo)
         plot_image.save(result_file)
@@ -424,28 +550,18 @@ class Plotter(object):
             if "plot" not in outputs_output:
                 raise Exception("The plot key is missing in products."+prod+".outputs." + output)
             plot = outputs_output["plot"]
-            title = ""
-            if "title" in outputs_output:
-                if language not in outputs_output["title"]:
-                    language = "en-US"
-            title = outputs_output["title"][language]
+            title = self._get_localized_value(outputs_output.get("title"), language, "")
 
-            place_name = ""
-            if language in place_info["name"]:
-                place_name = place_info["name"][language]
-            elif language[:2] in place_info["name"]:
-                place_name = place_info["name"][language[:2]]
-            else:
-                place_name = place_info["name"][next(iter(place_info["name"]))]
+            place_name = self._get_localized_value(place_info.get("name"), language, place)
 
-            plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(self.maps["title"][language]).replace("__name__", place_name)
+            plot_title_template = self._get_localized_value(self.maps.get("title"), language, "__name__")
+            plot_title = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute)).strftime(plot_title_template).replace("__name__", place_name)
             plt.title(plot_title)
 
             if "layers" not in plot:
                 raise Exception("The layers key is not present in products."+prod+".outputs." + output+".plot")
             layers = plot["layers"]
-            watermarks = False
-            watermark_layer = None
+            watermarks = []
 
             for layer in layers:
                 var1_name = layer.get("var1")
@@ -453,16 +569,19 @@ class Plotter(object):
                 time = layer.get("time")
                 level = layer.get("level")
                 layer_type = layer.get("type", "contourf")
-                text = layer.get("text", {}).get(language, "")
+                text = self._get_localized_value(layer.get("text"), language, "")
                 pad = layer.get("pad", "10%")
                 position = layer.get("position", "left")
                 ticks_position = layer.get("ticks_position", "left")
                 label_size = layer.get("label_size", 8)
                 colormap_name = layer.get("colormap")
                 colormap = None
+                clevs = None
                 clev_min = layer.get("clev_min", 0)
                 clev_max = layer.get("clev_max", 100)
                 colors = layer.get("colors")
+                interpolation_factor = layer.get("interpolation_factor", 2.0)
+                interpolation_max_points = layer.get("interpolation_max_points", 350)
 
                 if colormap_name:
                     if colormap_name not in self.maps["colormaps"]:
@@ -489,18 +608,26 @@ class Plotter(object):
                     colors = [tuple(x) for x in colormap["ccols"]]
 
                 if "shaded" in layer_type:
+                    if colors is None or clevs is None:
+                        raise Exception("Shaded layers require colormap-derived clevs and colors")
                     var = np.hypot(var1, var2) if var2 is not None else var1
+                    interp_lons, interp_lats, interp_var = self._interpolate_scalar_grid(
+                        lons, lats, var, interpolation_factor, interpolation_max_points
+                    )
                     self._add_shaded(
-                        basemap, clevs, lons, lats, var, colors, text, position,
+                        basemap, clevs, interp_lons, interp_lats, interp_var, colors, text, position,
                         pad=pad, ticks_position=ticks_position, label_size=label_size,
                         draw_colorbars=draw_colorbars
                     )
                 elif "contour" in layer_type:
                     var = np.hypot(var1, var2) if var2 is not None else var1
+                    interp_lons, interp_lats, interp_var = self._interpolate_scalar_grid(
+                        lons, lats, var, interpolation_factor, interpolation_max_points
+                    )
                     if output == 'wn2':
                         hpa_tick = 140
                     clevs = np.arange(clev_min, clev_max, hpa_tick)
-                    cs = basemap.contour(lons, lats, var, clevs, colors=colors, linewidths=0.5, latlon=True)
+                    cs = basemap.contour(interp_lons, interp_lats, interp_var, clevs, colors=colors, linewidths=0.5, latlon=True)
                     clabels = plt.clabel(cs, fontsize=6, inline=1, fmt='%1.0f')
                     for txt in clabels:
                         txt.set_bbox(dict(facecolor='white', edgecolor='none', pad=0))
@@ -519,9 +646,11 @@ class Plotter(object):
                 elif "versor" in layer_type:
                     skip2 = (slice(None, None, skip), slice(None, None, skip))
                     var = np.hypot(var1[skip2], var2[skip2])
+                    safe_var1 = np.divide(var1[skip2], var, out=np.zeros_like(var1[skip2], dtype=float), where=var != 0)
+                    safe_var2 = np.divide(var2[skip2], var, out=np.zeros_like(var2[skip2], dtype=float), where=var != 0)
                     basemap.quiver(
                         lons[skip2], lats[skip2],
-                        var1[skip2] / var, var2[skip2] / var,
+                        safe_var1, safe_var2,
                         latlon=True, scale=scale, scale_units="inches",
                         pivot='middle', linewidths=.01, edgecolors='gray'
                     )
@@ -542,11 +671,10 @@ class Plotter(object):
                     if "shapefiles" in layer:
                         self._add_shapefiles(basemap, layer["shapefiles"])
                 elif "watermark" in layer_type:
-                    watermarks = True
-                    watermark_layer = layer["watermarks"]
+                    watermarks.extend(layer.get("watermarks", []))
 
-            if watermarks is True:
-                self._add_watermark(fig, watermark_layer, result_file)
+            if watermarks:
+                self._add_watermark(fig, watermarks, result_file)
             else:
                 fig.savefig(result_file, bbox_inches='tight', dpi=300)
 

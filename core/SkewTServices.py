@@ -6,7 +6,6 @@
 #
 #################################################
 
-import wrf
 import os
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
@@ -16,6 +15,13 @@ from metpy.units import units
 from metpy.plots import SkewT, Hodograph
 from core.Logger import logger
 
+try:
+    import wrf
+    _WRF_IMPORT_ERROR = None
+except ImportError as exc:
+    wrf = None
+    _WRF_IMPORT_ERROR = exc
+
 
 class SkewTServices:
     """Service or helper that encapsulates skew tservices behavior."""
@@ -23,9 +29,18 @@ class SkewTServices:
         """Initialize skew tservices state."""
         self.dataset = dataset
 
+    @staticmethod
+    def _ensure_wrf_available():
+        """Raise a clear error when wrf-python is not installed."""
+        if _WRF_IMPORT_ERROR is not None:
+            raise RuntimeError(
+                "SkewTServices requires wrf-python, but it is not available in this environment."
+            ) from _WRF_IMPORT_ERROR
+
     
     def SkewTPlot(self, save_path, lat, lon):
         """Implement skew tplot for skew tservices."""
+        self._ensure_wrf_available()
         wrfin = None
         fig = None
         try:

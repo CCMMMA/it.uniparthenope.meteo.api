@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -18,6 +20,132 @@ MAPS_PATH = REPO_ROOT / "etc" / "maps.json"
 PAGES_PATH = REPO_ROOT / "etc" / "pages.json"
 
 
+@dataclass
+class InvocationTiming:
+    """One measured HTTP invocation in the test suite."""
+
+    test_id: str
+    method: str
+    target: str
+    url: str
+    elapsed_ms: float
+    status_code: int | None
+
+
+def pytest_addoption(parser):
+    """Register optional live endpoint and timing controls."""
+    group = parser.getgroup("api-live")
+    group.addoption(
+        "--live-base-url",
+        action="store",
+        default=None,
+        help="Run the live API contract tests against this base URL.",
+    )
+    group.addoption(
+        "--compare-base-url",
+        action="store",
+        default=None,
+        help="Compare live API responses against this second base URL.",
+    )
+    group.addoption(
+        "--live-timeout",
+        action="store",
+        type=float,
+        default=30.0,
+        help="Timeout in seconds for live HTTP invocations.",
+    )
+    group.addoption(
+        "--allow-live-posts",
+        action="store_true",
+        default=False,
+        help="Include POST endpoints in live URL runs. Disabled by default to avoid mutating remote systems.",
+    )
+
+
+def pytest_configure(config):
+    """Initialize shared test-run state."""
+    config._invocation_timings = []
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """Print per-invocation wallclock timings at the end of the run."""
+    timings = getattr(config, "_invocation_timings", [])
+    if not timings:
+        return
+
+    terminalreporter.section("API Invocation Timings", sep="-")
+    for item in sorted(timings, key=lambda entry: entry.elapsed_ms, reverse=True):
+        status = item.status_code if item.status_code is not None else "-"
+        terminalreporter.write_line(
+            f"{item.elapsed_ms:8.2f} ms  [{item.target}] {item.method} {item.url} -> {status} ({item.test_id})"
+        )
+
+
+@pytest.fixture
+def invocation_recorder(request):
+    """Record wallclock duration for each HTTP invocation executed by a test."""
+
+    def _record(method: str, target: str, url: str, elapsed_ms: float, status_code: int | None):
+        request.config._invocation_timings.append(
+            InvocationTiming(
+                test_id=request.node.nodeid,
+                method=method,
+                target=target,
+                url=url,
+                elapsed_ms=elapsed_ms,
+                status_code=status_code,
+            )
+        )
+
+    return _record
+
+
+@pytest.fixture(scope="session")
+def live_base_url(pytestconfig):
+    """Return the optional base URL used for live API validation."""
+    value = pytestconfig.getoption("--live-base-url")
+    return value.rstrip("/") if value else None
+
+
+@pytest.fixture(scope="session")
+def compare_base_url(pytestconfig):
+    """Return the optional second URL used for response comparison."""
+    value = pytestconfig.getoption("--compare-base-url")
+    return value.rstrip("/") if value else None
+
+
+@pytest.fixture(scope="session")
+def live_timeout(pytestconfig):
+    """Return the configured timeout for live HTTP calls."""
+    return pytestconfig.getoption("--live-timeout")
+
+
+@pytest.fixture(scope="session")
+def allow_live_posts(pytestconfig):
+    """Return whether live POST endpoints are explicitly enabled."""
+    return pytestconfig.getoption("--allow-live-posts")
+
+
+def _write_test_maps(base_dir: Path) -> Path:
+    """Create a writable copy of maps.json with local test paths."""
+    maps = json.loads(MAPS_PATH.read_text(encoding="utf-8"))
+
+    maps_data_dir = base_dir / "maps-data"
+    maps_result_dir = base_dir / "maps-result"
+    maps_cache_dir = base_dir / "maps-cache"
+
+    for directory in (maps_data_dir, maps_result_dir, maps_cache_dir):
+        directory.mkdir(parents=True, exist_ok=True)
+
+    maps["data_path"] = f"{maps_data_dir}/"
+    maps["result_path"] = f"{maps_result_dir}/"
+    maps["cache_path"] = f"{maps_cache_dir}/"
+
+    maps_path = base_dir / "test_maps.json"
+    maps_path.write_text(json.dumps(maps), encoding="utf-8")
+    return maps_path
+
+
 def _write_test_config(base_dir: Path) -> Path:
     """Create a dedicated Flask config file for isolated endpoint tests."""
     diskcache_dir = base_dir / "diskcache"
@@ -28,6 +156,7 @@ def _write_test_config(base_dir: Path) -> Path:
     json_dir = base_dir / "json"
     history_dir = base_dir / "history"
     noimage_path = base_dir / "noimage.jpg"
+    test_maps_path = _write_test_maps(base_dir)
 
     for directory in (
         diskcache_dir,
@@ -69,7 +198,7 @@ def _write_test_config(base_dir: Path) -> Path:
                 'DATABASE = "ccmmma-database"',
                 "NUM_THREADS = 4",
                 f'LEGAL = r"{LEGAL_PATH}"',
-                f'MAPS = r"{MAPS_PATH}"',
+                f'MAPS = r"{test_maps_path}"',
                 'LANG = "en-US"',
                 f'PAGES = r"{PAGES_PATH}"',
                 'HISTORY = "history"',

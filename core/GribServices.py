@@ -7,10 +7,17 @@ from datetime import datetime
 import os
 import os.path
 import netCDF4
-from wrf import getvar, ALL_TIMES
 import numpy as np
 from scipy.interpolate import griddata
 from core.Logger import logger
+
+try:
+    from wrf import getvar, ALL_TIMES
+    _WRF_IMPORT_ERROR = None
+except ImportError as exc:
+    getvar = None
+    ALL_TIMES = None
+    _WRF_IMPORT_ERROR = exc
 
 class GribServices:
     """Service or helper that encapsulates grib services behavior."""
@@ -31,6 +38,14 @@ class GribServices:
         with open(self.config["MAPS"]) as f:
             self.maps = simplejson.load(f)
         self.products = self.maps["products"]
+
+    @staticmethod
+    def _ensure_wrf_available():
+        """Raise a clear error when wrf-python is required but unavailable."""
+        if _WRF_IMPORT_ERROR is not None:
+            raise RuntimeError(
+                "GribServices requires wrf-python for this operation, but it is not available in this environment."
+            ) from _WRF_IMPORT_ERROR
 
     def getStatusCode(self, code):
         """Implement get status code for grib services."""
@@ -185,6 +200,7 @@ class GribServices:
             with netCDF4.Dataset(url) as ncfile:
                 result = {}
                 if "wrf5" in prod:
+                    self._ensure_wrf_available()
                     Xlat = np.asarray(getvar(ncfile, "XLAT", timeidx=ALL_TIMES))
                     Xlon = np.asarray(getvar(ncfile, "XLONG", timeidx=ALL_TIMES))
 
