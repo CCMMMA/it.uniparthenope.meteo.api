@@ -1,5 +1,7 @@
 """Application bootstrap for the meteorological API service."""
 
+import os
+
 from flask import Flask
 from flask_cors import CORS
 from apis import api
@@ -10,6 +12,7 @@ from core.Tiles import Tiles
 from core.Logger import logger
 from core.ManageDiskCache import ManageDiskCache
 from core.Models import db 
+from core.RequestPopularityTracker import RequestPopularityTracker
 
 application = Flask(__name__)
 
@@ -48,3 +51,12 @@ except Exception as memcache_error:
 meteo_services = MeteoServices(application.config)
 grib_services = GribServices(application.config)
 tiles = Tiles(application.config)
+request_popularity_tracker = RequestPopularityTracker(
+    application.config.get(
+        "REQUEST_POPULARITY_PATH",
+        os.path.join(application.config["BASE_DISKCACHE"], "request-popularity.json"),
+    ),
+    top_limit=application.config.get("POPULAR_REQUESTS_LIMIT", 25),
+    flush_every=application.config.get("REQUEST_POPULARITY_FLUSH_EVERY", 100),
+    flush_interval_seconds=application.config.get("REQUEST_POPULARITY_FLUSH_INTERVAL", 10.0),
+)

@@ -23,6 +23,7 @@ When editing this project:
 4. Be careful with large NetCDF/GRIB datasets: avoid loading or duplicating more data than needed.
 5. Run at least a syntax-level verification on touched Python files before finishing.
 6. Run the API endpoint unit-test suite with `pytest` whenever you change API handlers, request/response behavior, authentication flow, or shared service wiring.
+7. If you touch popularity tracking, invalidation, or rebuild behavior, update the related cache and operations documentation together with the code.
 
 ## Optimization Priorities
 
@@ -39,10 +40,13 @@ Focus on measurable wins such as:
 2. Avoiding full in-memory buffering when streaming large export files.
 3. Replacing repeated filesystem scans with direct lookups where possible.
 4. Reducing duplicate object creation inside hot request handlers.
+5. Preserving the low-overhead request-popularity tracker on forecast and time-series hot paths.
 
 ## Notes For Future Agents
 
 - Check which branch is active before assessing repository contents. `main` and `master` differ substantially.
 - Treat `master` as the branch containing the current application code unless the user asks otherwise.
 - If you change cache semantics or path construction, verify the related config keys in `etc/ccmmmaapi.conf`.
+- If you change forecast or time-series cache keys, update the invalidate/rebuild endpoints and the popularity-tracker normalization logic together.
+- The cache-maintenance endpoints depend on persisted popularity counters under `REQUEST_POPULARITY_PATH`; keep the tracker writable in tests and deployments.
 - The standard API test approach in this repository is `pytest` with Flask's test client and mocked service dependencies; keep endpoint coverage up to date when new routes are added.

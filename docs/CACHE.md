@@ -11,6 +11,22 @@ Related documents:
 - Production setup guide: [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md)
 - Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
 
+## Popularity Tracking
+
+The API now keeps a lightweight popularity log for forecast and time-series request signatures.
+
+The tracker is designed for hot request paths:
+
+- counts are updated in memory
+- persistence is batched
+- request signatures are normalized so JSON and CSV time-series requests share the same popularity identity
+
+The primary use cases are:
+
+- finding the hottest request signatures per product and place
+- targeted cache rebuilds after data refreshes
+- targeted invalidation and rewarming instead of full cache wipes
+
 ## Why The API Uses Two Cache Layers
 
 The API exposes routes that may:
@@ -45,6 +61,8 @@ In practice, this means:
 - disk cache is the fallback layer for local reuse
 - the original data source is only used on a full cache miss or when a cached object has expired
 
+For a small set of expensive endpoints, the application now also supports canonical cache keys that are not tied to a single URL representation. This is important when two routes expose the same structured payload in different formats.
+
 ## Memcache Layer
 
 ### What It Stores
@@ -56,7 +74,9 @@ Memcache is used for fast reuse of recent API responses, especially:
 - metadata results
 - lightweight image response descriptors
 
-The memcache key is derived from the request URL using an MD5 hash. This means query parameters are part of the cache identity, which is important because many routes depend on `date`, `place`, `prod`, `output`, or other request parameters.
+The memcache key is usually derived from the request URL using an MD5 hash. This means query parameters are part of the cache identity, which is important because many routes depend on `date`, `place`, `prod`, `output`, or other request parameters.
+
+For selected endpoints, the shared helpers also accept an explicit cache-key override. That allows multiple route shapes to reuse the same cached structured payload when they are semantically identical.
 
 ### Current Implementation
 
@@ -115,7 +135,7 @@ Examples:
 /project/diskcache/2026/3/18/
 ```
 
-Inside each daily directory, files are named with the MD5 hash of the request URL plus an extension:
+Inside each daily directory, files are named with the MD5 hash of the request URL or explicit cache-key source plus an extension:
 
 - `.json`
 - `.csv`
@@ -127,7 +147,7 @@ This keeps the cache simple and avoids very long filenames.
 
 When the disk cache is queried:
 
-1. the request URL is hashed
+1. the request URL or canonical cache-key source is hashed
 2. the helper checks the expected cache file paths directly
 3. if a cache file exists, the helper validates:
    - whether the source archive file is newer
@@ -166,6 +186,67 @@ A good mental model is:
 - memcache is the fast front layer
 - disk cache is the heavier local persistence layer
 
+## Multi-Step Endpoint Optimization
+
+The most expensive public routes are usually the multi-time-step endpoints, especially:
+
+- `GET /products/<prod>/timeseries/<place>`
+- `GET /products/<prod>/timeseries/<place>/csv`
+
+Those routes now use the cache system in two complementary ways.
+
+### 1. Shared top-level cache for JSON and CSV time series
+
+The JSON and CSV routes expose the same underlying time-series payload. They now use the same canonical cache key based on the request-driving parameters:
+
+- product
+- place
+- date
+- aggregation step
+- number of hours
+- option string
+
+This means:
+
+- a JSON request can warm the cache for the CSV route
+- a CSV request can warm the cache for the JSON route
+- the expensive `timeseries(...)` computation is only done once per canonical request
+
+The CSV route now reuses the structured cached payload and only performs the lightweight CSV rendering step on top of it.
+
+### 2. Per-time-step reuse inside `MeteoServices.timeseries(...)`
+
+The `timeseries(...)` builder internally fans out across multiple forecast hours and calls `modelOutput(...)` for each one. That path now honors the existing `use_disk_cached` flag instead of forcing `modelOutput(...)` to bypass its on-disk JSON cache.
+
+This reduces repeated work for hot time-series requests because:
+
+- already-generated per-hour `modelOutput(...)` JSON files can be reused
+- repeated NetCDF reads for the same hourly slices are avoided
+- the thread pool focuses on cache hits instead of recomputation when the hourly slices are already present
+
+In production, this is the main performance improvement for repeated requests against the same place and product over many forecast steps.
+
+### 3. Multiprocessing for cache misses
+
+After partitioning the hourly items into cache hits and cache misses, the service now uses a hybrid execution strategy:
+
+- cached hourly slices are loaded in-process with threads
+- uncached hourly slices can be computed with a process pool
+
+This is useful because the expensive part of a cold request is the NetCDF-backed extraction work, not the cache lookup itself.
+
+The relevant configuration keys are:
+
+- `NUM_THREADS` for local cache-load concurrency and thread fallback
+- `NUM_PROCESSES` for cold-slice multiprocessing fan-out
+- `TIMESERIES_PARALLEL_MODE` to choose the execution mode
+
+Recommended production setting:
+
+- keep `TIMESERIES_PARALLEL_MODE="processes"` for multi-core hosts
+- size `NUM_PROCESSES` conservatively to the number of physical or effective cores available to the API container
+- avoid setting `NUM_PROCESSES` so high that multiple large requests oversubscribe CPU and disk bandwidth
+
 ## Important Configuration Keys
 
 The most important cache-related settings are in `etc/ccmmmaapi.conf`:
@@ -173,6 +254,10 @@ The most important cache-related settings are in `etc/ccmmmaapi.conf`:
 - `BASE_DISKCACHE`
 - `TTL_MEMCACHED`
 - `TTL_DISKCACHE`
+- `POPULAR_REQUESTS_LIMIT`
+- `REQUEST_POPULARITY_FLUSH_EVERY`
+- `REQUEST_POPULARITY_FLUSH_INTERVAL`
+- `REQUEST_POPULARITY_PATH`
 
 ### `BASE_DISKCACHE`
 
@@ -257,6 +342,33 @@ Keeping them separate makes:
 ## 5. Tune TTLs By Endpoint Behavior
 
 Not all endpoints benefit equally from the same TTL.
+
+For example:
+
+- lightweight metadata endpoints can tolerate shorter TTLs because recomputation is cheap
+- time-series endpoints benefit from longer disk-cache reuse because they aggregate many hourly reads
+- plot and legend endpoints may need TTLs aligned with product regeneration frequency
+
+When tuning the system, treat multi-step endpoints as the primary beneficiaries of the disk-cache layer.
+
+## Targeted Invalidation And Rebuild
+
+The products namespace now exposes two cache-maintenance endpoints:
+
+- `GET /products/<prod>/invalidate/<place>/?date=YYYYMMDDZhhmm&hours=n`
+- `GET /products/<prod>/rebuild/?date=YYYYMMDDZhhmm&hours=n`
+
+The invalidate endpoint:
+
+- removes the per-hour `modelOutput(...)` JSON cache files under `CACHE_JSON`
+- removes matching top-level forecast and time-series cache entries from memcache and disk cache
+- scopes the work to one product/place and one time window
+
+The rebuild endpoint:
+
+- looks up the most popular forecast and time-series signatures for the selected product
+- rebuilds them for the requested start date and hour window
+- uses the popularity tracker so operators can warm the caches that matter most first
 
 Examples:
 

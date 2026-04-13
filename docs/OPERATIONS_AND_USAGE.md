@@ -63,6 +63,12 @@ Important configuration keys include:
 - `BASE_DISKCACHE`: on-disk cache root
 - `TTL_MEMCACHED`: memcached time-to-live in seconds
 - `TTL_DISKCACHE`: disk cache time-to-live in seconds
+- `NUM_THREADS`: thread fan-out for local parallel work
+- `NUM_PROCESSES`: process fan-out for cold multi-time-step computations
+- `TIMESERIES_PARALLEL_MODE`: execution mode for multi-time-step endpoints
+- `POPULAR_REQUESTS_LIMIT`: number of hottest forecast and time-series signatures to consider during rebuild
+- `REQUEST_POPULARITY_PATH`: persisted popularity-counter file
+- `REQUEST_POPULARITY_FLUSH_EVERY`, `REQUEST_POPULARITY_FLUSH_INTERVAL`: batching controls for tracker persistence
 - `MAPS`, `LEGAL`, `PAGES`: JSON metadata files
 - `NOIMAGE_PATH`, `NOIMAGE_URL`: fallback image resources
 - `ENV`: deployment environment label
@@ -177,6 +183,10 @@ Use a repeatable update workflow:
 - Avoid buffering large generated files fully in memory unless necessary.
 - Let memcached and disk cache absorb repeated reads for expensive endpoints.
 - Be cautious with large NetCDF datasets and interpolation-heavy paths.
+- Treat multi-time-step endpoints such as `timeseries` as priority cache consumers because they fan out across many hourly reads.
+- Prefer cache sharing between alternate representations of the same payload, such as JSON and CSV time-series exports.
+- Use multiprocessing for cold multi-time-step slices and keep cache-hit loading local so CPU time is spent only where it buys latency reduction.
+- Use targeted invalidation and rebuilds for product/place windows before reaching for a full cache purge.
 
 ### Reliability
 
@@ -235,6 +245,35 @@ Check:
 - TTL values in configuration
 - stale on-disk objects created by older response shapes
 
+For multi-time-step endpoints specifically, also check:
+
+- whether the per-hour JSON cache under `CACHE_JSON` is writable
+- whether JSON and CSV variants are warming the same canonical time-series cache entries
+- whether the archive file mtime is invalidating the expected disk-cache entries
+- whether `REQUEST_POPULARITY_PATH` is writable so rebuilds can see the latest hot signatures
+
+### Rebuild and invalidation operations
+
+Useful maintenance commands:
+
+- invalidate one product/place window:
+
+```text
+GET /products/<prod>/invalidate/<place>/?date=YYYYMMDDZhhmm&hours=n
+```
+
+- rebuild the hottest caches for one product:
+
+```text
+GET /products/<prod>/rebuild/?date=YYYYMMDDZhhmm&hours=n
+```
+
+Recommended sequence after a targeted data refresh:
+
+1. call the invalidate endpoint for the affected product/place window
+2. call the rebuild endpoint for the product
+3. compare live timings against production or pre-production using the pytest live suite
+
 ### Swagger loads but endpoints error
 
 Check:
@@ -258,6 +297,38 @@ When the code changes:
 1. Update `README.md` if architecture or usage changed.
 2. Update this file when deployment or operational behavior changed.
 3. Update `docs/PRODUCTION_SETUP.md` when production setup assumptions change.
+
+## Comparing Two Working APIs
+
+The repository test suite can compare two deployed APIs in terms of both behavior and wallclock timing.
+
+Typical use case:
+
+- primary URL: production
+- comparison URL: pre-production or staging
+
+Command:
+
+```bash
+python3 -m pytest -q \
+  --live-base-url https://api.meteo.uniparthenope.it \
+  --compare-base-url https://preprod.example.test
+```
+
+What this gives you:
+
+- contract-style comparison for the covered endpoint catalog
+- visibility into status-code mismatches
+- visibility into payload mismatches
+- per-invocation wallclock timings for both environments
+
+How to use the results:
+
+1. resolve behavior mismatches first
+2. compare the slowest endpoints in the timing summary
+3. focus on cache-heavy routes such as `timeseries`, plots, and GRIB-derived endpoints when latency changes
+
+This is especially useful before promoting a release from pre-production to production.
 4. Update `docs/CACHE.md` when cache architecture, TTL strategy, invalidation behavior, or cleanup guidance changes.
 5. Update `docs/TESTING.md` when the test workflow, dependencies, or evaluation criteria change.
 6. Update `docs/API_ENDPOINTS.md` if routes or semantics changed.

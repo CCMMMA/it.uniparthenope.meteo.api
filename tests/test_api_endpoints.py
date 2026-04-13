@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import builtins
 import io
+import os
 import time
+from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 from flask import Response
@@ -28,6 +31,42 @@ class DummyDiskCache:
         """Accept cache writes without persisting anything."""
         return None
 
+    def delete(self, *args, **kwargs):
+        """Pretend that no cached file matched the deletion request."""
+        return 0
+
+
+class FakePopularityTracker:
+    """In-memory popularity tracker used by endpoint tests."""
+
+    def __init__(self):
+        self.records = []
+
+    def record(self, endpoint, prod, place, params):
+        self.records.append(
+            {
+                "endpoint": endpoint,
+                "prod": prod,
+                "place": place,
+                "params": dict(params),
+                "count": 1,
+                "last_seen": time.time(),
+            }
+        )
+
+    def top_requests(self, prod=None, endpoint=None, place=None, limit=None):
+        records = [
+            record
+            for record in self.records
+            if (prod is None or record["prod"] == prod)
+            and (endpoint is None or record["endpoint"] == endpoint)
+            and (place is None or record["place"] == place)
+        ]
+        return records[: limit or len(records)]
+
+    def matching_requests(self, prod=None, endpoint=None, place=None):
+        return self.top_requests(prod=prod, endpoint=endpoint, place=place)
+
 
 class FakeMeteoServices:
     """Predictable service double for route-level API tests."""
@@ -35,6 +74,28 @@ class FakeMeteoServices:
     def __init__(self, config):
         """Store the Flask configuration for compatibility with the real class."""
         self.config = config
+        self.maps = {
+            "products": {
+                "wrf5": {"fields": {"t2c": {}}},
+                "ww33": {"fields": {"t2c": {}}},
+            }
+        }
+
+    def _parse_datetime_ref(self, timeref, round_to_hour=False, default_midnight=False):
+        """Return deterministic datetimes for cache-key helpers."""
+        if timeref:
+            return datetime.strptime(timeref, "%Y%m%dZ%H%M")
+        if default_midnight:
+            return datetime(2026, 4, 13, 0, 0)
+        return datetime(2026, 4, 13, 12, 0 if round_to_hour else 34)
+
+    def _format_datetime_ref(self, value):
+        """Return the canonical datetime string used by the real service."""
+        return value.strftime("%Y%m%dZ%H%M")
+
+    def _model_output_cache_path(self, prod, place, timeref):
+        """Return a deterministic cache path for invalidation tests."""
+        return os.path.join("/tmp", f"{prod}_{place}_{timeref}.json")
 
     def getProds(self, prod=None):
         """Return fake product catalog data."""
@@ -301,6 +362,7 @@ def stub_api_dependencies(monkeypatch, app_module):
     monkeypatch.setattr(app_module, "cache", None)
     monkeypatch.setattr(app_module, "use_pymemcache", False)
     monkeypatch.setattr(app_module, "use_disk_cached", False)
+    monkeypatch.setattr(app_module, "request_popularity_tracker", FakePopularityTracker())
     monkeypatch.setattr(app_module, "meteo_services", fake_meteo_services)
     monkeypatch.setattr(app_module, "grib_services", fake_grib_services)
     monkeypatch.setattr(app_module, "tiles", fake_tiles)
@@ -311,6 +373,8 @@ def stub_api_dependencies(monkeypatch, app_module):
             monkeypatch.setattr(module, "get_resource", lambda *args, **kwargs: None)
         if hasattr(module, "set_resource"):
             monkeypatch.setattr(module, "set_resource", lambda *args, **kwargs: None)
+        if hasattr(module, "delete_resource"):
+            monkeypatch.setattr(module, "delete_resource", lambda *args, **kwargs: False)
         if hasattr(module, "load_cached_json"):
             monkeypatch.setattr(
                 module,
@@ -390,6 +454,313 @@ def test_timeseries_csv_endpoint(client, invocation_recorder):
     assert response.status_code == 200
     assert response.mimetype == "text/csv"
     assert response.get_data(as_text=True).startswith("step,value")
+
+
+def test_forecast_and_timeseries_requests_are_tracked(client, app_module):
+    """Ensure successful forecast and time-series requests are recorded for popularity rebuilds."""
+    client.get("/products/wrf5/forecast/com63049")
+    client.get("/products/wrf5/timeseries/com63049")
+
+    recorded = app_module.request_popularity_tracker.records
+    assert any(item["endpoint"] == "forecast" and item["prod"] == "wrf5" and item["place"] == "com63049" for item in recorded)
+    assert any(item["endpoint"] == "timeseries" and item["prod"] == "wrf5" and item["place"] == "com63049" for item in recorded)
+
+
+def test_invalidate_endpoint_removes_matching_cache_entries(client, app_module, monkeypatch, tmp_path):
+    """Ensure the invalidate endpoint clears hourly and top-level caches for the requested window."""
+    import apis.namespace_products as ns_products
+
+    class DeletingDiskCache:
+        def __init__(self):
+            self.deleted = []
+
+        def delete(self, request=None, flag_diskcache=True, cache_key_source=None):
+            self.deleted.append(cache_key_source)
+            return 1
+
+    tracker = FakePopularityTracker()
+    tracker.records = [
+        {
+            "endpoint": "forecast",
+            "prod": "wrf5",
+            "place": "com63049",
+            "params": {"date": "20260413Z0000", "hours": 0, "step": 1, "opt": "", "filter": ""},
+            "count": 3,
+            "last_seen": time.time(),
+        },
+        {
+            "endpoint": "timeseries",
+            "prod": "wrf5",
+            "place": "com63049",
+            "params": {"date": "20260413Z0000", "hours": 24, "step": 1, "opt": "", "filter": ""},
+            "count": 2,
+            "last_seen": time.time(),
+        },
+    ]
+
+    deleted_memcache_keys = []
+    cache_dir = tmp_path / "model-cache"
+    cache_dir.mkdir()
+
+    monkeypatch.setattr(app_module, "request_popularity_tracker", tracker)
+    monkeypatch.setattr(app_module, "diskcache", DeletingDiskCache())
+    monkeypatch.setattr(
+        app_module.meteo_services,
+        "_model_output_cache_path",
+        lambda prod, place, timeref: str(cache_dir / f"{prod}_{place}_{timeref}.json"),
+    )
+    monkeypatch.setattr(ns_products, "delete_resource", lambda *args, cache_key_override=None, **kwargs: deleted_memcache_keys.append(cache_key_override) or True)
+
+    for timeref in ("20260413Z0000", "20260413Z0100"):
+        (cache_dir / f"wrf5_com63049_{timeref}.json").write_text("{}", encoding="utf-8")
+
+    response = client.get("/products/wrf5/invalidate/com63049/?date=20260413Z0000&hours=2")
+    payload = response.get_json()
+
+    assert response.status_code == 200
+    assert payload["result"] == "ok"
+    assert payload["deleted_model_output_files"] == 2
+    assert payload["matched_popular_requests"] == 2
+    assert len(deleted_memcache_keys) == 2
+
+
+def test_rebuild_endpoint_warms_popular_requests(client, app_module, monkeypatch):
+    """Ensure rebuild uses the most popular forecast and time-series signatures for the selected product."""
+    import apis.namespace_products as ns_products
+
+    tracker = FakePopularityTracker()
+    tracker.records = [
+        {
+            "endpoint": "forecast",
+            "prod": "wrf5",
+            "place": "com63049",
+            "params": {"date": "20260413Z1200", "hours": 0, "step": 1, "opt": "", "filter": ""},
+            "count": 4,
+            "last_seen": time.time(),
+        },
+        {
+            "endpoint": "timeseries",
+            "prod": "wrf5",
+            "place": "ca001",
+            "params": {"date": "20260413Z0000", "hours": 24, "step": 3, "opt": "", "filter": ""},
+            "count": 3,
+            "last_seen": time.time(),
+        },
+    ]
+
+    warmed_forecasts = []
+    warmed_timeseries = []
+
+    monkeypatch.setattr(app_module, "request_popularity_tracker", tracker)
+    monkeypatch.setattr(
+        ns_products,
+        "_warm_forecast_cache",
+        lambda prod, place, params: warmed_forecasts.append((prod, place, params["date"])) or {"status": "ok"},
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "_warm_timeseries_cache",
+        lambda prod, place, params: warmed_timeseries.append((prod, place, params["date"], params["hours"], params["step"])) or {"status": "ok"},
+    )
+
+    response = client.get("/products/wrf5/rebuild/?date=20260413Z0000&hours=2&limit=1")
+    payload = response.get_json()
+
+    assert response.status_code == 200
+    assert payload["result"] == "ok"
+    assert payload["forecast_candidates"] == 1
+    assert payload["timeseries_candidates"] == 1
+    assert payload["forecast_rebuilt"] == 2
+    assert payload["timeseries_rebuilt"] == 1
+    assert warmed_forecasts == [("wrf5", "com63049", "20260413Z0000"), ("wrf5", "com63049", "20260413Z0100")]
+    assert warmed_timeseries == [("wrf5", "ca001", "20260413Z0000", 2, 3)]
+
+
+def test_timeseries_json_and_csv_share_cache_payload(client, app_module, monkeypatch):
+    """Ensure JSON and CSV time-series routes reuse the same cached structured payload."""
+    import apis.namespace_products as ns_products
+
+    class CountingMeteoServices(FakeMeteoServices):
+        def __init__(self, config):
+            super().__init__(config)
+            self.calls = 0
+
+        def timeseries(self, params):
+            self.calls += 1
+            return {
+                "result": "ok",
+                "place": {"id": params["place"]},
+                "fields": ["t2c"],
+                "timeseries": [{"step": 0, "value": 21.5}],
+            }
+
+    class MemoryCache:
+        def __init__(self):
+            self.values = {}
+
+        def get(self, key):
+            return self.values.get(key)
+
+        def set(self, key, value, ttl=None):
+            self.values[key] = value
+
+    class MemoryDiskCache:
+        def __init__(self):
+            self.values = {}
+
+        def get(self, request, ttl, path_archive=None, flag_diskcache=True, cache_key_source=None):
+            if not flag_diskcache:
+                return None
+            return self.values.get(cache_key_source or request.url)
+
+        def set(self, request, res, type_file="plot", flag_diskcache=True, cache_key_source=None):
+            if not flag_diskcache:
+                return
+            self.values[cache_key_source or request.url] = res
+
+    service = CountingMeteoServices(app_module.application.config)
+    cache = MemoryCache()
+    diskcache = MemoryDiskCache()
+
+    monkeypatch.setattr(app_module, "meteo_services", service)
+    monkeypatch.setattr(app_module, "cache", cache)
+    monkeypatch.setattr(app_module, "diskcache", diskcache)
+    monkeypatch.setattr(app_module, "use_pymemcache", True)
+    monkeypatch.setattr(app_module, "use_disk_cached", True)
+    monkeypatch.setattr(
+        ns_products,
+        "get_resource",
+        lambda request, cache, use_pymemcache, cache_key_override=None: cache.get(cache_key_override or request.url)
+        if use_pymemcache
+        else None,
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "set_resource",
+        lambda request, res, cache, use_pymemcache, ttl, cache_key_override=None: cache.set(
+            cache_key_override or request.url,
+            res,
+            ttl,
+        )
+        if use_pymemcache
+        else None,
+    )
+
+    json_response = client.get("/products/wrf5/timeseries/com63049")
+    csv_response = client.get("/products/wrf5/timeseries/com63049/csv")
+
+    assert json_response.status_code == 200
+    assert csv_response.status_code == 200
+    assert service.calls == 1
+
+
+def test_timeseries_reuses_model_output_disk_cache(monkeypatch):
+    """Ensure the time-series builder loads cached slices locally and computes misses with cache enabled."""
+    from core.MeteoServices import MeteoServices
+
+    service = MeteoServices.__new__(MeteoServices)
+    service.config = {
+        "BASE_PATH": "/tmp/base",
+        "ARCHIVE": "archive",
+        "NUM_THREADS": 2,
+        "TTL_DISKCACHE": 3600,
+    }
+    service.default_prod = "wrf5"
+    service.default_place = "com63049"
+    service.maps = {"products": {"wrf5": {"fields": {}}}}
+    service.places = SimpleNamespace(
+        get_domain_and_indeces_by_product_and_place=lambda prod, place: ("d01", 0, 1, 0, 1)
+    )
+    service._parse_datetime_ref = lambda timeref, default_midnight=False, round_to_hour=False: __import__(
+        "datetime"
+    ).datetime(2026, 4, 13, 0, 0)
+    service._format_datetime_ref = lambda dt: dt.strftime("%Y%m%dZ%H%M")
+
+    loaded_dates = []
+    computed_dates = []
+
+    service._is_model_output_cache_valid = lambda item: item["date"].endswith("0000")
+    service._load_timeseries_cached_outputs = lambda items: [
+        loaded_dates.append(item["date"]) or {"dateTime": item["date"], "t2c": 1.0}
+        for item in items
+    ]
+    service._compute_timeseries_uncached_outputs = lambda items: [
+        computed_dates.append(item["date"]) or {"dateTime": item["date"], "t2c": 1.0}
+        for item in items
+    ]
+
+    seen_dates = []
+
+    def fake_isfile(path):
+        if not path.endswith(".nc"):
+            return False
+        basename = os.path.basename(path)
+        date_token = basename.rsplit("_", 1)[-1].replace(".nc", "")
+        if len(seen_dates) < 2:
+            seen_dates.append(date_token)
+            return True
+        return date_token in seen_dates
+
+    monkeypatch.setattr("core.MeteoServices.os.path.isfile", fake_isfile)
+
+    result = service.timeseries({"prod": "wrf5", "place": "com63049"})
+
+    assert result["result"] == "ok"
+    assert loaded_dates == ["20260413Z0000"]
+    assert computed_dates == ["20260413Z0100"]
+
+
+def test_timeseries_uncached_outputs_use_process_pool_when_enabled(monkeypatch):
+    """Ensure uncached multi-step batches use the process-pool path when configured."""
+    from core.MeteoServices import MeteoServices
+
+    service = MeteoServices.__new__(MeteoServices)
+    service.config = {
+        "MAPS": "/tmp/maps.json",
+        "NUM_THREADS": 4,
+        "NUM_PROCESSES": 3,
+        "TIMESERIES_PARALLEL_MODE": "processes",
+    }
+
+    recorded = {}
+
+    class FakeProcessPoolExecutor:
+        def __init__(self, max_workers, initializer=None, initargs=()):
+            recorded["max_workers"] = max_workers
+            recorded["initializer"] = initializer
+            recorded["initargs"] = initargs
+            if initializer is not None:
+                initializer(*initargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def map(self, func, items):
+            return [func(item) for item in items]
+
+    monkeypatch.setattr("core.MeteoServices.ProcessPoolExecutor", FakeProcessPoolExecutor)
+    monkeypatch.setattr(
+        "core.MeteoServices._init_timeseries_process_pool",
+        lambda config: recorded.setdefault("initialized_with", config),
+    )
+    monkeypatch.setattr(
+        "core.MeteoServices._process_pool_model_output",
+        lambda item: {"dateTime": item["date"], "value": 1.0},
+    )
+
+    outputs = service._compute_timeseries_uncached_outputs(
+        [
+            {"prod": "wrf5", "place": "com63049", "date": "20260413Z0000"},
+            {"prod": "wrf5", "place": "com63049", "date": "20260413Z0100"},
+        ]
+    )
+
+    assert [item["dateTime"] for item in outputs] == ["20260413Z0000", "20260413Z0100"]
+    assert recorded["max_workers"] == 2
+    assert recorded["initialized_with"] == dict(service.config)
 
 
 @pytest.mark.parametrize("path,headers,assert_payload", JSON_GET_CASES)

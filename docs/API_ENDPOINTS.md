@@ -475,6 +475,11 @@ GET /products/wrf5/forecast/com63049
 GET /products/ww33/forecast/ca001?date=20250317Z1200
 ```
 
+Performance note:
+
+- successful requests are tracked by normalized product/place/date signature
+- the popularity log is used by the rebuild endpoint to warm the most requested forecast caches first
+
 ### `GET /products/<prod>/forecast/<place>/plot/image`
 
 Purpose:
@@ -639,6 +644,13 @@ Example:
 GET /products/ww33/timeseries/ca001
 ```
 
+Performance note:
+
+- repeated requests for the same product, place, date, step, and hour window are cache-friendly
+- the endpoint now reuses cached per-hour `modelOutput` slices where available
+- the JSON and CSV variants share the same canonical cached structured payload
+- uncached hourly slices can be computed in parallel through the configured multiprocessing pool
+
 ### `GET /products/<prod>/timeseries/<place>/csv`
 
 Purpose:
@@ -653,6 +665,56 @@ Example:
 
 ```http
 GET /products/wrf5/timeseries/ca001/csv
+```
+
+Performance note:
+
+- this route now reuses the same cached structured payload used by the JSON time-series endpoint and only adds the CSV rendering step on top
+
+### `GET /products/<prod>/invalidate/<place>/?date=YYYYMMDDZhhmm&hours=n`
+
+Purpose:
+
+- Invalidates forecast and time-series caches for one product/place time window.
+
+Defaults:
+
+- `date`: current UTC day at `00:00`
+- `hours`: `168`
+
+Behavior:
+
+- removes cached hourly `modelOutput(...)` slices
+- removes matching top-level forecast and time-series cache entries
+- leaves unrelated products and places untouched
+
+Example:
+
+```http
+GET /products/wrf5/invalidate/com63049/?date=20260413Z0000&hours=24
+```
+
+### `GET /products/<prod>/rebuild/?date=YYYYMMDDZhhmm&hours=n`
+
+Purpose:
+
+- Rebuilds forecast and time-series caches for the most popular request signatures of one product.
+
+Defaults:
+
+- `date`: current UTC day at `00:00`
+- `hours`: `168`
+
+Behavior:
+
+- selects the most popular forecast and time-series signatures recorded for the product
+- rebuilds forecast caches for every hour in the requested window
+- rebuilds time-series caches for the requested window using the recorded step and option profile
+
+Example:
+
+```http
+GET /products/wrf5/rebuild/?date=20260413Z0000&hours=24
 ```
 
 ### `GET /products/<prod>/forecast/<place>/map/image`

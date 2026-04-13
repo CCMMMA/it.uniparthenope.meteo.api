@@ -149,6 +149,7 @@ def _write_test_maps(base_dir: Path) -> Path:
 def _write_test_config(base_dir: Path) -> Path:
     """Create a dedicated Flask config file for isolated endpoint tests."""
     diskcache_dir = base_dir / "diskcache"
+    popularity_path = diskcache_dir / "request-popularity.json"
     opendap_dir = base_dir / "opendap"
     storage_dir = base_dir / "storage"
     prods_dir = base_dir / "prods"
@@ -192,6 +193,10 @@ def _write_test_config(base_dir: Path) -> Path:
                 f'BASE_DISKCACHE = r"{diskcache_dir}"',
                 "TTL_MEMCACHED = 1800",
                 "TTL_DISKCACHE = 3600",
+                "POPULAR_REQUESTS_LIMIT = 25",
+                "REQUEST_POPULARITY_FLUSH_EVERY = 5",
+                "REQUEST_POPULARITY_FLUSH_INTERVAL = 0.1",
+                f'REQUEST_POPULARITY_PATH = r"{popularity_path}"',
                 f'NOIMAGE_PATH = r"{noimage_path}"',
                 'NOIMAGE_URL = "https://api.meteo.uniparthenope.it/images/noimage.png"',
                 'PUB_URL = "https://api.meteo.uniparthenope.it/images"',

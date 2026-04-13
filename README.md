@@ -13,6 +13,9 @@ The repository includes both operational documentation for deployers and pedagog
 - Expose version, legal, login, instruments, webcam, and application-support endpoints.
 - Provide `v2` CMS and weather-report APIs for frontend applications.
 - Cache expensive responses through memcached and on-disk cache layers.
+- Reuse cached hourly slices and shared JSON/CSV payloads for multi-step endpoints such as `timeseries`.
+- Parallelize cold multi-time-step extraction with multiprocessing while keeping cache-hit reuse lightweight.
+- Track the most popular forecast and time-series request signatures to drive targeted cache rebuilds.
 - Generate or proxy image products, including legends, plots, and Skew-T diagrams.
 
 ## Architecture Overview
@@ -56,6 +59,7 @@ The repository includes both operational documentation for deployers and pedagog
 - Production setup guide: [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md)
 - Cache architecture and tuning guide: [docs/CACHE.md](docs/CACHE.md)
 - Testing and evaluation guide: [docs/TESTING.md](docs/TESTING.md)
+- Live API comparison and timing workflow: [docs/TESTING.md](docs/TESTING.md)
 - Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
 - Step-by-step Python tutorial: [docs/PYTHON_API_TUTORIAL.md](docs/PYTHON_API_TUTORIAL.md)
 - Step-by-step Android/Kotlin tutorial: [docs/ANDROID_KOTLIN_API_TUTORIAL.md](docs/ANDROID_KOTLIN_API_TUTORIAL.md)

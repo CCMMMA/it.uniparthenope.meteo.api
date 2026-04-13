@@ -34,6 +34,9 @@ Coverage currently includes:
 - binary endpoints such as plot images, legends, webcam responses, and static icons
 - CSV export endpoints
 - POST endpoints such as user login and `v2/pages/<page>`
+- optional live GET checks against a deployed API URL
+- optional side-by-side comparison checks between two deployed API URLs
+- maintenance endpoint coverage for cache invalidation and rebuild flows
 
 The suite is designed to validate route registration, response codes, content types, and basic response structure for every public endpoint-method combination.
 
@@ -205,6 +208,76 @@ Interpretation guide:
 - POST endpoint failure: likely payload parsing, auth handling, or route registration changed
 - GRIB text or CSV failure: likely response formatter or export behavior changed
 
+## Per-Invocation Wallclock Timings
+
+Every HTTP invocation executed by the suite is timed. At the end of the run, `pytest` prints a summary ordered from slowest to fastest.
+
+Interpret the target labels as follows:
+
+- `local`: request executed through Flask's test client
+- `live-primary`: request executed against `--live-base-url`
+- `live-compare`: request executed against `--compare-base-url`
+
+This timing summary is useful for:
+
+- spotting slow endpoints quickly
+- checking whether a change improved or regressed a route
+- comparing two working deployments with the same endpoint catalog
+
+The timing output is a wallclock comparison aid, not a full load-testing benchmark.
+
+## Run Against A Live API
+
+To validate the published behavior of a deployed API:
+
+```bash
+python3 -m pytest -q --live-base-url https://api.meteo.uniparthenope.it
+```
+
+This adds the live GET checks to the normal local suite and prints per-invocation timings for the deployed endpoint calls.
+
+## Compare Two Working APIs
+
+To compare two environments, for example production and pre-production:
+
+```bash
+python3 -m pytest -q \
+  --live-base-url https://api.meteo.uniparthenope.it \
+  --compare-base-url https://preprod.example.test
+```
+
+Comparison mode checks both URLs for the same endpoint catalog and validates:
+
+- status-code parity
+- JSON payload equality for the covered JSON endpoints
+- binary-body equality for the covered CSV and image endpoints
+
+This makes it possible to compare both behavior and wallclock timing between two working APIs in one run.
+
+Recommended workflow:
+
+1. run the local suite first
+2. run the live suite against the candidate environment
+3. run the comparison mode against production and the candidate environment
+4. inspect behavioral mismatches first
+5. inspect the timing summary second
+
+Notes:
+
+- live POST checks are disabled by default
+- enable them only for environments where automated write-style checks are safe
+- network latency and background load affect live timings, so treat them as comparative signals rather than absolute performance guarantees
+
+## Enable Live POST Checks
+
+If you explicitly want to include POST endpoints against a deployed API:
+
+```bash
+python3 -m pytest -q \
+  --live-base-url https://api.meteo.uniparthenope.it \
+  --allow-live-posts
+```
+
 ### What to inspect when a test fails
 
 1. Read the failing endpoint path shown by `pytest`.
@@ -262,9 +335,15 @@ python3 -m py_compile app.py tests/conftest.py tests/test_api_endpoints.py
 pytest
 ```
 
-4. fix any failures
-5. update documentation if the public contract changed
-6. commit only after the suite is passing
+4. if cache behavior or public responses changed, compare the relevant deployed environments
+
+```bash
+python3 -m pytest -q --live-base-url https://api.meteo.uniparthenope.it --compare-base-url https://preprod.example.test
+```
+
+5. fix any failures
+6. update documentation if the public contract changed
+7. commit only after the suite is passing
 
 ## CI / Automation Recommendation
 

@@ -15,14 +15,15 @@ import hashlib
 import app
 import base64
 import json
+import os
 from types import SimpleNamespace
 from flask_restx import Namespace, Resource
 from flask import jsonify, Response, make_response, request, send_from_directory
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from core.Logger import logger
 from core.GetParams import get_params
-from core.MemcachedMethodHandlers import get_resource, set_resource, load_cached_json
+from core.MemcachedMethodHandlers import delete_resource, get_resource, set_resource, load_cached_json
 from core.MeteoServices import MeteoServices, csvfy
 from core.Places import Places
 from core.GribServices import GribServices
@@ -39,6 +40,152 @@ def _cache_request_with_default_date():
         separator = '&' if '?' in cache_url else '?'
         cache_url = f"{cache_url}{separator}date={ncep_date}"
     return SimpleNamespace(url=cache_url)
+
+
+def _normalized_option_string(raw_opt, ignore_fields=False):
+    """Return a stable normalized option string."""
+    options = []
+    for item in (raw_opt or "").split(","):
+        value = item.strip()
+        if not value:
+            continue
+        if ignore_fields and value == "fields":
+            continue
+        options.append(value)
+    return ",".join(sorted(set(options)))
+
+
+def _effective_forecast_date(timeref=None):
+    """Return the effective forecast datetime used by the service layer."""
+    return app.meteo_services._format_datetime_ref(
+        app.meteo_services._parse_datetime_ref(timeref, round_to_hour=(timeref is None))
+    )
+
+
+def _effective_timeseries_date(timeref=None):
+    """Return the effective timeseries start datetime used by the service layer."""
+    return app.meteo_services._format_datetime_ref(
+        app.meteo_services._parse_datetime_ref(timeref, default_midnight=(timeref is None))
+    )
+
+
+def _request_window(date_value=None, hours=None):
+    """Return the inclusive start/exclusive end window for maintenance endpoints."""
+    start = app.meteo_services._parse_datetime_ref(date_value, default_midnight=(date_value is None))
+    duration_hours = int(hours if hours is not None else 168)
+    return start, start + timedelta(hours=duration_hours)
+
+
+def _forecast_cache_key(prod, place, params=None):
+    """Build a canonical cache key for forecast payloads."""
+    params = params or {}
+    return "|".join(
+        [
+            "products-forecast-v1",
+            str(prod),
+            str(place),
+            _effective_forecast_date(params.get("date")),
+            str(params.get("filter") or ""),
+            _normalized_option_string(params.get("opt") or ""),
+        ]
+    )
+
+
+def _timeseries_cache_key(prod, place, params=None):
+    """Build a canonical cache key shared by time-series representations."""
+    params = params or {}
+    opt = _normalized_option_string(params.get("opt") or "", ignore_fields=True)
+    return "|".join(
+        [
+            "products-timeseries-v1",
+            str(prod),
+            str(place),
+            _effective_timeseries_date(params.get("date")),
+            str(int(params.get("step", 1))),
+            str(int(params.get("hours", 0))),
+            opt,
+        ]
+    )
+
+
+def _timeseries_fields(prod):
+    """Return the field dictionary used by CSV rendering without recomputing the time series."""
+    return app.meteo_services.maps["products"][prod]["fields"]
+
+
+def _popular_request_params(endpoint, prod, place, params):
+    """Return the normalized signature stored by the popularity tracker."""
+    if endpoint == "forecast":
+        return {
+            "date": _effective_forecast_date(params.get("date")),
+            "hours": 0,
+            "step": 1,
+            "opt": _normalized_option_string(params.get("opt") or ""),
+            "filter": str(params.get("filter") or ""),
+        }
+
+    return {
+        "date": _effective_timeseries_date(params.get("date")),
+        "hours": int(params.get("hours", 0)),
+        "step": int(params.get("step", 1)),
+        "opt": _normalized_option_string(params.get("opt") or "", ignore_fields=True),
+        "filter": "",
+    }
+
+
+def _record_popular_request(endpoint, prod, place, params):
+    """Record one successful forecast or time-series request."""
+    app.request_popularity_tracker.record(
+        endpoint,
+        prod,
+        place,
+        _popular_request_params(endpoint, prod, place, params),
+    )
+
+
+def _top_level_cache_delete(cache_key):
+    """Delete one top-level cache entry from memcache and disk cache."""
+    deleted_disk = app.diskcache.delete(cache_key_source=cache_key, flag_diskcache=app.use_disk_cached)
+    deleted_mem = delete_resource(None, app.cache, app.use_pymemcache, cache_key_override=cache_key)
+    return deleted_disk, deleted_mem
+
+
+def _warm_forecast_cache(prod, place, params):
+    """Build and store one forecast payload under the canonical cache key."""
+    cache_key = _forecast_cache_key(prod, place, params)
+    response = app.meteo_services.modelOutput(params)
+    if 'result' in response and "ok" not in response['result']:
+        return {"cache_key": cache_key, "status": "skipped", "details": response}
+
+    app.diskcache.set(request=None, res=response, type_file='json', cache_key_source=cache_key)
+    set_resource(
+        None,
+        response,
+        app.cache,
+        app.use_pymemcache,
+        app.application.config['TTL_MEMCACHED'],
+        cache_key_override=cache_key,
+    )
+    return {"cache_key": cache_key, "status": "ok"}
+
+
+def _warm_timeseries_cache(prod, place, params):
+    """Build and store one time-series payload under the canonical cache key."""
+    cache_key = _timeseries_cache_key(prod, place, params)
+    response = app.meteo_services.timeseries(params)
+    if 'result' in response and "ok" not in response['result']:
+        return {"cache_key": cache_key, "status": "skipped", "details": response}
+
+    app.diskcache.set(request=None, res=response, type_file='json', cache_key_source=cache_key)
+    set_resource(
+        None,
+        response,
+        app.cache,
+        app.use_pymemcache,
+        app.application.config['TTL_MEMCACHED'],
+        cache_key_override=cache_key,
+    )
+    return {"cache_key": cache_key, "status": "ok"}
 
 # TESTED AND WORKING - NO CACHE USE 
 @api.route('')
@@ -197,26 +344,27 @@ class ProductsForecastByProdAndPlace(Resource):
         Example:
         `GET /products/wrf5/forecast/com63049`
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        params = get_params({
+            'place': place,
+            'filter': None,
+            'prod': prod,
+            'date': None,
+            'opt': ""
+        })
+        cache_key = _forecast_cache_key(prod, place, params)
+        res = get_resource(request, app.cache, app.use_pymemcache, cache_key_override=cache_key)
 
         # Check Memcache
         if res is None:
-            
-
-            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
+            res = app.diskcache.get(
+                request,
+                app.diskcache_ttl,
+                app.use_disk_cached,
+                cache_key_source=cache_key,
+            )
 
             # Check Diskcache 
             if res is None:    
-
-
-                params = get_params({
-                    'place': place,
-                    'filter': None,
-                    'prod': prod,
-                    'date': None,
-                    'opt': ""
-                })
-                
                 res = app.meteo_services.modelOutput(params)
 
                 if 'result' in res and "ok" not in res['result']:
@@ -224,13 +372,22 @@ class ProductsForecastByProdAndPlace(Resource):
 
                 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'json')
+                app.diskcache.set(request, res, 'json', cache_key_source=cache_key)
 
                 # Save on Memcache
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-            
+                set_resource(
+                    request,
+                    res,
+                    app.cache,
+                    app.use_pymemcache,
+                    app.application.config['TTL_MEMCACHED'],
+                    cache_key_override=cache_key,
+                )
 
-        return jsonify(load_cached_json(res, res))
+        payload = load_cached_json(res, res)
+        if payload and payload.get("result") == "ok":
+            _record_popular_request("forecast", prod, place, params)
+        return jsonify(payload)
 
 
 '''
@@ -767,7 +924,6 @@ class ProductsPlotMetacharts(Resource):
                 
         else:
             res = load_cached_json(res, {})
-        
         return jsonify(res)
 
 
@@ -785,7 +941,18 @@ class ProductsTimeseriesByProdAndPlace(Resource):
         """
 
         # Check Memcache
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        base_params = {
+            'place': place,
+            'prod': prod,
+            'output': None,
+            'hours': 0,
+            'step': 1,
+            'md5': None,
+            'date': None,
+            'opt': ""
+        }
+        cache_key = _timeseries_cache_key(prod, place, base_params)
+        res = get_resource(request, app.cache, app.use_pymemcache, cache_key_override=cache_key)
 
         if res is None:
 
@@ -797,21 +964,16 @@ class ProductsTimeseriesByProdAndPlace(Resource):
 
             path_archive_file = MakeArchivePaths.makePath(params['prod'], params['place'])            
             # Check Diskcache
-            res = app.diskcache.get(request, app.diskcache_ttl, path_archive_file, app.use_disk_cached)
+            res = app.diskcache.get(
+                request,
+                app.diskcache_ttl,
+                path_archive_file,
+                app.use_disk_cached,
+                cache_key_source=cache_key,
+            )
             
             if res is None:
-
-
-                params = get_params({
-                    'place': place,
-                    'prod': prod,
-                    'output': None,
-                    'hours': 0,
-                    'step': 1,
-                    'md5': None,
-                    'date': None,
-                    'opt': ""
-                })
+                params = get_params(base_params)
                 time_series_data = app.meteo_services.timeseries(params)
 
                 if 'result' in time_series_data and "ok" not in time_series_data['result']:
@@ -820,14 +982,22 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                 res = time_series_data
 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'json')
+                app.diskcache.set(request, res, 'json', cache_key_source=cache_key)
 
                 # Save on Memcache
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+                set_resource(
+                    request,
+                    res,
+                    app.cache,
+                    app.use_pymemcache,
+                    app.application.config['TTL_MEMCACHED'],
+                    cache_key_override=cache_key,
+                )
 
         else:
             res = load_cached_json(res, {})
-        
+        if res and res.get("result") == "ok":
+            _record_popular_request("timeseries", prod, place, base_params)
         return jsonify(res)
 
 
@@ -881,27 +1051,37 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
         `GET /products/wrf5/timeseries/ca001/csv`
         """
 
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        res = None
+        params = get_params({
+            'place': place,
+            'prod': prod,
+            'hours': 0,
+            'step': 1,
+            'md5': None,
+            'date': None,
+            'opt': "fields"
+        })
+        cache_key = _timeseries_cache_key(prod, place, params)
+        res = get_resource(request, app.cache, app.use_pymemcache, cache_key_override=cache_key)
         
         # Check Memcache
         if res is None:
 
-            
-            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
+            archive_params = get_params({
+                'place': place,
+                'prod': prod,
+                'date': None
+            })
+            path_archive_file = MakeArchivePaths.makePath(archive_params['prod'], archive_params['place'])
+            res = app.diskcache.get(
+                request,
+                app.diskcache_ttl,
+                path_archive_file,
+                app.use_disk_cached,
+                cache_key_source=cache_key,
+            )
 
             # Check Diskcache
             if res is None:
-
-                params = get_params({
-                    'place': place,
-                    'prod': prod,
-                    'step': 1,
-                    'md5': None,
-                    'date': None,
-                    'opt': ""
-                })
-                params['opt'] = params['opt'] + ",fields"
                 time_series_data = app.meteo_services.timeseries(params)
 
                 if 'result' in time_series_data and "ok" not in time_series_data['result']:
@@ -911,15 +1091,158 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
 
 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'csv')
+                app.diskcache.set(request, res, 'json', cache_key_source=cache_key)
 
                 # Save on Memcache
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+                set_resource(
+                    request,
+                    res,
+                    app.cache,
+                    app.use_pymemcache,
+                    app.application.config['TTL_MEMCACHED'],
+                    cache_key_override=cache_key,
+                )
 
         else:
           res = load_cached_json(res, res)
 
-        return csvfy(res)
+        csv_payload = dict(res)
+        if "fields" not in csv_payload:
+            csv_payload["fields"] = _timeseries_fields(prod)
+
+        if res and res.get("result") == "ok":
+            _record_popular_request("timeseries", prod, place, params)
+
+        return csvfy(csv_payload)
+
+
+@api.route('/<string:prod>/invalidate/<string:place>/')
+class ProductsInvalidateByProdAndPlace(Resource):
+    """Resource handler for targeted cache invalidation by product and place."""
+
+    @api.doc(
+        summary="Invalidate forecast and time-series caches for a product/place window",
+        params={
+            "prod": "Product code",
+            "place": "Place identifier",
+            "date": "Optional window start as YYYYMMDDZhhmm, defaults to current UTC day at 00:00",
+            "hours": "Window length in hours, defaults to 168",
+        },
+        responses={200: "Cache entries invalidated successfully"},
+    )
+    def get(self, prod, place):
+        """Invalidate per-hour, forecast, and time-series caches for one product/place window."""
+        start, end = _request_window(request.args.get("date"), request.args.get("hours"))
+        hours = int(request.args.get("hours", 168))
+
+        deleted_model_output = 0
+        current = start
+        while current < end:
+            cache_path = app.meteo_services._model_output_cache_path(prod, place, current.strftime("%Y%m%dZ%H%M"))
+            if os.path.isfile(cache_path):
+                os.remove(cache_path)
+                deleted_model_output += 1
+            current += timedelta(hours=1)
+
+        deleted_top_level_disk = 0
+        deleted_top_level_mem = 0
+        matched_requests = []
+
+        for record in app.request_popularity_tracker.matching_requests(prod=prod, place=place):
+            params = record["params"]
+            record_start = app.meteo_services._parse_datetime_ref(params["date"])
+            record_end = record_start + timedelta(hours=max(1, int(params.get("hours", 0) or 0)))
+            if record_end <= start or record_start >= end:
+                continue
+
+            matched_requests.append(record)
+            if record["endpoint"] == "forecast":
+                cache_key = _forecast_cache_key(prod, place, params)
+            else:
+                cache_key = _timeseries_cache_key(prod, place, params)
+            deleted_disk, deleted_mem = _top_level_cache_delete(cache_key)
+            deleted_top_level_disk += deleted_disk
+            deleted_top_level_mem += int(bool(deleted_mem))
+
+        return jsonify(
+            {
+                "result": "ok",
+                "prod": prod,
+                "place": place,
+                "date": start.strftime("%Y%m%dZ%H%M"),
+                "hours": hours,
+                "deleted_model_output_files": deleted_model_output,
+                "deleted_top_level_disk_entries": deleted_top_level_disk,
+                "deleted_top_level_memcache_entries": deleted_top_level_mem,
+                "matched_popular_requests": len(matched_requests),
+            }
+        )
+
+
+@api.route('/<string:prod>/rebuild/')
+class ProductsRebuildByProd(Resource):
+    """Resource handler for targeted cache rebuild by product."""
+
+    @api.doc(
+        summary="Rebuild forecast and time-series caches for the most popular requests of a product",
+        params={
+            "prod": "Product code",
+            "date": "Optional window start as YYYYMMDDZhhmm, defaults to current UTC day at 00:00",
+            "hours": "Window length in hours, defaults to 168",
+            "limit": "Optional popularity cap, defaults to POPULAR_REQUESTS_LIMIT",
+        },
+        responses={200: "Popular caches rebuilt successfully"},
+    )
+    def get(self, prod):
+        """Rebuild caches for the most popular forecast and time-series signatures of one product."""
+        start, _ = _request_window(request.args.get("date"), request.args.get("hours"))
+        hours = int(request.args.get("hours", 168))
+        limit = int(request.args.get("limit", app.application.config.get("POPULAR_REQUESTS_LIMIT", 25)))
+        start_ref = start.strftime("%Y%m%dZ%H%M")
+
+        forecast_records = app.request_popularity_tracker.top_requests(prod=prod, endpoint="forecast", limit=limit)
+        timeseries_records = app.request_popularity_tracker.top_requests(prod=prod, endpoint="timeseries", limit=limit)
+
+        forecast_results = []
+        for record in forecast_records:
+            for offset in range(hours):
+                dt_ref = (start + timedelta(hours=offset)).strftime("%Y%m%dZ%H%M")
+                params = {
+                    "place": record["place"],
+                    "filter": record["params"].get("filter") or None,
+                    "prod": prod,
+                    "date": dt_ref,
+                    "opt": record["params"].get("opt") or "",
+                }
+                forecast_results.append(_warm_forecast_cache(prod, record["place"], params))
+
+        timeseries_results = []
+        for record in timeseries_records:
+            params = {
+                "place": record["place"],
+                "prod": prod,
+                "output": None,
+                "hours": hours,
+                "step": int(record["params"].get("step", 1)),
+                "md5": None,
+                "date": start_ref,
+                "opt": record["params"].get("opt") or "",
+            }
+            timeseries_results.append(_warm_timeseries_cache(prod, record["place"], params))
+
+        return jsonify(
+            {
+                "result": "ok",
+                "prod": prod,
+                "date": start_ref,
+                "hours": hours,
+                "popularity_limit": limit,
+                "forecast_rebuilt": sum(1 for item in forecast_results if item["status"] == "ok"),
+                "timeseries_rebuilt": sum(1 for item in timeseries_results if item["status"] == "ok"),
+                "forecast_candidates": len(forecast_records),
+                "timeseries_candidates": len(timeseries_records),
+            }
+        )
 
 
 '''

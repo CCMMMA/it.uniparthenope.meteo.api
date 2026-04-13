@@ -16,7 +16,7 @@ import math
 import sys
 import calendar
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import netCDF4
 import numpy as np
 import requests
@@ -58,6 +58,38 @@ WEATHER_TEXTS = [
     {"it-IT": "Pioggia", "en-US": "Rain"},
     {"it-IT": "Forti piogge", "en-US": "Heavy Rains"}
 ]
+
+
+_TIMESERIES_PROCESS_SERVICE = None
+
+
+def _build_timeseries_process_service(config):
+    """Create a lightweight service instance suitable for process workers."""
+    service = MeteoServices.__new__(MeteoServices)
+    service.config = config
+    service.maps = None
+    service.legal = None
+    service._numpy_method_cache = {}
+
+    with open(config["MAPS"]) as maps_file:
+        service.maps = simplejson.load(maps_file)
+
+    service.places = Places(config)
+    service.plotter = None
+    return service
+
+
+def _init_timeseries_process_pool(config):
+    """Initialize one shared MeteoServices-like helper inside each worker process."""
+    global _TIMESERIES_PROCESS_SERVICE
+    _TIMESERIES_PROCESS_SERVICE = _build_timeseries_process_service(config)
+
+
+def _process_pool_model_output(item):
+    """Compute one time-series model output inside a worker process."""
+    if _TIMESERIES_PROCESS_SERVICE is None:
+        raise RuntimeError("Timeseries process pool was not initialized")
+    return _TIMESERIES_PROCESS_SERVICE.modelOutput(item, use_disk_cached=True)
 
 def statusByConc(args):
     """Map a concentration value to its configured status label."""
@@ -440,6 +472,77 @@ class MeteoServices:
         self.places = Places(self.config)
         self.plotter = Plotter(self.config)
 
+    def _model_output_cache_path(self, prod, place, timeref):
+        """Return the cache-file path used by modelOutput for one hourly slice."""
+        date = self._parse_datetime_ref(timeref, round_to_hour=(timeref is None))
+        dateTime = self._format_datetime_ref(date)
+        relative_path = os.path.sep.join(
+            [place, prod, date.strftime("%Y"), date.strftime("%m"), date.strftime("%d")]
+        )
+        image_name = "jsn__" + place + "_" + prod + "_" + dateTime + ".json"
+        return self.config['CACHE_JSON'] + os.path.sep + relative_path + os.path.sep + image_name
+
+    def _is_model_output_cache_valid(self, item):
+        """Return whether one time-series hourly slice already has a reusable disk-cache entry."""
+        cache_path = self._model_output_cache_path(item["prod"], item["place"], item["date"])
+        if os.path.isfile(cache_path) is False:
+            return False
+
+        path_archive = MakeArchivePaths.makePath(item["prod"], item["place"])
+
+        if os.path.isfile(path_archive) and os.path.getmtime(path_archive) > os.path.getmtime(cache_path):
+            return False
+
+        return (time.time() - os.path.getmtime(cache_path)) <= self.config['TTL_DISKCACHE']
+
+    def _timeseries_parallel_mode(self):
+        """Return the configured execution mode for multi-step time-series endpoints."""
+        return str(self.config.get("TIMESERIES_PARALLEL_MODE", "processes")).lower()
+
+    def _timeseries_process_workers(self, item_count):
+        """Return the number of process workers to use for uncached multi-step items."""
+        if item_count < 2:
+            return 1
+        configured = self.config.get("NUM_PROCESSES")
+        if configured is None:
+            configured = min(os.cpu_count() or 1, self.config.get("NUM_THREADS", 1))
+        return max(1, min(int(configured), item_count))
+
+    def _timeseries_thread_workers(self, item_count):
+        """Return the number of thread workers to use for local fallback execution."""
+        if item_count < 1:
+            return 1
+        return max(1, min(self.config['NUM_THREADS'], item_count))
+
+    def _load_timeseries_cached_outputs(self, items):
+        """Load already-cached hourly model outputs in-process."""
+        if not items:
+            return []
+        max_workers = self._timeseries_thread_workers(len(items))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            return list(executor.map(lambda item: self.modelOutput(item, use_disk_cached=True), items))
+
+    def _compute_timeseries_uncached_outputs(self, items):
+        """Compute uncached hourly model outputs using multiprocessing when configured."""
+        if not items:
+            return []
+
+        parallel_mode = self._timeseries_parallel_mode()
+        max_workers = self._timeseries_process_workers(len(items))
+
+        if parallel_mode == "processes" and max_workers > 1:
+            config_snapshot = dict(self.config)
+            with ProcessPoolExecutor(
+                max_workers=max_workers,
+                initializer=_init_timeseries_process_pool,
+                initargs=(config_snapshot,),
+            ) as executor:
+                return list(executor.map(_process_pool_model_output, items))
+
+        thread_workers = self._timeseries_thread_workers(len(items))
+        with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+            return list(executor.map(lambda item: self.modelOutput(item, use_disk_cached=True), items))
+
     def getMaps(self):
         """Implement get maps for meteo services."""
         return self.maps
@@ -581,6 +684,8 @@ class MeteoServices:
         offset_pre = 1
         offset_post = 0
         timeref = None
+
+        use_step_cache = True
 
         if params:
             if 'prod' in params and params['prod'] is not None:
@@ -2307,6 +2412,7 @@ class MeteoServices:
         timeref = None
         step = 1
         hours = 0
+        use_step_cache = True
 
         if params:
 
@@ -2328,6 +2434,9 @@ class MeteoServices:
                 hours = int(params['hours'])
             else:
                 hours = 0
+
+            if 'use_disk_cached' in params:
+                use_step_cache = bool(params['use_disk_cached'])
 
         date = self._parse_datetime_ref(timeref, default_midnight=(timeref is None))
 
@@ -2361,15 +2470,27 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
 
-            max_workers = max(1, min(self.config['NUM_THREADS'], len(items))) if items else 1
-            if items:
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    model_outputs = list(executor.map(
-                        lambda item: self.modelOutput(item, use_disk_cached=False),
-                        items
-                    ))
-            else:
-                model_outputs = []
+            cached_items = []
+            uncached_items = items
+            if use_step_cache and items:
+                cached_items = [item for item in items if self._is_model_output_cache_valid(item)]
+                uncached_items = [item for item in items if item not in cached_items]
+
+            model_outputs = []
+            if cached_items:
+                model_outputs.extend(self._load_timeseries_cached_outputs(cached_items))
+            if uncached_items:
+                if use_step_cache:
+                    model_outputs.extend(self._compute_timeseries_uncached_outputs(uncached_items))
+                else:
+                    thread_workers = self._timeseries_thread_workers(len(uncached_items))
+                    with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+                        model_outputs.extend(
+                            list(executor.map(
+                                lambda item: self.modelOutput(item, use_disk_cached=False),
+                                uncached_items
+                            ))
+                        )
 
             for model_output in model_outputs:
                 forecast[model_output["dateTime"]]=model_output

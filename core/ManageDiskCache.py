@@ -33,23 +33,40 @@ class ManageDiskCache:
         day = day or datetime.today()
         return Path(self.base_diskcace) / str(day.year) / str(day.month) / str(day.day)
 
-    def _cache_key(self, request):
-        """Return the stable disk-cache key derived from the request URL."""
-        return hashlib.md5(request.url.encode('utf-8')).hexdigest()
+    def _iter_daily_cache_dirs(self):
+        """Yield every existing daily cache directory."""
+        base_path = Path(self.base_diskcace)
+        if not base_path.exists():
+            return
 
-    def _cache_file(self, request, extension, day=None):
+        for year_dir in base_path.iterdir():
+            if not year_dir.is_dir():
+                continue
+            for month_dir in year_dir.iterdir():
+                if not month_dir.is_dir():
+                    continue
+                for day_dir in month_dir.iterdir():
+                    if day_dir.is_dir():
+                        yield day_dir
+
+    def _cache_key(self, request=None, cache_key_source=None):
+        """Return the stable disk-cache key derived from a request URL or explicit source."""
+        source = cache_key_source if cache_key_source is not None else request.url
+        return hashlib.md5(str(source).encode('utf-8')).hexdigest()
+
+    def _cache_file(self, request, extension, day=None, cache_key_source=None):
         """Return the full cache-file path for a request and extension."""
-        return self._daily_cache_dir(day) / f"{self._cache_key(request)}{extension}"
+        return self._daily_cache_dir(day) / f"{self._cache_key(request, cache_key_source=cache_key_source)}{extension}"
 
-    def _find_cached_file(self, request):
+    def _find_cached_file(self, request, cache_key_source=None):
         """Return the first existing cache file for the current day."""
         for extension in self._KNOWN_EXTENSIONS:
-            candidate = self._cache_file(request, extension)
+            candidate = self._cache_file(request, extension, cache_key_source=cache_key_source)
             if candidate.exists():
                 return candidate
         return None
     
-    def get(self, request, ttl, path_archive=None, flag_diskcache=True):
+    def get(self, request, ttl, path_archive=None, flag_diskcache=True, cache_key_source=None):
         """Implement get for manage disk cache."""
         if isinstance(path_archive, bool) and flag_diskcache is True:
             flag_diskcache = path_archive
@@ -58,7 +75,7 @@ class ManageDiskCache:
         if not flag_diskcache:
             return None
 
-        cached_file = self._find_cached_file(request)
+        cached_file = self._find_cached_file(request, cache_key_source=cache_key_source)
         if cached_file is None:
             return None
 
@@ -83,7 +100,7 @@ class ManageDiskCache:
             return file.read()
 
     # type --> plot - json - csv
-    def set(self, request, res, type_file='plot', flag_diskcache=True): 
+    def set(self, request, res, type_file='plot', flag_diskcache=True, cache_key_source=None): 
         """Implement set for manage disk cache."""
         if not flag_diskcache:
             return
@@ -97,7 +114,7 @@ class ManageDiskCache:
 
         cache_dir = self._daily_cache_dir()
         cache_dir.mkdir(parents=True, exist_ok=True)
-        cache_file = self._cache_file(request, extension)
+        cache_file = self._cache_file(request, extension, cache_key_source=cache_key_source)
 
         if extension in {'.json', '.csv'}:
             with open(cache_file, 'w', encoding='utf-8') as file:
@@ -107,3 +124,17 @@ class ManageDiskCache:
         payload = res.encode('utf-8') if isinstance(res, str) else res
         with open(cache_file, 'wb') as file:
             file.write(payload)
+
+    def delete(self, request=None, flag_diskcache=True, cache_key_source=None):
+        """Delete cached files matching a request URL or canonical cache key."""
+        if not flag_diskcache:
+            return 0
+
+        deleted = 0
+        for cache_dir in self._iter_daily_cache_dirs() or []:
+            for extension in self._KNOWN_EXTENSIONS:
+                candidate = cache_dir / f"{self._cache_key(request, cache_key_source=cache_key_source)}{extension}"
+                if candidate.exists():
+                    candidate.unlink()
+                    deleted += 1
+        return deleted
