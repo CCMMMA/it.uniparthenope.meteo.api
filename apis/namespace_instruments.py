@@ -74,9 +74,9 @@ class InstrumentsContext(Resource):
 
         for ws_id, ws_data in res.items():
             if ws_id == identification:
-                return ws_data
+                return jsonify(ws_data)
         
-        return "Identification not found!", 404
+        return jsonify("Identification not found!"), 404
 
 '''
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 

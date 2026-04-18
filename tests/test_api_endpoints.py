@@ -280,6 +280,8 @@ class FakeLoginServices:
 
     def auth2Token(self, token):
         """Return fake bearer-token payload."""
+        if not token:
+            return {"errMsg": "Token not valid.", "statusCode": 401}
         return {"user": {"userId": "teacher-01"}, "meteo": {"roles": ["editor"]}, "token": token}
 
 
@@ -302,13 +304,22 @@ class FakeCMS:
         """Return fake navbar data."""
         return [{"id": "home", "roles": roles}]
 
-    def get_pages(self, params):
+    def get_pages(self, roles, params):
         """Return fake pages list."""
-        return [{"id": "about_us"}, {"id": "forecast_help"}]
+        return [
+            {"_id": "about", "author": "admin", "i18n": {"en-US": {"title": "About"}}},
+            {"_id": "services", "author": "admin", "i18n": {"en-US": {"title": "Services"}}},
+        ]
 
     def get_page_by_id(self, roles, page, params):
         """Return fake page detail."""
-        return {"id": page, "roles": roles, "userId": params.get("userId")}
+        return {
+            "_id": page,
+            "author": "admin",
+            "i18n": {"en-US": {"title": page.title()}},
+            "permissions": ["view"],
+            "userId": params.get("userId"),
+        }
 
     def set_page_by_id(self, roles, page, payload, params):
         """Return fake page persistence result."""
@@ -454,6 +465,38 @@ def test_timeseries_csv_endpoint(client, invocation_recorder):
     assert response.status_code == 200
     assert response.mimetype == "text/csv"
     assert response.get_data(as_text=True).startswith("step,value")
+
+
+def test_instrument_detail_missing_uses_legacy_json_string(client):
+    """Ensure missing instrument details keep the legacy JSON-string response shape."""
+    response = client.get("/instruments/station-99")
+
+    assert response.status_code == 404
+    assert response.get_json() == "Identification not found!"
+
+
+def test_v2_auth_login_without_token_returns_401(client):
+    """Ensure auth/login preserves the legacy 401 payload when no bearer token is supplied."""
+    response = client.get("/v2/auth/login")
+
+    assert response.status_code == 401
+    assert response.get_json() == {"errMsg": "Token not valid.", "statusCode": 401}
+
+
+def test_v2_page_detail_legacy_alias_matches_canonical_route(client):
+    """Ensure the legacy page/detail alias resolves through the same CMS serializer."""
+    response = client.get("/v2/page/detail?page=about", headers={"Authorization": "Bearer demo-token"})
+
+    assert response.status_code == 200
+    assert response.get_json()["_id"] == "about"
+
+
+def test_v2_basemap_detail_legacy_alias_matches_canonical_route(client):
+    """Ensure the legacy basemap/detail alias still resolves a named basemap."""
+    response = client.get("/v2/basemap/detail?name=demo")
+
+    assert response.status_code == 200
+    assert response.get_json()["id"] == "demo"
 
 
 def test_forecast_and_timeseries_requests_are_tracked(client, app_module):

@@ -25,15 +25,45 @@ page_model = api.model("page", {
 })
 
 
+def _extract_bearer_token():
+    """Return the bearer token from the Authorization header when available."""
+    auth_header = request.headers.get("Authorization", "").strip()
+    if not auth_header:
+        return None
+
+    parts = auth_header.split(None, 1)
+    if len(parts) != 2:
+        return None
+
+    scheme, token = parts
+    if scheme.lower() != "bearer":
+        return None
+    return token.strip() or None
+
+
+def _json_status_response(payload, default_status=200):
+    """Return a JSON response using the status encoded in a legacy payload when present."""
+    status_code = payload.get("statusCode", default_status) if isinstance(payload, dict) else default_status
+    try:
+        status_code = int(status_code)
+    except (TypeError, ValueError):
+        status_code = default_status
+    return jsonify(payload), status_code
+
+
+def _resolve_mapping_detail(data, name, field_name):
+    """Resolve one entry from a static mapping and return a 404 payload when missing."""
+    if name not in data:
+        return jsonify({"errMsg": f"{field_name} not found.", "statusCode": 404}), 404
+    return jsonify(data[name])
+
+
 def token_required(f):
     """Protect an endpoint by requiring a valid authorization token."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         """Implement decorated function."""
-        token = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split()[1]
-        kwargs['token'] = token
+        kwargs['token'] = _extract_bearer_token()
         return f(*args, **kwargs)
 
     return decorated_function
@@ -44,16 +74,15 @@ def roles_from_token(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         """Implement decorated function."""
-        token = None
+        token = _extract_bearer_token()
         roles = []
         userId = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split()[1]
+        if token:
             ls = LoginServices(app.application.config)
             res = ls.auth2Token(token)
             if "meteo" in res:
                 userId = res['user']['userId']
-                roles = res["meteo"]["roles"]
+                roles = list(res["meteo"]["roles"])
                 roles.append("auth")
         # Check if user have been authenticated
         if not "auth" in roles:
@@ -209,7 +238,19 @@ class BaseMapsByName(Resource):
     @api.doc(summary="Get a basemap by name", params={"name": "Basemap identifier"}, responses={200: "Basemap returned", 404: "Basemap not found"})
     def get(self, name):
         """Handle GET requests for this resource."""
-        return jsonify(baseMaps[name])
+        return _resolve_mapping_detail(baseMaps, name, "Basemap")
+
+
+@api.route('/basemap/detail')
+class BaseMapDetail(Resource):
+    """Legacy compatibility alias for basemap detail lookups."""
+    @api.doc(summary="Get a basemap by legacy detail route", params={"name": "Basemap identifier"}, responses={200: "Basemap returned", 404: "Basemap not found"})
+    def get(self):
+        """Handle GET requests for the legacy basemap detail alias."""
+        name = request.args.get("name") or request.args.get("id")
+        if not name:
+            return jsonify({"errMsg": "Basemap not found.", "statusCode": 404}), 404
+        return _resolve_mapping_detail(baseMaps, name, "Basemap")
 
 
 # TESTED AND WORKING
@@ -230,7 +271,7 @@ class LayersByName(Resource):
     @api.doc(summary="Get a layer by name", params={"name": "Layer identifier"}, responses={200: "Layer returned", 404: "Layer not found"})
     def get(self, name):
         """Handle GET requests for this resource."""
-        return jsonify(layers[name])
+        return _resolve_mapping_detail(layers, name, "Layer")
 
 
 # TESTED AND WORKING
@@ -251,7 +292,7 @@ class MapsByName(Resource):
     @api.doc(summary="Get a map definition by name", params={"name": "Map identifier"}, responses={200: "Map definition returned", 404: "Map not found"})
     def get(self, name):
         """Handle GET requests for this resource."""
-        return jsonify(maps[name])
+        return _resolve_mapping_detail(maps, name, "Map")
 
 
 # TESTED AND WORKING
@@ -290,7 +331,7 @@ class Pages(Resource):
         roles = kwargs["roles"]
         params = get_params({'lang': 'en-US'})
         cms = CMS(app.application.config)
-        res = cms.get_pages(params)
+        res = cms.get_pages(roles, params)
         return jsonify({"pages": res})
 
 
@@ -332,6 +373,25 @@ class PageByPageId(Resource):
         return jsonify(res)
 
 
+@api.route('/page/detail')
+class PageDetail(Resource):
+    """Legacy compatibility alias for page detail lookups."""
+    @api.doc(summary="Get a page by legacy detail route", security='Bearer', params={"page": "Page identifier"}, responses={200: "Page returned", 404: "Page not found"})
+    @roles_from_token
+    def get(self, **kwargs):
+        """Handle GET requests for the legacy page-detail alias."""
+        page = request.args.get("page") or request.args.get("id")
+        if not page:
+            return jsonify({"errMsg": "Page not found.", "statusCode": 404}), 404
+
+        roles = kwargs["roles"]
+        params = get_params({'lang': 'en-US'})
+        params["userId"] = kwargs["userId"]
+        cms = CMS(app.application.config)
+        res = cms.get_page_by_id(roles, page, params)
+        return jsonify(res)
+
+
 @api.route('/auth/login')
 class AuthLoginByToken(Resource):
     """Resource handler for auth login by token operations."""
@@ -347,4 +407,4 @@ class AuthLoginByToken(Resource):
         token = kwargs["token"]
         ls = LoginServices(app.application.config)
         res = ls.auth2Token(token)
-        return jsonify(res)
+        return _json_status_response(res)

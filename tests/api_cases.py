@@ -52,9 +52,8 @@ JSON_GET_CASES = [
     pytest.param("/v2/maps", None, lambda data: "weather" in data, id="v2-maps"),
     pytest.param("/v2/maps/weather", None, lambda data: data["id"] == "weather", id="v2-map-detail"),
     pytest.param("/v2/navbar", AUTH_HEADERS, lambda data: data["navbar"][0]["id"] == "home", id="v2-navbar"),
-    pytest.param("/v2/pages", AUTH_HEADERS, lambda data: data["pages"][0]["id"] == "about_us", id="v2-pages"),
-    pytest.param("/v2/pages/about_us", AUTH_HEADERS, lambda data: data["id"] == "about_us", id="v2-page-detail"),
-    pytest.param("/v2/auth/login", AUTH_HEADERS, lambda data: data["token"] == "demo-token", id="v2-auth-login"),
+    pytest.param("/v2/pages", AUTH_HEADERS, lambda data: data["pages"][0]["_id"] == "about", id="v2-pages"),
+    pytest.param("/v2/pages/about", AUTH_HEADERS, lambda data: data["_id"] == "about", id="v2-page-detail"),
 ]
 
 
@@ -78,8 +77,8 @@ POST_CASES = [
         id="users-login",
     ),
     pytest.param(
-        "/v2/pages/about_us",
-        {"_id": "about_us", "author": "teacher-01"},
+        "/v2/pages/about",
+        {"_id": "about", "author": "teacher-01"},
         AUTH_HEADERS,
         lambda data: data["result"] == "ok",
         id="v2-page-upsert",

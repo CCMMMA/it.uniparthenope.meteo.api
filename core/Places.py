@@ -7,9 +7,13 @@ import pymongo
 import numpy as np
 from math import radians, cos, sin, asin, sqrt
 from datetime import datetime
-from numpy.compat import basestring
 from core.MongoDbHandlers import MongoDBHandlers
 from core.Logger import logger
+
+try:
+    from numpy.compat import basestring
+except ImportError:
+    basestring = str
 
 class Places(object):
     """Service or helper that encapsulates places behavior."""
