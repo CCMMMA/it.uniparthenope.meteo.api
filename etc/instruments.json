@@ -1,0 +1,112 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "airlinkID": "",
+          "id": "it.uniparthenope.meteo.ws9",
+          "image": null,
+          "name": "Esperimenti",
+          "organization": "Università degli Studi di Napoli \"Parthenope\"",
+          "type": "ws_on",
+          "variables": {}
+        },
+        "geometry": {
+          "coordinates": [
+            14.2804091,
+            40.856508,
+            0
+          ],
+          "type": "Point"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "airlinkID": "329eaa19-ffd4-4031-a789-a33b2c001642",
+          "id": "it.uniparthenope.meteo.ws5",
+          "image": "static/uploads/it.uniparthenope.meteo.ws5.jpg",
+          "name": "Castelvolturno",
+          "organization": "IMAT Training Center",
+          "type": "ws_on",
+          "variables": {
+            "HumOut": 78,
+            "RainRate": 0,
+            "TempOut": 20.94,
+            "WindDir": 277,
+            "WindSpeed": 20,
+            "aqi_nowcast_val": 102.66091,
+            "pm_1": 70.05882,
+            "pm_10_nowcast": 127.56696
+          }
+        },
+        "geometry": {
+          "coordinates": [
+            13.9843,
+            40.9723
+          ],
+          "type": "Point"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "airlinkID": "ff477632-7bd9-461c-bd5d-d9f187e5c7ec",
+          "id": "it.uniparthenope.meteo.ws1",
+          "image": "static/uploads/it.uniparthenope.meteo.ws1.jpg",
+          "name": "Centro Direzionale",
+          "organization": "Università degli Studi di Napoli \"Parthenope\"",
+          "type": "ws_on",
+          "variables": {
+            "HumOut": 255,
+            "RainRate": 655.35,
+            "TempOut": 1802.61,
+            "WindDir": 32767,
+            "WindSpeed": 255,
+            "aqi_nowcast_val": 3.4865165,
+            "pm_1": 2.6714287,
+            "pm_10_nowcast": 4.727836
+          }
+        },
+        "geometry": {
+          "coordinates": [
+            14.2946362,
+            40.8564635,
+            0
+          ],
+          "type": "Point"
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "airlinkID": "f49aa148-e5a6-4c2e-8c69-2b4fc1b95909",
+          "id": "it.uniparthenope.meteo.ws8",
+          "image": null,
+          "latitude": 40.6056503,
+          "longitude": 14.3637172,
+          "name": "Sant'Agata",
+          "organization": "Sant'Agata (Sorrento)",
+          "type": "ws_on",
+          "variables": {
+            "HumOut": 78,
+            "RainRate": 0,
+            "TempOut": 19.61,
+            "WindDir": 360,
+            "WindSpeed": 9,
+            "aqi_nowcast_val": 14.049029,
+            "pm_1": 9.26087,
+            "pm_10_nowcast": 9.509698
+          }
+        },
+        "geometry": {
+          "coordinates": [
+            14.3637172,
+            40.6056503
+          ],
+          "type": "Point"
+        }
+      }
+    ]
+  }

@@ -1,0 +1,5290 @@
+{
+   "title": {
+      "it-IT": "%d-%m-%Y %H:%M UTC\n__name__",
+      "en-US": "%d-%m-%Y %H:%M UTC\n__name__"
+   },
+   "alt": {
+      "it-IT": "Ore %H:%M UTC del giorno %d-%m-%Y, __place__, __model__, __output__",
+      "en-US": "Hours %H:%M UTC of day %d-%m-%Y, __place__, __model__, __output__"
+   },
+   "data_path": "/data1/ccmmma/prometeo/data/opendap/",
+   "result_path": "/project/images/",
+   "cache_path": "/data1/ccmmma/prometeo/cache/",
+   "base": [
+      "https://api.meteo.uniparthenope.it/geoserver/it.uniparthenope.meteo/wms?service=WMS&request=GetMap&layers=it.uniparthenope.meteo%3AOSM-WMS&styles=&format=image/png&transparent=false&version=1.1.0"
+   ],
+   "overlay":[
+      "https://api.meteo.uniparthenope.it/geoserver/it.uniparthenope.meteo/ows?SERVICE=WMS&layers=UA.UNITAAMMINISTRATIVE.REGIONI",
+      "https://api.meteo.uniparthenope.it/geoserver/it.uniparthenope.meteo/ows?SERVICE=WMS&layers=UA.UNITAAMMINISTRATIVE.PROVINCE",
+      "https://api.meteo.uniparthenope.it/geoserver/it.uniparthenope.meteo/ows?SERVICE=WMS&layers=UA.UNITAAMMINISTRATIVE.COMUNI"
+   ],
+   "shapefiles" : [
+      { "path": "/project/data/shapefiles/europe", "color": "black" },
+      { "path": "/project/data/shapefiles/Africa", "color": "black" }
+   ],
+   "colormaps": {
+      "rms3.cur.lamma": {
+         "clevs": [
+            0.0,
+            0.2, 0.4, 0.6, 0.8,
+            1.0, 1.2, 1.4, 1.6, 1.8, 
+            2.0, 2.2, 2.4,
+            2.6, 2.8,
+            3.0
+         ],
+         "ccols": [
+            [ 178, 252, 165, 255 ],
+            [  26, 200, 103, 255 ],
+            [  76, 166,  48, 255 ],
+            [ 143, 202,  62, 255 ],
+            [ 211, 228,  74, 255 ],
+            [ 255, 253,  84, 255 ],
+            [ 248, 206,  70, 255 ],
+            [ 242, 159,  57, 255 ],
+            [ 236, 107,  45, 255 ],
+            [ 235,  50,  35, 255 ],
+            [ 168,  34,  23, 255 ],
+            [ 143,  27,  17, 255 ],
+            [ 107,  17,  10, 255 ],
+            [ 139,  33, 147, 255 ],
+            [ 234,  63, 247, 255 ],
+            [ 241, 174, 248, 255 ] 
+         ]
+      },
+      "rms3.tem.lamma": {
+         "clevs": [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [  14,   0, 118, 255 ],
+            [  45,  34, 187, 255 ],
+            [  34,  90, 239, 255 ],
+
+            [  42, 112, 236, 255 ],
+            [ 102, 168, 249, 255 ],
+            [ 167, 237, 248, 255 ],
+
+            [ 178, 252, 165, 255 ],
+            [  25, 195, 100, 255 ],
+            [  20, 152,   3, 255 ],
+
+            [ 106, 200,   5, 255 ],
+            [ 196, 230,   9, 255 ],
+            [ 255, 255,  33, 255 ],
+
+            [ 253, 198,   8, 255 ],
+            [ 252, 137,   8, 255 ],
+            [ 252,  75,   8, 255 ],
+
+            [ 251,   0,   7, 255 ],
+            [  90,   0,   1, 255 ],
+            [ 113,   0,   1, 255 ],
+
+            [ 251,   0, 255, 255 ],
+            [ 253, 147, 255, 255 ]
+         ]
+      },
+      "rms3.sss": {
+         "clevs": [ 37.5, 37.55, 37.6, 37.65, 37.7, 37.75, 37.8, 37.85, 37.9, 37.95, 38, 38.05, 38.1, 38.15, 38.2, 38.25, 38.3, 38.35, 38.4, 38.45, 38.5, 38.55, 38.6, 38.65, 38.7, 38.75,  38.8, 38.85, 38.9, 38.95, 39],
+         "ccols": [
+            [22, 48, 246, 255],
+            [39, 85, 246, 255],
+            [53, 113, 246, 255],
+            [66, 139, 249, 255],
+            [92, 191, 249, 255],
+
+            [102, 211, 249, 255],
+            [111, 228, 240, 255],
+            [119, 244, 233, 255],
+            [120, 246, 230, 255],
+            [122, 250, 225, 255],
+
+            [98, 195, 97, 255],
+            [127, 209, 153, 255],
+            [141, 222, 67, 255],
+            [177, 238, 79, 255],
+            [214, 254, 94, 255],
+
+            [214, 254, 91, 255],
+            [242, 251, 83, 255],
+            [250, 230, 77, 255],
+            [246, 205, 69, 255],
+            [242, 177, 61, 255],
+
+            [241, 171, 60, 255],
+            [238, 151, 54, 255],
+            [236, 128, 49, 255],
+            [234, 103, 43, 255],
+            [232, 69, 38, 255],
+
+            [232, 58, 36, 255],
+            [231, 54, 35, 255],
+            [198, 41, 28, 255],
+            [161, 32, 21, 255],
+            [131, 23, 16, 255],
+            [131, 23, 16, 255]
+
+         ]
+      },
+      "ww33.p.lamma": {
+         "clevs": [ 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ],
+         "ccols": [
+            [ 113, 190, 119, 255 ],
+            [  88, 154,  37, 255 ],
+            [ 144, 194,  52, 255 ],
+            [ 232, 203,  60, 255 ],
+            [ 210, 113,  32, 255 ],
+            [ 170,  47,  13, 255 ],
+            [ 117,  27,   7, 255 ],
+            [ 189, 130, 198, 255 ],
+            [ 140,  44, 140, 255 ],
+            [  68,  13,  98, 255 ],
+            [ 221, 221, 217, 255 ],
+            [ 161, 161, 159, 255 ],
+            [  96,  96,  94, 255 ],
+            [  58,  58,  57, 255]
+         ]
+      },
+      "ww33.h.lamma": {
+         "clevs": [ 0, 0.1, 0.3, 0.5, 0.8, 1.25, 1.6, 2, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+         "ccols": [
+            [ 144, 241, 134, 255 ],
+            [ 154, 246, 253, 255 ],
+            [ 130, 209, 215, 255 ],
+            [  98,  88, 243, 255 ],
+            [  35,  10, 209, 255 ],
+            [  97,  22, 129, 255 ],
+            [ 139,  43, 139, 255 ],
+            [ 176, 101, 182, 255 ],
+            [ 157,  42,  11, 255 ],
+            [ 201,  59,  19, 255 ],
+            [ 228, 191,  56, 255 ],
+            [ 243, 237, 105, 255 ],
+            [ 204, 205, 201, 255 ],
+            [ 180, 180, 176, 255 ],
+            [ 151, 151, 149, 255 ],
+            [  78,  77,  74, 255 ]
+         ] 
+      }, 
+      "wrf5.cldfrc": {
+         "clevs": [0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [ 220, 220, 220, 255 ],
+            [ 205, 205, 205, 255 ],
+            [ 190, 190, 190, 255 ],
+            [ 175, 175, 175, 255 ],
+            [ 165, 165, 165, 255 ],
+            [ 150, 150, 150, 255 ],
+            [ 140, 140, 140, 255 ],
+            [ 114, 114, 114, 255 ],
+            [  90,  90,  90, 255 ]
+         ]
+      },
+      "wrf5.rain.lamma": {
+         "clevs": [0, 0.4, 0.6, 1, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250, 300, 350],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [ 159, 255, 255, 255 ],
+            [ 101, 255, 255, 255 ],
+            [  66, 195, 255, 255 ],
+            [  66, 155, 255, 255 ],
+            [  90, 100, 255, 255 ],
+            [  65,  74, 255, 255 ],
+            [  60, 187,  61, 255 ],
+            [ 164, 215,  31, 255 ],
+            [ 254, 230,   2, 255 ],
+            [ 255, 194,   0, 255 ],
+            [ 255, 125,   0, 255 ],
+            [ 255,   0,   1, 255 ],
+            [ 200,   3,   0, 255 ],
+            [ 212, 100, 195, 255 ],
+            [ 181,  25, 157, 255 ],
+            [ 132,   0, 148, 255 ],
+            [ 180, 180, 180, 255 ],
+            [ 140, 140, 140, 255 ],
+            [  90,  90,  90, 255 ],
+            [  50,  50,  50, 255 ],
+            [ 164, 120,  35, 255 ],
+            [ 128,  82,   1, 255 ],
+            [ 100,  50,   1, 255 ],
+            [  80,  35,   0, 255 ]
+         ]
+      },
+      "wrf5.snow": {
+         "clevs": [ 0, 0.5, 2.5, 5.5, 8.5, 11.5, 15.5 ],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [ 255, 204, 255, 255 ],
+            [ 255, 179, 255, 255 ],
+            [ 255, 153, 255, 255 ],
+            [ 255, 128, 255, 255 ],
+            [ 255, 102, 255, 255 ],
+            [  90,  90,  90, 255 ]
+         ]
+      },
+      "wrf5.wind.kt": {
+         "clevs": [ 0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 30, 35, 40, 45, 50 ],
+         "ccols": [
+            [   0,   0,  51, 255 ],
+            [   1,  23, 186, 255 ],
+            [   1,  31, 243, 255 ],
+            [   5,  51, 252, 255 ],
+            [  25,  87, 255, 255 ],
+            [  59, 139, 244, 255 ],
+            [  79, 189, 248, 255 ],
+            [ 104, 245, 231, 255 ],
+            [ 119, 254, 198, 255 ],
+            [ 146, 251, 158, 255 ],
+            [ 168, 254, 125, 255 ],
+            [ 202, 254,  90, 255 ],
+            [ 237, 253,  77, 255 ],
+            [ 245, 208,  58, 255 ],
+            [ 239, 169,  57, 255 ],
+            [ 250, 115,  46, 255 ],
+            [ 231,  83,  38, 255 ],
+            [ 238,  48,  33, 255 ],
+            [ 187,  32,  24, 255 ],
+            [ 122,  22,  16, 255 ],
+            [ 100,  22,  16, 255 ]
+         ]
+      },
+      "wrf5.wind.kt.lamma": {
+         "clevs": [ 0, 1, 3, 6, 10, 16, 21, 27, 33, 40, 47, 55, 63],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [ 240, 255, 255, 255 ],
+            [ 168, 220, 231, 255 ],
+            [  81, 165, 244, 255 ],
+            [  13, 209, 120, 255 ],
+            [   3, 160,   0, 255 ],
+            [ 225,  21,   0, 255 ],
+            [ 165,   0,   0, 255 ],
+            [ 255,   0, 255, 255 ],
+            [ 255, 169, 255, 255 ],
+            [ 255, 149,   1, 255 ],
+            [ 249, 100,   2, 255 ],
+            [ 170, 171, 171, 255 ]
+         ]
+      },
+      "wrf5.t2c.lamma": {
+         "clevs": [-16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44],
+         "ccols": [
+            [   2,   1, 126, 255 ],
+            [   0,   0, 192, 255 ],
+            [  21, 100, 209, 255 ],
+            [  37, 130, 240, 255 ],
+            [  80, 164, 244, 255 ],
+            [ 120, 185, 250, 255 ],
+            [ 150, 209, 250, 255 ],
+            [ 180, 240, 250, 255 ],
+            [ 230, 255, 229, 255 ],
+            [ 190, 250, 180, 255 ],
+            [   1, 206, 123, 255 ],
+            [   5, 170,   0, 255 ],
+            [ 123, 206,   0, 255 ],
+            [ 206, 231,   1, 255 ],
+            [ 255, 255,  39, 255 ],
+            [ 254, 206,   2, 255 ],
+            [ 255, 156,   2, 255 ],
+            [ 254, 100,   0, 255 ],
+            [ 255,   0,   1, 255 ],
+            [ 206,   2,   1, 255 ],
+            [ 160,   0,   1, 255 ],
+            [ 129,   1,   0, 255 ],
+            [ 105,   3,   1, 255 ],
+            [ 160, 120, 110, 255 ],
+            [ 120,  80,  69, 255 ],
+            [  90,  53,  42, 255 ],
+            [ 180, 181, 181, 255 ],
+            [ 129, 129, 129, 255 ],
+            [ 255, 130, 255, 255 ],
+            [ 255,   0, 255, 255 ],
+            [ 155,   2, 155, 255 ]
+         ]
+      },
+      "wcm3.con": {
+         "clevs": [ 0, 1, 18, 230, 700, 4600, 46000 ],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [ 204, 255, 255, 255 ],
+            [  51, 102, 255, 255 ],
+            [   0, 204,   0, 255 ],
+            [ 255, 255,   0, 255 ],
+            [ 255,  51,   1, 255 ],
+            [ 102,   0,  51, 255 ]
+         ]
+      },
+      "wcm3.con.fine": {
+         "clevs": [
+            1,3,6,8,11,13,16,18,
+            48,78,109,139,170,200,230,
+            297,364,431,498,565,632,700,
+            1257,1814,2371,2929,3486,4043,4600,
+            10514,16429,22343,28257,34171,40086,46000
+         ], 
+         "ccols": [
+
+            [255,255,255,255],
+            [170,220,245,255],
+            [140,200,235,255],
+            [110,180,225,255],
+            [80,160,215,255],
+            [40,130,205,255],
+            [0,90,200,255],
+            
+            [0,110,180,255],
+            [0,130,160,255],
+            [0,150,140,255],
+            [0,170,120,255],
+            [0,185,100,255],
+            [0,195,80,255],
+            [0,200,60,255],
+            
+            [40,210,50,255],
+            [80,220,40,255],
+            [120,225,30,255],
+            [160,230,20,255],
+            [190,235,10,255],
+            [220,238,5,255],
+            [255,240,0,255],
+            
+            [255,220,0,255],
+            [255,200,0,255],
+            [255,180,0,255],
+            [255,160,0,255],
+            [255,140,0,255],
+            [255,120,0,255],
+            [255,100,0,255],
+            
+            [240,90,20,255],
+            [220,70,30,255],
+            [200,50,35,255],
+            [190,30,38,255],
+            [180,10,40,255],
+            [170,0,50,255],
+            [160,0,55,255],
+            [180,0,40,255]
+         ]  
+      },
+      "aiq3.mci": {
+         "clevs": [ 0, 1, 2, 3, 4, 5, 6 ],
+         "ccols": [
+            [ 255, 255, 255,   0 ],
+            [ 204, 255, 255, 255 ],
+            [  51, 102, 255, 255 ],
+            [   0, 204,   0, 255 ],
+            [ 255, 255,   0, 255 ],
+            [ 255,  51,   1, 255 ],
+            [ 102,   0,  51, 255 ]
+         ]
+      },
+      "wrf5.clf": {
+         "clevs": [ 0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+         "ccols": [
+               [ 255, 255, 255, 0],
+               [ 220, 220, 220, 255],
+               [ 205, 205, 205, 255],
+               [ 190, 190, 190, 255],
+               [ 175, 175, 175, 255],
+               [ 165, 165, 165, 255],
+               [ 150, 150, 150, 255],
+               [ 140, 140, 140, 255],
+               [ 114, 114, 114, 255],
+               [  90,  90,  90, 255]
+         ]
+      },
+      "wrf5.gp5": {
+         "clevs": [492, 496, 500, 504, 508, 512, 516, 520, 524, 528, 532, 536, 540, 544, 548, 552, 556, 560, 564, 568, 572, 576, 580, 584, 588, 592, 596, 600, 604, 608, 612],
+         "ccols": [
+            [53, 27, 47, 255], 
+            [66, 28, 62, 255], 
+            [121, 33, 123, 255], 
+            [89, 31, 86, 255],
+            [68, 28, 49, 255],
+            [49, 44, 76, 255],
+            [19, 30, 115, 255],
+            [33, 32, 176, 255],
+            [34, 32, 241, 255],
+            [17, 54, 231, 255],
+            [77, 161, 255, 255],
+            [92, 193, 227, 255],
+            [107, 207, 211, 255],
+            [146, 235, 158, 255],
+            [115, 186, 79, 255],
+            [124, 191, 65, 255],
+            [178, 185, 56, 255],
+            [221, 208, 110, 255],
+            [205, 186, 117, 255],
+            [248, 233, 121, 255],
+            [206, 175, 94, 255],
+            [196, 106, 43, 255],
+            [192, 63, 34, 255],
+            [235, 92, 78, 255],
+            [195, 42, 34, 255],
+            [204, 22, 31, 255],
+            [161, 35, 41, 255],
+            [103, 30, 38, 255],
+            [72, 24, 34, 255],
+            [77, 29, 39, 255],
+            [61, 31, 41, 255],
+            [36, 33, 41, 255]
+         ]
+      },
+      "wrf5.gp8": {
+         "clevs": [100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172, 176, 180, 184, 188, 192, 196, 200, 204, 208, 212, 216, 220],
+         "ccols": [
+            [53, 27, 47, 255], 
+            [66, 28, 62, 255], 
+            [121, 33, 123, 255], 
+            [89, 31, 86, 255],
+            [68, 28, 49, 255],
+            [49, 44, 76, 255],
+            [19, 30, 115, 255],
+            [33, 32, 176, 255],
+            [34, 32, 241, 255],
+            [17, 54, 231, 255],
+            [77, 161, 255, 255],
+            [92, 193, 227, 255],
+            [107, 207, 211, 255],
+            [146, 235, 158, 255],
+            [115, 186, 79, 255],
+            [124, 191, 65, 255],
+            [178, 185, 56, 255],
+            [221, 208, 110, 255],
+            [205, 186, 117, 255],
+            [248, 233, 121, 255],
+            [206, 175, 94, 255],
+            [196, 106, 43, 255],
+            [192, 63, 34, 255],
+            [235, 92, 78, 255],
+            [195, 42, 34, 255],
+            [204, 22, 31, 255],
+            [161, 35, 41, 255],
+            [103, 30, 38, 255],
+            [72, 24, 34, 255],
+            [77, 29, 39, 255],
+            [61, 31, 41, 255],
+            [36, 33, 41, 255]
+         ]
+      },
+      "wrf5.wsv": {
+         "clevs": [ -12,-10, -8, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 8, 10 ],
+         "ccols": [
+            [0, 1, 138, 255],
+            [48, 56, 147, 255],
+            [73, 124, 181, 255],
+            [108, 166, 203, 255],
+            [132, 188, 215, 255],
+            [152, 204, 224, 255],
+            [166, 215, 230, 255],
+            [255, 255, 255, 255],
+            [255, 255, 255, 255],
+            [254, 250, 188, 255],
+            [255, 227, 156, 255],
+            [254, 204, 130, 255],
+            [254, 171, 101, 255],
+            [247, 115, 74, 255],
+            [231, 78, 56, 255],
+            [202, 35, 40, 255]
+         ]
+      },
+      "wrf5.rh2": {
+         "clevs": [20, 40, 60, 80, 99],
+         "ccols": [
+            [244, 6, 12, 255],
+            [254, 255, 50, 255],
+            [0, 254, 58, 255], 
+            [0, 254, 254, 255],
+            [0, 120, 217, 255],
+            [255, 12, 251, 255]
+         ]
+      },
+      "wrf5.mcape": {
+         "clevs": [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000],
+         "ccols": [
+            [255, 255, 255, 255],
+            [47, 255, 255, 255],
+            [48, 255, 195, 255],
+            [49, 255, 85, 255],
+            [123, 255, 85, 255],
+            [161, 255, 86, 255],
+            [190, 255, 86, 255],
+            [255, 255, 87, 255],
+            [255, 224, 82, 255],
+            [255, 160, 74, 255],
+            [255, 97, 68, 255],
+            [255, 35, 65, 255],
+            [255, 97, 189, 255],
+            [255, 160, 252, 255],
+            [255, 224, 251, 255]
+         ]
+      },
+      "wrf5.uh": {
+         "clevs": [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195],
+         "ccols": [
+            [255, 255, 255, 255],
+            [47, 255, 255, 255],
+            [48, 255, 195, 255],
+            [49, 255, 85, 255],
+            [123, 255, 85, 255],
+            [161, 255, 86, 255],
+            [190, 255, 86, 255],
+            [255, 255, 87, 255],
+            [255, 224, 82, 255],
+            [255, 160, 74, 255],
+            [255, 97, 68, 255],
+            [255, 35, 65, 255],
+            [255, 97, 189, 255],
+            [255, 160, 252, 255],
+            [255, 224, 251, 255]
+         ]
+      }
+   },
+   "products":{
+      "aiq3": {
+         "type": "model",
+         "desc": { 
+            "it-IT": "Predizione contaminazione molluschi da allevamento",
+            "en-US": "Mussels farm contamination prediction"
+         },
+         "timestep": 60,
+         "steps": 168,
+         "fields": {
+            "link": {
+               "title": {
+                  "it-IT": "Collegamento",
+                  "en-US": "Link"
+               },
+               "label": {
+                  "it-IT": "Collegamento a pagina delle previsioni",
+                  "en-US": "Link to the forecast page"
+               }
+            },
+            "dateTime": {
+               "title": {
+                  "it-IT": "Data",
+                  "en-US": "Date"
+               },
+               "label": {
+                  "it-IT": "Data e ora correnti",
+                  "en-US": "Current date and time"
+               },
+               "var": "__dateTime__",
+               "unit": "date"
+            },
+            "mci": {
+               "title": {
+                  "it-IT": "Indice di contaminazione predetto",
+                  "en-US": "Predicted contamination index"
+               },
+               "label": {
+                  "it-IT": "Indice contaminazione",
+                  "en-US": "Contamination index"
+               },
+               "time": 0,
+               "round": 0,
+               "var": "class_predict",
+               "method": "amax",
+               "unit": "n",
+               "aggregate": [
+                  "ave",
+                  "min",
+                  "max"
+               ]
+            },
+            "mci-min": {
+               "title": {
+                  "it-IT": "Indice min",
+                  "en-US": "Index min"
+               },
+               "label": {
+                  "it-IT": "Valore indice minimo",
+                  "en-US": "Minimum index value"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "mci-max": {
+               "title": {
+                  "it-IT": "Indice max",
+                  "en-US": "Index max"
+               },
+               "label": {
+                  "it-IT": "Valore indice massimo",
+                  "en-US": "Minimum index value"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "icon": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Simbolo",
+                  "en-US": "Symbol"
+               },
+               "time": 0,
+               "var": "class_predict",
+               "method": "amax",
+               "func": "musselContaminationIcon",
+               "unit": "",
+               "aggregate": [
+
+               ]
+            }
+         },
+         "outputs": {
+            "gen": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "chart": {
+                  "title_chart": "Mussels contamination index",
+                  "title_bars": "Index (#)", 
+                  "var_bars": "mci",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "clevels":  [ 0, 1, 2, 3, 4, 5, 6 ],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 204, 255, 255, 255 ],
+                     [  51, 102, 255, 255 ],
+                     [   0, 204,   0, 255 ],
+                     [ 255, 255,   0, 255 ],
+                     [ 255,  51,   1, 255 ],
+                     [ 102,   0,  51, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "class_predict",
+                        "COLORSCALERANGE": "0,5",
+                        "NUMCOLORBANDS": "6",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR": "extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/mciBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": { 
+                           "en-US": "Mussel Contamination Index (predicted)",
+                           "it-IT": "Indice di contaminazione (predizione)"
+                        },
+                        "colormap":"aiq3.mci",
+                        "var1": "class_predict",
+                        "b": 2,
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     }
+                  ]
+               }
+            },
+            "mci": {
+               "title": { 
+                  "en-US": "Mussel Contamination Index", 
+                  "it-IT": "Indice di contaminazione molluschi"
+               },
+               "chart": {
+                  "title_chart": "Mussels contamination index",
+                  "title_bars": "Index (#)", 
+                  "var_bars": "mci",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "clevels": [ 0, 1, 2, 3, 4, 5, 6 ],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 204, 255, 255, 255 ],
+                     [  51, 102, 255, 255 ],
+                     [   0, 204,   0, 255 ],
+                     [ 255, 255,   0, 255 ],
+                     [ 255,  51,   1, 255 ],
+                     [ 102,   0,  51, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "class_predict",
+                        "COLORSCALERANGE": "0,5",
+                        "NUMCOLORBANDS": "6",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR": "extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/mciBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US": "Mussel Contamination Index",
+                           "it-IT": "Indice Contaminazione Molluschi"
+                        },
+                        "colormap":"aiq3.mci",
+                        "var1": "class_predict",
+                        "b": 2,
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":4,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "name": "Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "mciW": {
+               "title": { 
+                  "en-US": "Mussel Contamination Index", 
+                  "it-IT": "Indice di contaminazione molluschi"
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "class_predict",
+                        "COLORSCALERANGE": "0,5",
+                        "NUMCOLORBANDS": "6",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR": "extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/mciBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US": "Mussel Contamination Index",
+                           "it-IT": "Indice Contaminazione Molluschi"
+                        },
+                        "colormap":"aiq3.mci",
+                        "var1": "class_predict",
+                        "b": 2,
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":4,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "name": "Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
+                     }
+                  ]
+               }
+            }
+         }
+      },
+      "wcm3": {
+         "type": "model",
+         "desc": {
+            "it-IT": "Diffusione e trasporto traccinti inerti",
+            "en-US": "Inert tracer transport and diffusion"
+         },
+         "timestep": "60",
+         "steps": "168",
+         "fields": {
+            "link": {
+               "title": {
+                  "it-IT": "Collegamento",
+                  "en-US": "Link"
+               },
+               "label": {
+                  "it-IT": "Collegamento a pagina delle previsioni",
+                  "en-US": "Link to the forecast page"
+               }
+            },
+            "dateTime": {
+               "title": {
+                  "it-IT": "Data",
+                  "en-US": "Date"
+               },
+               "label": {
+                  "it-IT": "Data e ora correnti",
+                  "en-US": "Current date and time"
+               },
+               "var": "__dateTime__",
+               "unit": "date"
+            },
+            "con": {
+               "title": {
+                  "it-IT": "Concentrazione",
+                  "en-US": "Concentration"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante",
+                  "en-US": "Tracer concentration"
+               },
+               "round": 0,
+               "time": 0,
+               "level": 0,
+               "method": "amax",
+               "var": "conc",
+               "unit": "n",
+               "aggregate": [
+                  "min",
+                  "max"
+                  ]
+            },
+            "con-min": {
+               "title": {
+                  "it-IT": "Concentrazione min",
+                  "en-US": "Concentration min"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante Minima",
+                  "en-US": "Minimum tracer concentration"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "con-max": {
+               "title": {
+                  "it-IT": "Concentrazione max",
+                  "en-US": "Concentration max"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante Massima",
+                  "en-US": "Maximum tracer concentration"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "cof":{
+               "title": {
+                  "it-IT": "Concentrazione",
+                  "en-US": "Concentration"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante",
+                  "en-US": "Tracer concentration"
+               },
+               "round": 0,
+               "time": 0,
+               "level": 0,
+               "method": "amax",
+               "var": "conc",
+               "unit": "n",
+               "aggregate": [
+                  "min",
+                  "max"
+                  ]
+            },
+            "cof-min": {
+               "title": {
+                  "it-IT": "Concentrazione min",
+                  "en-US": "Concentration min"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante Minima",
+                  "en-US": "Minimum tracer concentration"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "cof-max": {
+               "title": {
+                  "it-IT": "Concentrazione max",
+                  "en-US": "Concentration max"
+               },
+               "label": {
+                  "it-IT": "Concentrazione tracciante Massima",
+                  "en-US": "Maximum tracer concentration"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "sts": {
+               "title": {
+                  "it-IT": "Stato",
+                  "en-US": "Status"
+               },
+               "label": {
+                  "it-IT": "Valutazione stato",
+                  "en-US": "Status evaluation"
+               },
+               "round": 0,
+               "time": 0,
+               "level": 0,
+               "method": "amax",
+               "var": "conc",
+               "func": "statusByConc",
+               "unit": "n",
+               "aggregate": [
+                  "ave",
+                  "min",
+                  "max"
+               ]
+            },
+            "sts-min": {
+               "title": {
+                  "it-IT": "Stato min",
+                  "en-US": "Status min"
+               },
+               "label": {
+                  "it-IT": "Stato Minimo",
+                  "en-US": "Minimum status"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "sts-max": {
+               "title": {
+                  "it-IT": "Stato max",
+                  "en-US": "Status max"
+               },
+               "label": {
+                  "it-IT": "Stato Massimo",
+                  "en-US": "Maximum status"
+               },
+               "round": 0,
+               "unit": "n"
+            },
+            "icon": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Simbolo",
+                  "en-US": "Symbol"
+               },
+               "round": 0,
+               "time": 0,
+               "level": 0,
+               "method": "amax",
+               "var": "conc",
+               "func": "concentrationParticles",
+               "unit": "",
+               "aggregate": [
+               ]
+            }
+         },
+         "outputs": {
+            "gen": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "chart": {
+                  "title_chart": "Particle concentration ",
+                  "title_bars": "Number of Particles (#)", 
+                  "var_bars": "con",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "clevels": [ 0, 1, 18, 230, 700, 4600, 46000 ],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 204, 255, 255, 255 ],
+                     [  51, 102, 255, 255 ],
+                     [   0, 204,   0, 255 ],
+                     [ 255, 255,   0, 255 ],
+                     [ 255,  51,   1, 255 ],
+                     [ 102,   0,  51, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "sfconc10m",
+                        "COLORSCALERANGE": "1,46000",
+                        "NUMCOLORBANDS": "7",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR": "extend",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/concBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US": "Concentration [N. of particles] 10m",
+                           "it-IT": "Concentrazione [N. particelle] 10m"
+                        },
+                        "colormap":"wcm3.con",
+                        "var1": "sfconc10m",
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "con": {
+               "title": {
+                  "en-US": "Inert transport and diffusion",
+                  "it-IT": "Diffusione e trasporto traccinti inerti"
+               },
+               "chart": {
+                  "title_chart": "Particle concentration ",
+                  "title_bars": "Number of Particles (#)", 
+                  "var_bars": "con",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "clevels": [ 0, 1, 18, 230, 700, 4600, 46000 ],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 204, 255, 255, 255 ],
+                     [  51, 102, 255, 255 ],
+                     [   0, 204,   0, 255 ],
+                     [ 255, 255,   0, 255 ],
+                     [ 255,  51,   1, 255 ],
+                     [ 102,   0,  51, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "sfconc10m",
+                        "COLORSCALERANGE": "1,46000",
+                        "NUMCOLORBANDS": "7",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR" :"extend",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/concBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US":"Concentration [N. of particles] 10m",
+                           "it-IT": "Concentrazione [N. particelle] 10m"
+                        },
+                        "colormap":"wcm3.con",
+                        "var1": "sfconc10m",
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "conW": {
+               "title": {
+                  "en-US": "Inert transport and diffusion",
+                  "it-IT": "Diffusione e trasporto traccinti inerti"
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "sfconc10m",
+                        "COLORSCALERANGE": "1,46000",
+                        "NUMCOLORBANDS": "7",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR" :"extend",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/concBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US":"Concentration [N. of particles]",
+                           "it-IT": "Concentrazione [N. particelle]"
+                        },
+                        "colormap":"wcm3.con",
+                        "var1": "sfconc10m",
+                        "type": "shaded",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
+                     }
+                  ]
+               }
+            },
+            "cof": {
+               "title": {
+                  "en-US": "Inert transport and diffusion (fine scale)",
+                  "it-IT": "Diffusione e trasporto traccinti inerti (scala fine)"
+               },
+               "chart": {
+                  "title_chart": "Particle concentration ",
+                  "title_bars": "Number of Particles", 
+                  "var_bars": "cof",
+                  "pos_bars": "left",
+                  "unit_bars": "#",
+                  "clevels": [
+                     1,3,6,8,11,13,16,18,
+                     48,78,109,139,170,200,230,
+                     297,364,431,498,565,632,700,
+                     1257,1814,2371,2929,3486,4043,4600,
+                     10514,16429,22343,28257,34171,40086,46000
+                  ], 
+                  "ccolors": [
+
+                     [200,240,255,255],
+                     [170,220,245,255],
+                     [140,200,235,255],
+                     [110,180,225,255],
+                     [80,160,215,255],
+                     [40,130,205,255],
+                     [0,90,200,255],
+                     
+                     [0,110,180,255],
+                     [0,130,160,255],
+                     [0,150,140,255],
+                     [0,170,120,255],
+                     [0,185,100,255],
+                     [0,195,80,255],
+                     [0,200,60,255],
+                     
+                     [40,210,50,255],
+                     [80,220,40,255],
+                     [120,225,30,255],
+                     [160,230,20,255],
+                     [190,235,10,255],
+                     [220,238,5,255],
+                     [255,240,0,255],
+                     
+                     [255,220,0,255],
+                     [255,200,0,255],
+                     [255,180,0,255],
+                     [255,160,0,255],
+                     [255,140,0,255],
+                     [255,120,0,255],
+                     [255,100,0,255],
+                     
+                     [240,90,20,255],
+                     [220,70,30,255],
+                     [200,50,35,255],
+                     [190,30,38,255],
+                     [180,10,40,255],
+                     [170,0,50,255],
+                     [160,0,55,255],
+                     [180,0,40,255]
+                  ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS": "conc",
+                        "COLORSCALERANGE": "1,46000",
+                        "NUMCOLORBANDS": "7",
+                        "ABOVEMAXCOLOR": "extend",
+                        "BELOWMINCOLOR": "transparent",
+                        "NODATAACOLOR": "transparent",
+                        "BGCOLOR" :"extend",
+                        "ELEVATION": "0",
+                        "LOGSCALE": "false",
+                        "STYLES": "raster/concBars",
+                        "LEGEND": "right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers":[
+                     {
+                        "text": {
+                           "en-US":"Concentration [N. of particles]",
+                           "it-IT": "Concentrazione [N. particelle]"
+                        },
+                        "colormap":"wcm3.con.fine",
+                        "var1": "conc",
+                        "type": "shaded",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":3,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            }
+         }
+      },
+      "rms3": {
+         "config": {
+            "d03": [
+               { "ge":   0, "lt":  30, "values": { "skip":  2, "scale": 10, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge":  30, "lt":  60, "values": { "skip":  7, "scale":  5, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge":  60, "lt":  90, "values": { "skip":  8, "scale": 10, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge":  90, "lt": 120, "values": { "skip": 10, "scale":  7, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge": 120, "lt": 240, "values": { "skip": 15, "scale":  5, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge": 240, "lt": 480, "values": { "skip": 20, "scale": 15, "hpa_tick": 1, "barb_length": 3  }},
+               { "ge": 480,            "values": { "skip": 30, "scale": 20, "hpa_tick": 1, "barb_length": 3  }}
+            ]
+         },
+         "type": "model",
+         "desc": {
+            "it-IT": "Dinamica Costiera 7 giorni",
+            "en-US": "Coastal Dynamics 7 days"
+         },
+         "timestep": 60,
+         "steps": 168,
+         "fields": {
+            "link": {
+               "title": {
+                  "it-IT": "Collegamento",
+                  "en-US": "Link"
+               },
+               "label": {
+                  "it-IT": "Collegamento a pagina delle previsioni",
+                  "en-US": "Link to the forecast page"
+               },
+               "var":"__link__"
+            },
+            "dateTime": {
+               "title": {
+                  "it-IT": "Data",
+                  "en-US": "Date"
+               },
+               "label": {
+                  "it-IT": "Data e ora correnti",
+                  "en-US": "Current date and time"
+               },
+               "var": "__dateTime__",
+               "unit": "date"
+            },
+            "iDate": {
+               "title": {
+                  "it-IT": "Inizializzazione",
+                  "en-US": "Initialization"
+               },
+               "label": {
+                  "it-IT": "Data di inizio simulazione",
+                  "en-US": "Simulation initialization time"
+               },
+               "unit": "date",
+               "var": "__iDate__"
+            },
+            "scs": {
+               "title": {
+                  "it-IT": "Current",
+                  "en-US": "Current"
+               },
+               "label": {
+                  "it-IT": "Direzione corrente superficiale",
+                  "en-US": "Surface current direction"
+               },
+               "round": 1,
+               "level": 0,
+               "time": 0,
+               "var": [ "u", "v" ],
+               "func": "currS"
+            },
+            "scd": {
+               "title": {
+                  "it-IT": "Current",
+                  "en-US": "Current"
+               },
+               "label": {
+                  "it-IT": "Direzione corrente superficiale",
+                  "en-US": "Surface current direction"
+               },
+               "round": 1,
+               "level": 0,
+               "time": 0,
+               "var": [ "u", "v" ],
+               "func": "northDirection",
+               "unit": "°N",
+               "aggregate": [
+                  "min",
+                  "max"
+               ]
+            },
+            "scd-min": {
+            "title": {
+               "it-IT": "Current min",
+               "en-US": "Current min"
+            },
+            "label": {
+               "it-IT": "Direction corrente superficiale Minima",
+               "en-US": "Minimum surface current direction"
+            },
+            "round": 1,
+            "unit": "°N"
+            },
+            "scd-max": {
+            "title": {
+               "it-IT": "Current max",
+               "en-US": "Current max"
+            },
+            "label": {
+               "it-IT": "Direzione corrente superficiale Massima",
+               "en-US": "Maximum surface current direction"
+            },
+            "round": 1,
+            "unit": "°N"
+            },
+            "scm": {   
+               "title": {
+                  "it-IT": "Current",
+                  "en-US": "Current"
+               },
+               "label": {
+                  "it-IT": "Velocità corrente superficiale",
+                  "en-US": "Surface current speed"
+               },
+               "level": 0,
+               "time": 0,
+               "round": 3,
+               "var": [ "u", "v"],
+               "a": 1.94384,
+               "func": "modulus",
+               "unit": "ms-1",
+               "aggregate": [
+                  "ave",
+                  "min",
+                  "max"
+               ]
+            },
+            "scm-min": {
+            "title": {
+               "it-IT": "Current min",
+               "en-US": "Current min"
+            },
+            "label": {
+               "it-IT": "Velocità corrente superficiale Minima",
+               "en-US": "Minimum surface current speed"
+            },
+            "round": 1,
+            "unit": "m s-1"
+            },
+            "scm-max": {
+            "title": {
+               "it-IT": "Current max",
+               "en-US": "Current max"
+            },
+            "label": {
+               "it-IT": "Velocità corrente superficiale Massima",
+               "en-US": "Maximum surface current speed"
+            },
+            "round": 1,
+            "unit": "m s-1"
+            },
+            "icon": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Simbolo",
+                  "en-US": "Symbol"
+               },
+               "level": 0,
+               "time": 0,
+               "round": 3,
+               "a": 1.94384,
+               "var": [ "u", "v"],
+               "func": "surfaceCurrentIcon",
+               "unit": "",
+               "aggregate": [
+
+               ]
+            },
+            "sst": {
+               "title": {
+                  "it-IT": "SST",
+                  "en-US": "SST"
+               },
+               "label": {
+                  "it-IT": "Temperatura Superficiale",
+                  "en-US": "Sea Surface Temperature"
+               },
+               "time": 0,
+               "level": 0,
+               "round": 1,
+               "var": "temp",
+               "unit": "°C",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "sst-min": {
+            "title": {
+               "it-IT": "SST min",
+               "en-US": "SST min"
+            },
+            "label": {
+               "it-IT": "Temperatura Superficiale Minima",
+               "en-US": "Minimum Sea Surface Temperature"
+            },
+            "round": 1,
+            "unit": "°C"
+            },
+            "sst-max": {
+            "title": {
+               "it-IT": "SST max",
+               "en-US": "SST max"
+            },
+            "label": {
+               "it-IT": "Temperatura Superficiale Massima",
+               "en-US": "Maximum Sea Surface Temperature"
+            },
+            "round": 1,
+            "unit": "°C"
+            },
+            "sss": {   
+               "title": {
+                  "it-IT": "SSS",
+                  "en-US": "SSS"
+               },
+               "label": {
+                  "it-IT": "Salinità Superficiale",
+                  "en-US": "Sea Surface Salinity"
+               },
+               "time": 0,
+               "level": 0,
+               "round": 4,
+               "var": "salt",
+               "unit": "%.",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "sss-min": {
+            "title": {
+               "it-IT": "SSS min",
+               "en-US": "SSS min"
+            },
+            "label": {
+               "it-IT": "Salinità Superficiale Minima",
+               "en-US": "Minimum Sea Surface Salinity"
+            },
+            "round": 1,
+            "unit": "%."
+            },
+            "sss-max": {
+            "title": {
+               "it-IT": "SSS max",
+               "en-US": "SSS max"
+            },
+            "label": {
+               "it-IT": "Salinità Superficiale Massima",
+               "en-US": "Maximum Sea Surface Salinity"
+            },
+            "round": 1,
+            "unit": "%."
+            }
+         },
+         "outputs": {
+            "gen": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "chart": {
+                  "title_chart": "Surface current",
+                  "title_bars": "Current Speed at the surface (°N)", 
+                  "var_bars": "scm",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# kn",
+                  "clevels": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0],
+                  "ccolors": [
+                     [ 178, 252, 165, 255 ],
+                     [  26, 200, 103, 255 ],
+                     [  76, 166,  48, 255 ],
+                     [ 143, 202,  62, 255 ],
+                     [ 211, 228,  74, 255 ],
+                     [ 255, 253,  84, 255 ],
+                     [ 248, 206,  70, 255 ],
+                     [ 242, 159,  57, 255 ],
+                     [ 236, 107,  45, 255 ],
+                     [ 235,  50,  35, 255 ],
+                     [ 168,  34,  23, 255 ],
+                     [ 143,  27,  17, 255 ],
+                     [ 107,  17,  10, 255 ],
+                     [ 139,  33, 147, 255 ],
+                     [ 234,  63, 247, 255 ],
+                     [ 241, 174, 248, 255 ] 
+                  ],
+                  "title_line": "Current Direction at the surface (°N)", 
+                  "var_line": "scd",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                           "LAYERS":"u:v-mag",
+                           "COLORSCALERANGE":"0.1,0.7",
+                           "NUMCOLORBANDS":"8",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "NODATAACOLOR":"transparent",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"raster/curBars",
+                           "LEGEND":"right"
+                     },
+                     {
+                           "LAYERS":"u:v-dir",
+                           "COLORSCALERANGE":"0,100",
+                           "NUMCOLORBANDS":"250",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Surface current [kn]",
+                           "it-IT": "Corrente marina superficiale [kn]"
+                        },
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "rms3.cur.lamma",
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     }
+                  ]
+               }
+            },
+            "genW": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "wms": {
+                  "layers": [
+                     {
+                           "LAYERS":"u:v-mag",
+                           "COLORSCALERANGE":"0.1,0.7",
+                           "NUMCOLORBANDS":"8",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "NODATAACOLOR":"transparent",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"raster/curBars",
+                           "LEGEND":"right"
+                     },
+                     {
+                           "LAYERS":"u:v-dir",
+                           "COLORSCALERANGE":"0,100",
+                           "NUMCOLORBANDS":"250",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Surface current [kn]",
+                           "it-IT": "Corrente marina superficiale [kn]"
+                        },
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "rms3.cur.lamma",
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":4,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "name": "Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]   
+                     }
+                  ]
+               }
+            },
+            "scu": {
+               "title": {
+                  "en-US": "Surface current [kn]",
+                  "it-IT": "Corrente marina superficiale [kn]"
+               },
+               "chart": {
+                  "title_chart": "Surface current",
+                  "title_bars": "Current Speed at the surface (°N )", 
+                  "var_bars": "scm",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# kn",
+                  "clevels":[0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0],
+                  "ccolors": [
+                     [ 178, 252, 165, 255 ],
+                     [  26, 200, 103, 255 ],
+                     [  76, 166,  48, 255 ],
+                     [ 143, 202,  62, 255 ],
+                     [ 211, 228,  74, 255 ],
+                     [ 255, 253,  84, 255 ],
+                     [ 248, 206,  70, 255 ],
+                     [ 242, 159,  57, 255 ],
+                     [ 236, 107,  45, 255 ],
+                     [ 235,  50,  35, 255 ],
+                     [ 168,  34,  23, 255 ],
+                     [ 143,  27,  17, 255 ],
+                     [ 107,  17,  10, 255 ],
+                     [ 139,  33, 147, 255 ],
+                     [ 234,  63, 247, 255 ],
+                     [ 241, 174, 248, 255 ] 
+                  ],
+                  "title_line": "Current Direction at the surface (°N)", 
+                  "var_line": "scd",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers":[
+                     {
+                           "LAYERS":"u:v-mag",
+                           "COLORSCALERANGE":"0.1,0.7",
+                           "NUMCOLORBANDS":"8",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "NODATAACOLOR":"transparent",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"raster/curBars",
+                           "LEGEND":"right"
+                     },
+                     {
+                           "LAYERS":"u:v-dir",
+                           "COLORSCALERANGE":"0,100",
+                           "NUMCOLORBANDS":"250",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Surface current [kt]",
+                           "it-IT": "Corrente marina superficiale [kn]"
+                        },
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "rms3.cur.lamma",
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "u",
+                        "var2": "v",
+                        "time": 0,
+                        "level": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     }
+                  ]
+               }
+            },
+            "sss": {
+               "title": {
+                  "en-US": "Sea Surface Salinity [PSU]",
+                  "it-IT": "Salinità Superficiale [PSU]"
+               },
+               "chart": {
+                  "title_chart": "Surface salinity",
+                  "title_bars": "Surface salinity (PSU)", 
+                  "var_bars": "sss",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "clevels": [ 37.5, 37.55, 37.6, 37.65, 37.7, 37.75, 37.8, 37.85, 37.9, 37.95, 38, 38.05, 38.1, 38.15, 38.2, 38.25, 38.3, 38.35, 38.4, 38.45, 38.5, 38.55, 38.6, 38.65, 38.7, 38.75,  38.8, 38.85, 38.9, 38.95, 39],
+                  "ccolors": [
+                     [22, 48, 246, 255],
+                     [39, 85, 246, 255],
+                     [53, 113, 246, 255],
+                     [66, 139, 249, 255],
+                     [92, 191, 249, 255],
+
+                     [102, 211, 249, 255],
+                     [111, 228, 240, 255],
+                     [119, 244, 233, 255],
+                     [120, 246, 230, 255],
+                     [122, 250, 225, 255],
+
+                     [98, 195, 97, 255],
+                     [127, 209, 153, 255],
+                     [141, 222, 67, 255],
+                     [177, 238, 79, 255],
+                     [214, 254, 94, 255],
+
+                     [214, 254, 91, 255],
+                     [242, 251, 83, 255],
+                     [250, 230, 77, 255],
+                     [246, 205, 69, 255],
+                     [242, 177, 61, 255],
+
+                     [241, 171, 60, 255],
+                     [238, 151, 54, 255],
+                     [236, 128, 49, 255],
+                     [234, 103, 43, 255],
+                     [232, 69, 38, 255],
+
+                     [232, 58, 36, 255],
+                     [231, 54, 35, 255],
+                     [198, 41, 28, 255],
+                     [161, 32, 21, 255],
+                     [131, 23, 16, 255],
+                     [131, 23, 16, 255]
+                  ]
+               },
+               "wms": {
+                  "layers":[
+                     {
+                           "LAYERS":"salt",
+                           "COLORSCALERANGE":"37.5,39",
+                           "NUMCOLORBANDS":"8",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "NODATAACOLOR":"transparent",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"raster/saltBars",
+                           "LEGEND":"right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Sea Surface Salinity [PSU]",
+                           "it-IT": "Salinità Superficiale [PSU]"
+                        },
+                        "type": "shaded",
+                        "colormap": "rms3.sss",
+                        "var1": "salt",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     }
+                  ]
+               }
+            },
+            "sst": {
+               "title": {
+                  "en-US": "Sea Surface Temperature",
+                  "it-IT": "Temperatura Superficiale"
+               },
+               "chart": {
+                  "title_chart": "Surface temperature",
+                  "title_bars": "Surface temperature (°C)", 
+                  "var_bars": "sst",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# °C",
+                  "clevels": [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [  14,   0, 118, 255 ],
+                     [  45,  34, 187, 255 ],
+                     [  34,  90, 239, 255 ],
+
+                     [  42, 112, 236, 255 ],
+                     [ 102, 168, 249, 255 ],
+                     [ 167, 237, 248, 255 ],
+
+                     [ 178, 252, 165, 255 ],
+                     [  25, 195, 100, 255 ],
+                     [  20, 152,   3, 255 ],
+
+                     [ 106, 200,   5, 255 ],
+                     [ 196, 230,   9, 255 ],
+                     [ 255, 255,  33, 255 ],
+
+                     [ 253, 198,   8, 255 ],
+                     [ 252, 137,   8, 255 ],
+                     [ 252,  75,   8, 255 ],
+
+                     [ 251,   0,   7, 255 ],
+                     [  90,   0,   1, 255 ],
+                     [ 113,   0,   1, 255 ],
+
+                     [ 251,   0, 255, 255 ],
+                     [ 253, 147, 255, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers":[
+                     {
+                           "LAYERS":"temp",
+                           "COLORSCALERANGE":"10,30",
+                           "NUMCOLORBANDS":"22",
+                           "ABOVEMAXCOLOR":"extend",
+                           "BELOWMINCOLOR":"extend",
+                           "NODATAACOLOR":"transparent",
+                           "BGCOLOR":"extend",
+                           "ELEVATION":"0",
+                           "LOGSCALE":"false",
+                           "STYLES":"raster/tempBars",
+                           "LEGEND":"right"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers" : [
+                     {
+                        "text": {
+                           "en-US":"Surface temperature [°C]",
+                           "it-IT":"Temperatura Superficiale [°C]"
+                        },
+                        "type": "shaded",
+                        "colormap": "rms3.tem.lamma",
+                        "var1": "temp",
+                        "time": 0,
+                        "level": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow"},
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow"}
+                        ]
+                     }
+                  ]
+               }
+            }
+         }
+      },
+      "ww33": {
+         "config": {
+            "d01": [
+               { "ge":   0, "lt": 240, "values": { "skip":  2, "scale": 1  }},
+               { "ge": 240, "lt": 480, "values": { "skip":  6, "scale": 1  }},
+               { "ge": 480,            "values": { "skip": 18, "scale": 10 }}
+            ],
+            "d02": [ 
+               { "ge":   0, "lt":  60, "values": { "skip":  2, "scale": 1  }},
+               { "ge":  60, "lt": 240, "values": { "skip":  4, "scale": 1  }},
+               { "ge": 240, "lt": 480, "values": { "skip":  8, "scale": 1  }},
+               { "ge": 480,            "values": { "skip": 16, "scale": 10 }}
+            ],
+            "d03": [
+	       { "ge":   0, "lt":  30, "values": { "skip":  1, "scale":  5  }},
+               { "ge":  30, "lt":  60, "values": { "skip":  2, "scale":  5  }},
+               { "ge":  60, "lt": 120, "values": { "skip":  6, "scale":  7  }},
+               { "ge": 120, "lt": 240, "values": { "skip":  8, "scale":  5  }},
+               { "ge": 240, "lt": 480, "values": { "skip": 10, "scale": 10  }},
+               { "ge": 480,            "values": { "skip": 12, "scale": 10  }}
+
+            ]
+         },
+         "type": "model",
+         "desc": {
+           "it-IT": "Moto ondoso alta risoluzione 7 giorni",
+           "en-US": "High resolution wind driven sea waves 7 days"
+         },
+         "timestep": 60,
+         "steps": 168,
+         "fields": {
+           "link": {
+               "title": {
+               "it-IT": "Collegamento",
+               "en-US": "Link"
+             },
+             "label": {
+               "it-IT": "Collegamento a pagina delle previsioni",
+               "en-US": "Link to the forecast page"
+             },
+             "var": "__link__"
+           },
+           "dateTime": {
+             "title": {
+               "it-IT": "Data",
+               "en-US": "Date"
+             },
+             "label": {
+               "it-IT": "Data e ora correnti",
+               "en-US": "Current date and time"
+             },
+             "var": "__dateTime__",
+             "unit": "date"
+           },
+           "iDate": { 
+             "title": {
+               "it-IT": "Inizializzazione",
+               "en-US": "Initialization"
+             },
+             "label": {
+               "it-IT": "Data di inizio simulazione",
+               "en-US": "Simulation initialization time"
+             },
+             "var" : "__iDate__",
+             "unit": "date"
+           },
+           "hs": {   
+             "title": {
+               "it-IT": "Altezza significativa",
+               "en-US": "Significant wave height"
+             },
+             "label": {
+               "it-IT": "Altezza significativa",
+               "en-US": "Significant wave height"
+             },
+             "time": 0,
+             "round": 1,
+             "var": "hs",
+             "unit": "m",
+             "aggregate": [
+               "ave",
+               "min",
+               "max"
+             ]
+           },
+           "icon": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Simbolo",
+                  "en-US": "Symbol"
+               },
+               "time": 0,
+               "var": "hs",
+               "func": "significantHeightIcon",
+               "unit": "",
+               "aggregate": [
+
+               ]
+            },
+           "lm": {
+             "title": {
+               "it-IT": "Lunghezza media",
+               "en-US": "Mean weave lenght"
+             },
+             "label": {
+               "it-IT": "Lunghezza media",
+               "en-US": "Mean weave lenght"
+             },
+             "time": 0,
+             "round": 1,
+             "var": "lm",
+             "unit": "m",
+             "aggregate": [
+               "min",
+               "max"
+             ]
+           },
+           "fp": {
+             "title": {
+               "it-IT": "Frequenza di picco",
+               "en-US": "Peack frequency"
+             },
+             "label": {
+               "it-IT": "Frequenza di picco",
+               "en-US": "Peack frequency"
+             },
+             "time": 0,
+             "round": 1,
+             "var": "fp",
+             "unit": "s-1",
+             "aggregate": [
+               "min",
+               "max"
+             ]
+           },
+           "dir": {
+             "title": {
+               "it-IT": "Direzione",
+               "en-US": "Direction"
+             },
+             "label": {
+               "it-IT": "Direzione",
+               "en-US": "Direction"
+             },
+             "time":0,
+             "round": 1,
+             "var": "dir",
+             "unit": "N",
+             "aggregate": [
+               "min",
+               "max"
+             ]
+           },
+           "period": {
+             "title": {
+               "it-IT": "Periodo medio",
+               "en-US": "Mean period"
+             },
+             "label": {
+               "it-IT": "Periodo Medio",
+               "en-US": "Mean period"
+             },
+             "time": 0,
+             "var": "period",
+             "round": 1,
+             "unit": "s",
+             "aggregate": [
+               "min",
+               "max"
+             ]
+           }
+         },
+         "outputs": {
+            "gen": {
+               "title": {
+                  "it-IT": "Generico",
+                  "en-US": "Generic"
+               },
+               "chart": {
+                  "title_chart": "Significant wave height and direction",
+                  "title_bars": "Significant wave height (m)", 
+                  "var_bars": "hs",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m",
+                  "clevels": [ 0, 0.1, 0.3, 0.5, 0.8, 1.25, 1.6, 2, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+                  "ccolors": [
+                     [ 144, 241, 134, 255 ],
+                     [ 154, 246, 253, 255 ],
+                     [ 130, 209, 215, 255 ],
+                     [  98,  88, 243, 255 ],
+                     [  35,  10, 209, 255 ],
+                     [  97,  22, 129, 255 ],
+                     [ 139,  43, 139, 255 ],
+                     [ 176, 101, 182, 255 ],
+                     [ 157,  42,  11, 255 ],
+                     [ 201,  59,  19, 255 ],
+                     [ 228, 191,  56, 255 ],
+                     [ 243, 237, 105, 255 ],
+                     [ 204, 205, 201, 255 ],
+                     [ 180, 180, 176, 255 ],
+                     [ 151, 151, 149, 255 ],
+                     [  78,  77,  74, 255 ]
+                  ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Significant Wave Height [m]", "it-IT": "Altezza d'onda significativa [m]" },
+                        "type": "shaded",
+                        "colormap": "ww33.h.lamma",
+                        "var1": "hs",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     }
+                  ]
+               }
+             },
+             "hsd": {
+               "title": {
+                  "it-IT": "Altezza significativa e direzione del fronte d'onda",
+                  "en-US": "Significant wave height and direction"
+               },
+               "chart": {
+                  "title_chart": "Significant wave height and direction",
+                  "title_bars": "Significant wave height (m)", 
+                  "var_bars": "hs",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m",
+                  "clevels": [ 0, 0.1, 0.3, 0.5, 0.8, 1.25, 1.6, 2, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+                  "ccolors": [
+                     [ 144, 241, 134, 255 ],
+                     [ 154, 246, 253, 255 ],
+                     [ 130, 209, 215, 255 ],
+                     [  98,  88, 243, 255 ],
+                     [  35,  10, 209, 255 ],
+                     [  97,  22, 129, 255 ],
+                     [ 139,  43, 139, 255 ],
+                     [ 176, 101, 182, 255 ],
+                     [ 157,  42,  11, 255 ],
+                     [ 201,  59,  19, 255 ],
+                     [ 228, 191,  56, 255 ],
+                     [ 243, 237, 105, 255 ],
+                     [ 204, 205, 201, 255 ],
+                     [ 180, 180, 176, 255 ],
+                     [ 151, 151, 149, 255 ],
+                     [  78,  77,  74, 255 ]
+                  ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Significant wave height [m]", "it-IT": "Altezza significativa [m]" },
+                        "type": "shaded",
+                        "colormap": "ww33.h.lamma",
+                        "var1": "hs",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     }
+                  ]
+               }
+             },
+             "hsdW": {
+               "title": {
+                  "it-IT": "Altezza significativa e direzione del fronte d'onda",
+                  "en-US": "Significant wave height and direction"
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Significant wave height [m]", "it-IT": "Altezza significativa [m]" },
+                        "type": "shaded",
+                        "colormap": "ww33.h.lamma",
+                        "var1": "hs",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Sorgenti_agg_feb2022",
+                              "color": "magenta",
+                              "marker": {
+                                 "symbol":"+",
+                                 "size":4,
+                                 "edge_width":2
+                              }
+                           },
+                           {
+                              "path": "/project/data/shapefiles/Banchi_all_ott2024",
+                              "name": "Banchi_all_ott2024",
+                              "color": "red"
+                           }
+                        ]
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
+                     }
+                  ]
+               }
+             },
+             "lmd": {
+               "title": {
+                  "it-IT": "Lunghezza e direzione del fronte d'onda",
+                  "en-US": "Wave length and direction"
+               },
+               "chart": {
+                  "title_chart": "Mean wave length and direction",
+                  "title_bars": "Mean wave length (m)", 
+                  "var_bars": "lm",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m",
+                  "clevels": [ 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ],
+                  "ccolors": [
+                     [ 113, 190, 119, 255 ],
+                     [  88, 154,  37, 255 ],
+                     [ 144, 194,  52, 255 ],
+                     [ 232, 203,  60, 255 ],
+                     [ 210, 113,  32, 255 ],
+                     [ 170,  47,  13, 255 ],
+                     [ 117,  27,   7, 255 ],
+                     [ 189, 130, 198, 255 ],
+                     [ 140,  44, 140, 255 ],
+                     [  68,  13,  98, 255 ],
+                     [ 221, 221, 217, 255 ],
+                     [ 161, 161, 159, 255 ],
+                     [  96,  96,  94, 255 ],
+                     [  58,  58,  57, 255]
+                  ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Wave length [m]", "it-IT": "Lunghezza del fronte d'onda [m]" },
+                        "type": "shaded",
+                        "colormap": "ww33.p.lamma",
+                        "var1": "lm",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     }
+                     
+                  ]
+               }
+             },
+             "fpd": {
+               "title": {
+                  "it-IT": "Frequenza di picco e direzione del fronte d'onda",
+                  "en-US": "Wave peak frequency and direction"
+               },
+               "chart": {
+                  "title_chart": "Peak frequency and direction",
+                  "title_bars": "Peak frequency (s-1)", 
+                  "var_bars": "fp",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# s-1",
+                  "clevels": [ 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ],
+                  "ccolors": [
+                     [ 113, 190, 119, 255 ],
+                     [  88, 154,  37, 255 ],
+                     [ 144, 194,  52, 255 ],
+                     [ 232, 203,  60, 255 ],
+                     [ 210, 113,  32, 255 ],
+                     [ 170,  47,  13, 255 ],
+                     [ 117,  27,   7, 255 ],
+                     [ 189, 130, 198, 255 ],
+                     [ 140,  44, 140, 255 ],
+                     [  68,  13,  98, 255 ],
+                     [ 221, 221, 217, 255 ],
+                     [ 161, 161, 159, 255 ],
+                     [  96,  96,  94, 255 ],
+                     [  58,  58,  57, 255]
+                  ],
+                  "title_line": "Mean wave direction surface (°N)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Wave peak frequency [s-1]", "it-IT": "Frequenza di picco [s-1]" },
+                        "type": "shaded",
+                        "colormap": "ww33.p.lamma",
+                        "var1": "fp",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     }
+                  ]
+               }
+             },
+             "ppd": {
+               "title": {
+                  "it-IT": "Periodo e direzione del fronte d'onda",
+                  "en-US": "Wave period and direction"
+               },
+               "chart": {
+                  "title_chart": "Mean Period and Direction",
+                  "title_bars": "Mean Period (s)", 
+                  "var_bars": "period",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# s",
+                  "clevels": [ 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ],
+                  "ccolors": [
+                     [ 113, 190, 119, 255 ],
+                     [  88, 154,  37, 255 ],
+                     [ 144, 194,  52, 255 ],
+                     [ 232, 203,  60, 255 ],
+                     [ 210, 113,  32, 255 ],
+                     [ 170,  47,  13, 255 ],
+                     [ 117,  27,   7, 255 ],
+                     [ 189, 130, 198, 255 ],
+                     [ 140,  44, 140, 255 ],
+                     [  68,  13,  98, 255 ],
+                     [ 221, 221, 217, 255 ],
+                     [ 161, 161, 159, 255 ],
+                     [  96,  96,  94, 255 ],
+                     [  58,  58,  57, 255]
+                  ],
+                  "title_line": "Mean wave direction surface (ºN)", 
+                  "var_line": "dir",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                         "text": { "en-US":"Mean Wave Period [s]", "it-IT": "Periodo d'onda medio [s]" },
+                         "type": "shaded",
+                         "colormap": "ww33.p.lamma",
+                         "var1": "period",
+                         "time": 0,
+                         "pad": "13%",
+                         "position": "left",
+                         "ticks_position": "left",
+                         "label_size": 5
+                     },
+                     {
+                        "type": "angle",
+                        "var1": "dir",
+                        "b": -180,
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           { "path": "/project/data/shapefiles/europe", "color": "black", "fillcolor": "lightyellow" },
+                           { "path": "/project/data/shapefiles/Africa", "color": "black", "fillcolor": "lightyellow" }
+                        ]
+                     } 
+                  ]
+               }
+             }
+         }
+      },
+      "wrf5": {
+         "config": {
+            "d01": [
+               { "ge":   0, "lt": 240, "values": { "skip":  2, "scale": 1, "hpa_tick": 1, "barb_length": 4 }},
+               { "ge": 240, "lt": 480, "values": { "skip":  6, "scale": 1, "hpa_tick": 1, "barb_length": 4  }},
+               { "ge": 480,            "values": { "skip": 18, "scale": 10, "hpa_tick": 2, "barb_length": 5  }}
+            ],
+            "d02": [
+               { "ge":   0, "lt":  60, "values": { "skip":  1, "scale": 1, "hpa_tick":  1, "barb_length": 4  }},
+               { "ge":  60, "lt": 240, "values": { "skip":  4, "scale": 5, "hpa_tick":  1, "barb_length": 3  }},
+               { "ge": 240, "lt": 480, "values": { "skip":  10, "scale": 10, "hpa_tick":  1, "barb_length": 4  }},
+               { "ge": 480,            "values": { "skip": 35, "scale": 15, "hpa_tick": 2, "barb_length": 4  }}
+            ],
+            "d03": [
+               { "ge":   0, "lt":  30, "values": { "skip":  1, "scale": 10, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge":  30, "lt":  60, "values": { "skip":  2, "scale":  5, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge":  60, "lt":  90, "values": { "skip":  3, "scale": 10, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge":  90, "lt": 120, "values": { "skip":  4, "scale":  7, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge": 120, "lt": 240, "values": { "skip":  8, "scale":  5, "hpa_tick": 1, "barb_length": 2  }},
+               { "ge": 240, "lt": 480, "values": { "skip": 10, "scale": 10, "hpa_tick": 1, "barb_length": 3  }},
+               { "ge": 480,            "values": { "skip": 12, "scale": 10, "hpa_tick": 1, "barb_length": 3  }}
+            ]
+         },
+         "type": "model",
+         "desc": {
+            "it-IT": "Meteo alta risoluzione 7 giorni",
+            "en-US": "High resolution weather forecast 7 days"
+         },
+         "timestep": 60,
+         "steps": 168,
+         "autosteps":[ 
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            3,3,3,3,3,3,3,3,
+            3,3,3,3,3,3,3,3,
+            6,6,6,6,
+            6,6,6,6,
+            6,6,6,6,
+            12,12,
+            12,12
+         ],
+         "fields": {
+            "link": {
+                  "title": {
+                  "it-IT": "Collegamento",
+                  "en-US": "Link"
+               },
+               "label": {
+                  "it-IT": "Collegamento a pagina delle previsioni",
+                  "en-US": "Link to the forecast page"
+               },
+               "var":"__link__"
+            },
+            "dateTime": {
+               "title": {
+                  "it-IT": "Data",
+                  "en-US": "Date"
+               },
+               "label": {
+                  "it-IT": "Data e ora correnti",
+                  "en-US": "Current date and time"
+               },
+               "unit": "date",
+               "var": "__dateTime__"
+            },
+            "iDate": {
+               "title": {
+                  "it-IT": "Inizializzazione",
+                  "en-US": "Initialization"
+               },
+               "label": {
+                  "it-IT": "Data di inizio simulazione",
+                  "en-US": "Simulation initialization time"
+               },
+               "unit": "date",
+               "var": "__iDate__"
+            },
+            "mcape": {
+               "title":{
+                  "it-IT": "Most unstable convective available potential energy [J/kg-1]",
+                  "en-US": "Most unstable convective available potential energy [J/kg-1]"
+               },
+               "label": {
+                  "it-IT": "MCAPE",
+                  "en-US": "MCAPE"
+               },
+               "round": 0,
+               "time": 0,
+               "var": "MCAPE",
+               "unit": "J/kg-1"
+            },
+            "t2c": {
+               "title": {
+                  "it-IT": "Temp",
+                  "en-US": "Temp"
+               },
+               "label": {
+                  "it-IT": "Temperatura dell'aria a 2 metri",
+                  "en-US": "Air temperature at 2 meters"
+               },
+               "time": 0,
+               "var":"T2C",
+               "round": 1,
+               "unit": "°C",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "t2c-min": {
+               "title": {
+                  "it-IT": "T min",
+                  "en-US": "T min"
+               },
+               "label": {
+                  "it-IT": "Temperatura dell'aria minima a 2 metri",
+                  "en-US": "Minimum air temperature at 2 meters"
+               },
+               "round": 1,
+               "unit": "°C"
+            },
+            "t2c-max": {
+               "title": {
+                  "it-IT": "T max",
+                  "en-US": "T max"
+               },
+               "label": {
+                  "it-IT": "Temperatura massima dell'aria a 2 metri",
+                  "en-US": "Maximum air temperature at 2 meters"
+               },
+               "round": 1,
+               "unit": "°C"
+            },
+            "rh2": {
+               "title": {
+                  "it-IT": "UR",
+                  "en-US": "RH"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa dell&apos;ria a 2 meters",
+                  "en-US": "Air relative humidity at 2 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH2",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "clf": {
+               "title": {
+                  "it-IT": "Nuvolosit&agrave;",
+                  "en-US": "Cloud"
+               },
+               "label": {
+                  "it-IT": "Frazione di nuvolosit&agrave; integrata",
+                  "en-US": "Integrated cloud fraction"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "CLDFRA_TOTAL",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "crh": {
+               "title": {
+                  "it-IT": "Pioggia 1h",
+                  "en-US": "Rain 1h"
+               },
+               "label": {
+                  "it-IT": "Pioggia cumulata oraria",
+                  "en-US": "Hourly cumulated rain"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "DELTA_RAIN",
+               "zero_if_negative": true,
+               "unit": "mm",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "sum"
+               ]
+            },
+            "crd": {
+               "title": {
+                  "it-IT": "Pioggia 24h",
+                  "en-US": "Rain 24h"
+               },
+               "label": {
+                  "it-IT": "Pioggia cumulata giornaliera",
+                  "en-US": "Daily cumulated rain"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "DAILY_RAIN",
+               "zero_if_negative": true,
+               "unit": "mm",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "sum"
+               ]
+            },
+            "swe": {
+               "title": {
+                  "it-IT": "Neve 1h",
+                  "en-US": "Snow 1h"
+               },
+               "label": {
+                  "it-IT": "Neve cumulata oraria",
+                  "en-US": "Hourly cumulated snow"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "HOURLY_SWE",
+               "zero_if_negative": true,
+               "unit": "cm",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "sum"
+               ]
+            },
+            "slp": {
+               "title": {
+                  "it-IT": "Pressione",
+                  "en-US": "Pressure"
+               },
+               "label": {
+                  "it-IT": "Pressione a livello del mare",
+                  "en-US": "Sea level air pressure"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "SLP",
+               "unit": "HPa",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "wd10": {
+               "title": {
+                  "it-IT": "Vento",
+                  "en-US": "Wind"
+               },
+               "label": {
+                  "it-IT": "Direzione del vento a 10 metri",
+                  "en-US": "Wind direction at 10 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "WDIR10",
+               "unit": "°N",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "ws10": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Velocit&agrave; del vento a 10 metri",
+                  "en-US": "Wind speed at 10 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "WSPD10",
+               "unit": "m/s",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "ws10-min": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Minima velocit&agrave; del vento a 10 metri",
+                  "en-US": "Minimum wind speed at 10 meters"
+               },
+               "round": 1,
+               "unit": "m/s"
+            },
+            "ws10-max": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Massima velocit&agrave; del vento a 10 metri",
+                  "en-US": "Maximum wind speed at 10 meters"
+               },
+               "round": 1,
+               "unit": "m/s"
+            },
+            "ws10k": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Velocit&agrave; del vento a 10 metri",
+                  "en-US": "Wind speed at 10 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "WSPD10",
+               "a": 3.6,
+               "unit": "km/h",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "ws10k-min": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Minima velocit&agrave; del vento a 10 metri",
+                  "en-US": "Minimum wind speed at 10 meters"
+               },
+               "round": 1,
+               "unit": "km/h"
+            },
+            "ws10k-max": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Massima velocit&agrave; del vento a 10 metri",
+                  "en-US": "Maximum wind speed at 10 meters"
+               },
+               "round": 1,
+               "unit": "km/h"
+            },
+            "ws10n": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Velocit&agrave; del vento a 10 metri",
+                  "en-US": "Wind speed at 10 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "WSPD10",
+               "a": 1.94384449,
+               "unit": "knt",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "ws10n-min": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Minima velocit&agrave; del vento a 10 metri",
+                  "en-US": "Minimum wind speed at 10 meters"
+               },
+               "round": 1,
+               "unit": "kt"
+            },
+            "ws10n-max": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Massima velocità del vento a 10 metri",
+                  "en-US": "Maximum wind speed at 10 meters"
+               },
+               "round": 1,
+               "unit": "knt"
+            },
+            "u10m": {
+               "title": {
+                  "it-IT": "U10m",
+                  "en-US": "U10m"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 10 metri",
+                  "en-US": "Rotated wind U component at 10 meters"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U10M",
+               "unit": "ms-1"
+            },
+            "v10m": {
+               "title": {
+                  "it-IT": "V10m",
+                  "en-US": "V10m"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 10 metri",
+                  "en-US": "Rotated wind V component at 10 meters"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V10M",
+               "unit": "ms-1"
+            },
+            "beaufort": {
+               "title": {
+                  "it-IT": "Beaufort",
+                  "en-US": "Beaufort"
+               },
+               "label": {
+                  "it-IT": "Velocit&agrave; del vento a 10 metri in scala Beaufort",
+                  "en-US": "Wind speed at 10m in Beaufort Scale"
+               },
+               "round": 0,
+               "time": 0,
+               "var": "WSPD10",
+               "func": "knt2Beaufort",
+               "unit": "bft"
+            },
+            "text_beaufort": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Testo",
+                  "en-US": "Text"
+               },
+               "time": 0,
+               "var": "WSPD10",
+               "func": "beaufortText",
+               "unit": "",
+               "aggregate": [
+
+               ]
+            },
+            "dwd10": {
+               "title": {
+                  "it-IT": "Rotazione",
+                  "en-US": "Shift"
+               },
+               "label": {
+                  "it-IT": "Rotazione della direzione del vento a 10 metri",
+                  "en-US": "Wind direction at 10m shift"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "DELTA_WDIR10",
+               "unit": "°N"
+            },
+            "dws10": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Differenza di velocit&agrave; del vento a 10m",
+                  "en-US": "Wind speed difference at 10m"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "DELTA_WSPD10",
+               "a": 1.94384449,
+               "unit": "kt"
+            },
+            "tc300": {
+               "title": {
+                  "it-IT": "TC300",
+                  "en-US": "TC300"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 300 hPa in °C",
+                  "en-US": "Temperature at 300 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC300",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh300": {
+               "title": {
+                  "it-IT": "UR300",
+                  "en-US": "RH300"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 300 hPa",
+                  "en-US": "Relative humidity at 300 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH300",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u300": {  
+               "title": {
+                  "it-IT": "U300",
+                  "en-US": "U300"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 300 hPa",
+                  "en-US": "Rotated wind U component at 300 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U300",
+               "unit": "ms-1"
+            },
+            "v300": {  
+               "title": {
+                  "it-IT": "V300",
+                  "en-US": "V300"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 300 hPa",
+                  "en-US": "Rotated wind V component at 300 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V300",
+               "unit": "ms-1"
+            },
+            "tc500": {
+               "title": {
+                  "it-IT": "TC500",
+                  "en-US": "TC500"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 500 hPa in °C",
+                  "en-US": "Temperature at 500 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC500",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh500": {
+               "title": {
+                  "it-IT": "UR500",
+                  "en-US": "RH500"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 500 hPa",
+                  "en-US": "Relative humidity at 500 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH500",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u500": {   
+               "title": {
+                  "it-IT": "U500",
+                  "en-US": "U500"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 500 hPa",
+                  "en-US": "Rotated wind U component at 500 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U500",
+               "unit": "ms-1"
+            },
+            "v500": {
+               "title": {
+                  "it-IT": "V500",
+                  "en-US": "V500"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 500 hPa",
+                  "en-US": "Rotated wind V component at 500 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V500",
+               "unit": "ms-1"
+            },
+            "tc700": {
+               "title": {
+                  "it-IT": "TC700",
+                  "en-US": "TC700"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 700 hPa in °C",
+                  "en-US": "Temperature at 700 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC700",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh700": {
+               "title": {
+                  "it-IT": "UR700",
+                  "en-US": "RH700"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 700 hPa",
+                  "en-US": "Relative humidity at 700 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH700",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u700": {   
+               "title": {
+                  "it-IT": "U700",
+                  "en-US": "U700"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 700 hPa",
+                  "en-US": "Rotated wind U component at 700 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U700",
+               "unit": "ms-1"
+            },
+            "v700": {
+               "title": {
+                  "it-IT": "V700",
+                  "en-US": "V700"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 700 hPa",
+                  "en-US": "Rotated wind V component at 700 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V700",
+               "unit": "ms-1"
+            },
+            "tc850": {
+               "title": {
+               "it-IT": "TC850",
+               "en-US": "TC850"
+               },
+               "label": {
+               "it-IT": "Temperatura a 850 hPa in °C",
+               "en-US": "Temperature at 850 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC850",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh850": {
+               "title": {
+               "it-IT": "UR850",
+               "en-US": "RH850"
+               },
+               "label": {
+               "it-IT": "Umidit&agrave; relativa a 850 hPa",
+               "en-US": "Relative humidity at 850 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH850",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u850": {   
+               "title": {
+                  "it-IT": "U850",
+                  "en-US": "U850"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 850 hPa",
+                  "en-US": "Rotated wind U component at 850 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U850",
+               "unit": "ms-1"
+            },
+            "v850": {
+               "title": {
+                  "it-IT": "V850",
+                  "en-US": "V850"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 850 hPa",
+                  "en-US": "Rotated wind V component at 850 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V850",
+               "unit": "ms-1"
+            },
+            "tc925": {
+               "title": {
+                  "it-IT": "TC925",
+                  "en-US": "TC925"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 925 hPa in °C",
+                  "en-US": "Temperature at 925 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC925",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh925": {
+               "title": {
+                  "it-IT": "UR925",
+                  "en-US": "RH925"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 925 hPa",
+                  "en-US": "Relative humidity at 925 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH925",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u925": {   
+               "title": {
+                  "it-IT": "U925",
+                  "en-US": "U925"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 925 hPa",
+                  "en-US": "Rotated wind U component at 925 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U925",
+               "unit": "ms-1"
+            },
+            "v925": {
+               "title": {
+                  "it-IT": "V925",
+                  "en-US": "V925"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 925 hPa",
+                  "en-US": "Rotated wind V component at 925 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V925",
+               "unit": "ms-1"
+            },
+            "tc950": {
+               "title": {
+                  "it-IT": "TC950",
+                  "en-US": "TC950"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 950 hPa in °C",
+                  "en-US": "Temperature at 950 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC950",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh950": {
+               "title": {
+                  "it-IT": "UR950",
+                  "en-US": "RH950"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 950 hPa",
+                  "en-US": "Relative humidity at 950 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH950",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u950": {   
+               "title": {
+                  "it-IT": "U950",
+                  "en-US": "U950"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 950 hPa",
+                  "en-US": "Rotated wind U component at 950 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U950",
+               "unit": "ms-1"
+            },
+            "v950": {
+               "title": {
+                  "it-IT": "V950",
+                  "en-US": "V950"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 950 hPa",
+                  "en-US": "Rotated wind V component at 950 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V950",
+               "unit": "ms-1"
+            },
+            "tc975": {
+               "title": {
+                  "it-IT": "TC975",
+                  "en-US": "TC975"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 975 hPa in °C",
+                  "en-US": "Temperature at 975 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC975",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh975": {
+               "title": {
+                  "it-IT": "UR975",
+                  "en-US": "RH975"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 975 hPa",
+                  "en-US": "Relative humidity at 975 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH975",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u975": {   
+               "title": {
+                  "it-IT": "U975",
+                  "en-US": "U975"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 975 hPa",
+                  "en-US": "Rotated wind U component at 975 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U975",
+               "unit": "ms-1"
+            },
+            "v975": {
+               "title": {
+                  "it-IT": "V975",
+                  "en-US": "V975"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 975 hPa",
+                  "en-US": "Rotated wind V component at 975 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V975",
+               "unit": "ms-1"
+            },
+            "tc1000": {
+               "title": {
+                  "it-IT": "TC1000",
+                  "en-US": "TC1000"
+               },
+               "label": {
+                  "it-IT": "Temperatura a 1000 hPa in °C",
+                  "en-US": "Temperature at 1000 hPa in °C"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "TC1000",
+               "unit": "%",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "rh1000": {
+               "title": {
+               "it-IT": "UR1000",
+               "en-US": "RH1000"
+               },
+               "label": {
+                  "it-IT": "Umidit&agrave; relativa a 1000 hPa",
+                  "en-US": "Relative humidity at 1000 hPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "RH1000",
+               "unit": "%", 
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "u1000": {   
+               "title": {
+                  "it-IT": "U1000",
+                  "en-US": "U1000"
+               },
+               "label": {
+                  "it-IT": "componente U del vento a 1000 hPa",
+                  "en-US": "Rotated wind U component at 1000 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "U1000",
+               "unit": "ms-1"
+            },
+            "v1000": {
+               "title": {
+                  "it-IT": "V1000",
+                  "en-US": "V1000"
+               },
+               "label": {
+                  "it-IT": "Componente V del vento a 1000 hPa",
+                  "en-US": "Rotated wind V component at 1000 hPa"
+               },
+               "round": 2,
+               "time": 0,
+               "var": "V1000",
+               "unit": "ms-1"
+            },
+            "gph500": {
+               "title": {
+                  "it-IT": "Geopotential",
+                  "en-US": "Geopotenziale"
+               },
+               "label": {
+                  "it-IT": "Geopotential height at 500 HPa",
+                  "en-US": "Altezza geopotenziale a 500 HPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "GPH500",
+               "unit": "dm",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "gph850": {
+               "title": {
+                  "it-IT": "Geopotential",
+                  "en-US": "Geopotenziale"
+               },
+               "label": {
+                  "it-IT": "Geopotential height at 850 HPa",
+                  "en-US": "Altezza geopotenziale a 850 HPa"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "GPH850",
+               "unit": "dm",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "delta_wspd10": {
+               "title": {
+                  "it-IT": "Wind Speed variation",
+                  "en-US": "variazione della velocità del vento"
+               },
+               "label": {
+                  "it-IT": "Differenza di velocità del vento a 10 metri",
+                  "en-US": "Difference of wind speed at 10 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "DELTA_WSPD10",
+               "unit": "m/s-1",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "delta_wdir10": {
+               "title": {
+                  "it-IT": "Wind Direction variation ",
+                  "en-US": "variazione della direzione del vento"
+               },
+               "label": {
+                  "it-IT": "Differenza di direzione del vento a 10 metri",
+                  "en-US": "Difference of wind direction at 10 meters"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "DELTA_WDIR10",
+               "unit": " °",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "uh": {
+               "title": {
+                  "it-IT": "Elicità della corrente ascensionale",
+                  "en-US": "Updraft Helicity"
+               },
+               "label": {
+                  "it-IT": "Elicità della corrente ascensionale",
+                  "en-US": "Updraft Helicity"
+               },
+               "round": 1,
+               "time": 0,
+               "var": "UH",
+               "unit": " m2 s-2",
+               "aggregate": [
+                  "min",
+                  "max",
+                  "ave"
+               ]
+            },
+            "winds": {
+               "title": {
+                  "it-IT": "Vento",
+                  "en-US": "Wind"
+               },
+               "label": {
+                  "it-IT": "Direzione del vento a 10m",
+                  "en-US": "Wind direction a 10m"
+               },
+               "time": 0,
+               "var": "WDIR10",
+               "func": "windS"
+            },
+            "wchill": {
+               "title": {
+                  "it-IT": "Wind chill",
+                  "en-US": "Wind chill"
+               },
+               "label": {
+                  "it-IT": "Temperatura percepita",
+                  "en-US": "Feel as temperature"
+               },
+               "round": 2,
+               "time": 0,
+               "var": ["T2C", "WSPD10"],
+               "func": "windChill",
+               "unit": "°C"
+            },
+            "text": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Testo",
+                  "en-US": "Text"
+               },
+               "time": 0,
+               "var": [ "DELTA_RAIN", "CLDFRA_TOTAL" ],
+               "func": "weatherText",
+               "unit": "",
+               "aggregate": [
+
+               ]
+            },
+            "icon": {
+               "title": {
+                  "it-IT": "",
+                  "en-US": ""
+               },
+               "label": {
+                  "it-IT": "Simbolo",
+                  "en-US": "Symbol"
+               },
+               "time": 0,
+               "var": [ "__dateTime__", "DELTA_RAIN", "CLDFRA_TOTAL" ],
+               "func": "weatherIcon",
+               "unit": "",
+               "aggregate": [
+
+               ]
+            }
+         },
+         "outputs": {
+            "gen": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "chart": {
+                  "title_chart": "Total Cloud Cover",
+                  "title_bars": "Total Cloud Cover [0-1]", 
+                  "var_bars": "clf",
+                  "pos_bars": "left",
+                  "unit_bars": "##.#",
+                  "clevels": [0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 220, 220, 220, 255 ],
+                     [ 205, 205, 205, 255 ],
+                     [ 190, 190, 190, 255 ],
+                     [ 175, 175, 175, 255 ],
+                     [ 165, 165, 165, 255 ],
+                     [ 150, 150, 150, 255 ],
+                     [ 140, 140, 140, 255 ],
+                     [ 114, 114, 114, 255 ],
+                     [  90,  90,  90, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers":[
+                     {
+                        "LAYERS":"CLDFRA_TOTAL",
+                        "COLORSCALERANGE":"0.125,1",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_cldfrc",
+                        "LEGEND":"right"
+                     },
+                     {
+                        "LAYERS":"DELTA_RAIN",
+                        "COLORSCALERANGE":".2,60",
+                        "NUMCOLORBANDS":"15",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_rain_lamma",
+                        "LEGEND":"left"
+                     },
+                     {
+                        "LAYERS":"HOURLY_SWE",
+                        "COLORSCALERANGE":"0.5,15.5",
+                        "NUMCOLORBANDS":"6",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_snow"
+                     },
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     },
+                     {
+                        "LAYERS":"SLP",
+                        "COLORSCALERANGE":"960,1040",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"contours/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Total Cloud Cover [0-1]",
+                           "it-IT": "Nuvolosità [0-1]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.cldfrc",
+                        "var1": "CLDFRA_TOTAL",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "text": {
+                           "en-US": "Total Precipitation [mm/1h]",
+                           "it-IT": "Precipitazione cumulata oraria [mm/1h]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.rain.lamma",
+                        "var1": "DELTA_RAIN",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "right",
+                        "ticks_position": "right",
+                        "label_size": 5
+                     },
+                     {
+                        "text": {
+                           "en-US": "Total Accumulated Snow [cm/1h]",
+                           "it-IT": "Neve cumulata oraria [cm/1h]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.snow",
+                        "var1": "HOURLY_SWE",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "bottom",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "SLP",
+                        "time": 0,
+                        "clev_min": 940,
+                        "clev_max": 1040,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "barbs",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "genW": {
+               "title": {
+                  "en-US": "Generic",
+                  "it-IT": "Generico"
+               },
+               "wms": {
+                  "layers":[
+                     {
+                        "LAYERS":"CLDFRA_TOTAL",
+                        "COLORSCALERANGE":"0.125,1",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_cldfrc",
+                        "LEGEND":"right"
+                     },
+                     {
+                        "LAYERS":"DELTA_RAIN",
+                        "COLORSCALERANGE":".2,60",
+                        "NUMCOLORBANDS":"15",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_rain_lamma",
+                        "LEGEND":"left"
+                     },
+                     {
+                        "LAYERS":"HOURLY_SWE",
+                        "COLORSCALERANGE":"0.5,15.5",
+                        "NUMCOLORBANDS":"6",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_snow"
+                     },
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     },
+                     {
+                        "LAYERS":"SLP",
+                        "COLORSCALERANGE":"960,1040",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"contours/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US": "Total Cloud Cover [0-1]",
+                           "it-IT": "Nuvolosità [0-1]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.cldfrc",
+                        "var1": "CLDFRA_TOTAL",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "text": {
+                           "en-US": "Total Precipitation [mm/1h]",
+                           "it-IT": "Precipitazione cumulata oraria [mm/1h]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.rain.lamma",
+                        "var1": "DELTA_RAIN",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "right",
+                        "ticks_position": "right",
+                        "label_size": 5
+                     },
+                     {
+                        "text": {
+                           "en-US": "Total Accumulated Snow [cm/1h]",
+                           "it-IT": "Neve cumulata oraria [cm/1h]"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.snow",
+                        "var1": "HOURLY_SWE",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "bottom",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "SLP",
+                        "time": 0,
+                        "clev_min": 940,
+                        "clev_max": 1040,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "barbs",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "watermarks",
+                        "watermarks": [
+                           {
+                           "path" : "/project/data/watermark/logo_parthenope.png",
+                           "position" : "top-right",
+                           "opacity" : 0.2, 
+                           "dim" : 0.3
+                           }
+                        ]
+                           
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "crh": {
+               "title": { 
+                  "en-US": "Hourly cloudness and cumulated pecipitation",
+                  "it-IT": "Nuvolosità e precipitazione cumulata oraria"
+               },
+               "chart": {
+                  "title_chart": "Clouds and Rain",
+                  "title_bars": "Hourly cumulated rain (mm)", 
+                  "var_bars": "crh",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# mm",
+                  "clevels": [0, 0.4, 0.6, 1, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250, 300, 350],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 159, 255, 255, 255 ],
+                     [ 101, 255, 255, 255 ],
+                     [  66, 195, 255, 255 ],
+                     [  66, 155, 255, 255 ],
+                     [  90, 100, 255, 255 ],
+                     [  65,  74, 255, 255 ],
+                     [  60, 187,  61, 255 ],
+                     [ 164, 215,  31, 255 ],
+                     [ 254, 230,   2, 255 ],
+                     [ 255, 194,   0, 255 ],
+                     [ 255, 125,   0, 255 ],
+                     [ 255,   0,   1, 255 ],
+                     [ 200,   3,   0, 255 ],
+                     [ 212, 100, 195, 255 ],
+                     [ 181,  25, 157, 255 ],
+                     [ 132,   0, 148, 255 ],
+                     [ 180, 180, 180, 255 ],
+                     [ 140, 140, 140, 255 ],
+                     [  90,  90,  90, 255 ],
+                     [  50,  50,  50, 255 ],
+                     [ 164, 120,  35, 255 ],
+                     [ 128,  82,   1, 255 ],
+                     [ 100,  50,   1, 255 ],
+                     [  80,  35,   0, 255 ]
+                  ],
+                  "title_line": "Total Cloud Cover [0-1]", 
+                  "var_line": "clf",
+                  "pos_line": "right",
+                  "unit_line": "#0.##",
+                  "values_line": [0.00, 0.06, 0.11, 0.17, 0.22, 0.28, 0.33, 0.39, 0.44, 0.50, 0.56, 0.61, 0.67, 0.72, 0.78, 0.83, 0.89, 0.94, 1.00]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS":"CLDFRA_TOTAL",
+                        "COLORSCALERANGE":"0.125,1",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_cldfrc",
+                        "LEGEND":"right"
+                     },
+                     {
+                        "LAYERS":"DELTA_RAIN",
+                        "COLORSCALERANGE":".2,60",
+                        "NUMCOLORBANDS":"15",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_rain_lamma",
+                        "LEGEND":"left"
+                     },
+                     {
+                        "LAYERS":"UH",
+                        "COLORSCALERANGE":"25,500",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_uh",
+                        "LEGEND":"top"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Total Cloud Cover [0-1]"},
+                        "type": "shaded",
+                        "colormap": "wrf5.cldfrc",
+                        "var1": "CLDFRA_TOTAL",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "text": { "en-US":"Total Precipitation [mm/1h]"},
+                        "type": "shaded",
+                        "colormap": "wrf5.rain.lamma",
+                        "var1": "DELTA_RAIN",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "right",
+                        "ticks_position": "right",
+                        "label_size": 5
+                     },
+                     {
+                        "text": { "en-US":"Total Accumulated Snow [cm/1h]"},
+                        "type": "shaded",
+                        "colormap": "wrf5.snow",
+                        "var1": "HOURLY_SWE",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "bottom",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "crd": {
+               "title": { 
+                  "en-US": "Cumulated Daily Pecipitation",
+                  "it-IT": "Precipitazione giornaliera cumulata" 
+               },
+               "chart": {
+                  "title_chart": "Daily Cumulated Rain",
+                  "title_bars": "Daily Cumulated Rain (mm)", 
+                  "var_bars": "crd",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# mm",
+                  "clevels": [0, 0.4, 0.6, 1, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250, 300, 350],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 159, 255, 255, 255 ],
+                     [ 101, 255, 255, 255 ],
+                     [  66, 195, 255, 255 ],
+                     [  66, 155, 255, 255 ],
+                     [  90, 100, 255, 255 ],
+                     [  65,  74, 255, 255 ],
+                     [  60, 187,  61, 255 ],
+                     [ 164, 215,  31, 255 ],
+                     [ 254, 230,   2, 255 ],
+                     [ 255, 194,   0, 255 ],
+                     [ 255, 125,   0, 255 ],
+                     [ 255,   0,   1, 255 ],
+                     [ 200,   3,   0, 255 ],
+                     [ 212, 100, 195, 255 ],
+                     [ 181,  25, 157, 255 ],
+                     [ 132,   0, 148, 255 ],
+                     [ 180, 180, 180, 255 ],
+                     [ 140, 140, 140, 255 ],
+                     [  90,  90,  90, 255 ],
+                     [  50,  50,  50, 255 ],
+                     [ 164, 120,  35, 255 ],
+                     [ 128,  82,   1, 255 ],
+                     [ 100,  50,   1, 255 ],
+                     [  80,  35,   0, 255 ]
+                  ]
+               },
+               "wms": {
+                  "layers":[
+                     {
+                        "LAYERS":"DELTA_RAIN",
+                        "COLORSCALERANGE":".2,350",
+                        "NUMCOLORBANDS":"25",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_rain_lamma",
+                        "LEGEND":"left"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Total Precipitation [mm/1h]"},
+                        "type": "shaded",
+                        "colormap": "wrf5.rain.lamma",
+                        "var1": "DELTA_RAIN",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "right",
+                        "ticks_position": "right",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "tsp": { 
+               "title": {
+                  "en-US": "Temperature and Sea Level Pressure",
+                  "it-IT": "Temperatura e pressione al livello del mare"
+               },
+               "chart": {
+                  "title_chart": "Pressure And Temperature",
+                  "title_bars": "Temperature (°C)",
+                  "var_bars": "t2c",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## °C",
+                  "clevels": [-16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44],
+                  "ccolors": [
+                     [   2,   1, 126, 255 ],
+                     [   0,   0, 192, 255 ],
+                     [  21, 100, 209, 255 ],
+                     [  37, 130, 240, 255 ],
+                     [  80, 164, 244, 255 ],
+                     [ 120, 185, 250, 255 ],
+                     [ 150, 209, 250, 255 ],
+                     [ 180, 240, 250, 255 ],
+                     [ 230, 255, 229, 255 ],
+                     [ 190, 250, 180, 255 ],
+                     [   1, 206, 123, 255 ],
+                     [   5, 170,   0, 255 ],
+                     [ 123, 206,   0, 255 ],
+                     [ 206, 231,   1, 255 ],
+                     [ 255, 255,  39, 255 ],
+                     [ 254, 206,   2, 255 ],
+                     [ 255, 156,   2, 255 ],
+                     [ 254, 100,   0, 255 ],
+                     [ 255,   0,   1, 255 ],
+                     [ 206,   2,   1, 255 ],
+                     [ 160,   0,   1, 255 ],
+                     [ 129,   1,   0, 255 ],
+                     [ 105,   3,   1, 255 ],
+                     [ 160, 120, 110, 255 ],
+                     [ 120,  80,  69, 255 ],
+                     [  90,  53,  42, 255 ],
+                     [ 180, 181, 181, 255 ],
+                     [ 129, 129, 129, 255 ],
+                     [ 255, 130, 255, 255 ],
+                     [ 255,   0, 255, 255 ],
+                     [ 155,   2, 155, 255 ]
+                     
+                  ],
+                  "title_line": "Sea Level Pressure (hPa)", 
+                  "var_line": "slp",
+                  "pos_line": "right",
+                  "unit_line": "##.# hPa",
+                  "values_line": [930.0, 941.3, 952.7, 964.0, 975.3, 986.7, 998.0, 1009.3, 1020.7, 1032.0, 1043.3, 1054.7, 1066.0, 1077.3, 1088.7, 1100.0]
+               },
+               "wms": { 
+                  "layers": [
+                  {
+                     "LAYERS":"T2C",
+                     "COLORSCALERANGE":"-40,50",
+                     "NUMCOLORBANDS":"19",
+                     "ABOVEMAXCOLOR":"extend",
+                     "BELOWMINCOLOR":"extend",
+                     "BGCOLOR":"extend",
+                     "LOGSCALE":"false",
+                     "STYLES":"raster/wrf5_t2c_lamma",
+                     "LEGEND":"right"
+                  },
+                  {
+                     "LAYERS":"SLP",
+                     "COLORSCALERANGE":"960,1040",
+                     "NUMCOLORBANDS":"250",
+                     "ABOVEMAXCOLOR":"extend",
+                     "BELOWMINCOLOR":"extend",
+                     "BGCOLOR":"extend",
+                     "LOGSCALE":"false",
+                     "STYLES":"contours/default"
+                  }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Temperature at 2m [°C]" },
+                        "type": "shaded",
+                        "colormap": "wrf5.t2c.lamma",
+                        "var1": "T2C",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "SLP",
+                        "time": 0,
+                        "clev_min": 940,
+                        "clev_max": 1040,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "gp5": {
+               "title": { 
+                  "en-US": "Geopotential Height at 500 HPa and sea level pressure",
+                  "it-IT": "Geopotenziale a 500 HPa e pressione al livello del mare"
+               },
+               "chart": {
+                  "title_chart": "Geopotential and Pressure",
+                  "title_bars": "Geopotential (m)",
+                  "var_bars": "gph500",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## m",
+                  "clevels": [492, 496, 500, 504, 508, 512, 516, 520, 524, 528, 532, 536, 540, 544, 548, 552, 556, 560, 564, 568, 572, 576, 580, 584, 588, 592, 596, 600, 604, 608, 612],
+                  "ccolors": [
+                     [53, 27, 47, 255], 
+                     [66, 28, 62, 255], 
+                     [121, 33, 123, 255], 
+                     [89, 31, 86, 255],
+                     [68, 28, 49, 255],
+                     [49, 44, 76, 255],
+                     [19, 30, 115, 255],
+                     [33, 32, 176, 255],
+                     [34, 32, 241, 255],
+                     [17, 54, 231, 255],
+                     [77, 161, 255, 255],
+                     [92, 193, 227, 255],
+                     [107, 207, 211, 255],
+                     [146, 235, 158, 255],
+                     [115, 186, 79, 255],
+                     [124, 191, 65, 255],
+                     [178, 185, 56, 255],
+                     [221, 208, 110, 255],
+                     [205, 186, 117, 255],
+                     [248, 233, 121, 255],
+                     [206, 175, 94, 255],
+                     [196, 106, 43, 255],
+                     [192, 63, 34, 255],
+                     [235, 92, 78, 255],
+                     [195, 42, 34, 255],
+                     [204, 22, 31, 255],
+                     [161, 35, 41, 255],
+                     [103, 30, 38, 255],
+                     [72, 24, 34, 255],
+                     [77, 29, 39, 255],
+                     [61, 31, 41, 255],
+                     [36, 33, 41, 255]
+                  ],
+                  "title_line": "Sea Level Pressure (hPa)", 
+                  "var_line": "slp",
+                  "pos_line": "right",
+                  "unit_line": "##.# hPa",
+                  "values_line": [583, 611.32, 639.64, 667.96, 696.28, 724.60, 752.92, 781.24, 809.56, 837.88, 866.20, 894.52, 922.84, 951.16, 979.48, 1007.80, 1036.12, 1064.44, 1092.76, 1100]
+
+               }, 
+               "wms": { 
+                  "layers": [
+                     {
+                        "LAYERS":"GPH500",
+                        "COLORSCALERANGE":"500,600",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_gp5",
+                        "LEGEND":"left"
+                     },
+                     {
+                        "LAYERS":"SLP",
+                        "COLORSCALERANGE":"960,1040",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"contours/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": {
+                           "en-US":"Geopotential Height at 500 HPa",
+                           "it-IT":"Geopotenziale a 500 HPa"
+                        },
+                        "type": "shaded",
+                        "colormap": "wrf5.gp5",
+                        "var1": "GPH500",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "SLP",
+                        "time": 0,
+                        "clev_min": 940,
+                        "clev_max": 1040,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "gp8": {
+               "title": {
+                  "en-US": "Geopotential Height at 850 HPa and sea level pressure",
+                  "it-IT": "Geopotenziale a 850 HPa e pressione al livello del mare"
+               },
+               "chart": {
+                  "title_chart": "Geopotential and Pressure",
+                  "title_bars":"Geopotential (m)",
+                  "var_bars": "gph850",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## m",
+                  "clevels": [100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172, 176, 180, 184, 188, 192, 196, 200, 204, 208, 212, 216, 220],
+                  "ccolors": [
+                     [53, 27, 47, 255], 
+                     [66, 28, 62, 255], 
+                     [121, 33, 123, 255], 
+                     [89, 31, 86, 255],
+                     [68, 28, 49, 255],
+                     [49, 44, 76, 255],
+                     [19, 30, 115, 255],
+                     [33, 32, 176, 255],
+                     [34, 32, 241, 255],
+                     [17, 54, 231, 255],
+                     [77, 161, 255, 255],
+                     [92, 193, 227, 255],
+                     [107, 207, 211, 255],
+                     [146, 235, 158, 255],
+                     [115, 186, 79, 255],
+                     [124, 191, 65, 255],
+                     [178, 185, 56, 255],
+                     [221, 208, 110, 255],
+                     [205, 186, 117, 255],
+                     [248, 233, 121, 255],
+                     [206, 175, 94, 255],
+                     [196, 106, 43, 255],
+                     [192, 63, 34, 255],
+                     [235, 92, 78, 255],
+                     [195, 42, 34, 255],
+                     [204, 22, 31, 255],
+                     [161, 35, 41, 255],
+                     [103, 30, 38, 255],
+                     [72, 24, 34, 255],
+                     [77, 29, 39, 255],
+                     [61, 31, 41, 255],
+                     [36, 33, 41, 255]
+                  ],
+                  "title_line": "Sea Level Pressure (hPa)", 
+                  "var_line": "slp",
+                  "pos_line": "right",
+                  "unit_line": "##.# hPa",
+                  "values_line": [155, 181, 207, 233, 259, 285, 311, 337, 363, 389, 415, 441, 467, 493, 519, 545, 571, 597, 623, 649, 675, 701, 727, 753, 779, 805, 831, 857, 883, 909, 935, 961, 987, 1013, 1040]
+               }, 
+               "wms": { 
+                  "layers": [
+                     {
+                        "LAYERS":"GPH850",
+                        "COLORSCALERANGE":"100,200",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"transparent",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_gp8",
+                        "LEGEND":"left"
+                     },
+                     {
+                        "LAYERS":"SLP",
+                        "COLORSCALERANGE":"960,1040",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"contours/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Geopotential Height at 850 HPa" },
+                        "type": "shaded",
+                        "colormap": "wrf5.gp8",
+                        "var1": "GPH850",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "SLP",
+                        "time": 0,
+                        "clev_min": 940,
+                        "clev_max": 1040,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "wn1": {
+               "title": { 
+                  "en-US": "Wind speed at 10m (spectrum scale)",
+                  "it-IT": "Velocità del vento a 10m (scala spettrale)"
+               },
+               "chart": {
+                  "title_chart": "Wind Speed and Direction at 10m",
+                  "title_bars": "Wind Speed at 10m (knt)", 
+                  "var_bars": "ws10n",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# kn",
+                  "clevels": [ 0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 30, 35, 40, 45, 50 ],
+                  "ccolors": [
+                     [   0,   0,  51, 255 ],
+                     [   1,  23, 186, 255 ],
+                     [   1,  31, 243, 255 ],
+                     [   5,  51, 252, 255 ],
+                     [  25,  87, 255, 255 ],
+                     [  59, 139, 244, 255 ],
+                     [  79, 189, 248, 255 ],
+                     [ 104, 245, 231, 255 ],
+                     [ 119, 254, 198, 255 ],
+                     [ 146, 251, 158, 255 ],
+                     [ 168, 254, 125, 255 ],
+                     [ 202, 254,  90, 255 ],
+                     [ 237, 253,  77, 255 ],
+                     [ 245, 208,  58, 255 ],
+                     [ 239, 169,  57, 255 ],
+                     [ 250, 115,  46, 255 ],
+                     [ 231,  83,  38, 255 ],
+                     [ 238,  48,  33, 255 ],
+                     [ 187,  32,  24, 255 ],
+                     [ 122,  22,  16, 255 ],
+                     [ 100,  22,  16, 255 ]
+                  ],
+                  "title_line": "Wind Direction at 10m (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 316, 360 ] 
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS":"U10M:V10M-mag",
+                        "COLORSCALERANGE":"0,25.72",
+                        "NUMCOLORBANDS":"21",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_wind_kt",
+                        "LEGEND":"right"
+                     },
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { 
+                           "en-US":"Wind speed [kt]",
+                           "it-IT":"Velocità del vento [kt]"
+                        },
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "wrf5.wind.kt",
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "wn4": {
+               "title": { 
+                  "en-US": "Wind speed at 10m",
+                  "it-IT": "Velocità del vento a 10m"
+               },
+               "chart": {
+                  "title_chart": "Wind Speed and Direction at 10m",
+                  "title_bars": "Wind Speed at 10m (knt)", 
+                  "var_bars": "ws10n",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# kt",
+                  "clevels": [ 0, 1, 3, 6, 10, 16, 21, 27, 33, 40, 47, 55, 63],
+                  "ccolors": [
+                     [ 255, 255, 255,   0 ],
+                     [ 240, 255, 255, 255 ],
+                     [ 168, 220, 231, 255 ],
+                     [  81, 165, 244, 255 ],
+                     [  13, 209, 120, 255 ],
+                     [   3, 160,   0, 255 ],
+                     [ 225,  21,   0, 255 ],
+                     [ 165,   0,   0, 255 ],
+                     [ 255,   0, 255, 255 ],
+                     [ 255, 169, 255, 255 ],
+                     [ 255, 149,   1, 255 ],
+                     [ 249, 100,   2, 255 ],
+                     [ 170, 171, 171, 255 ]
+                  ],
+                  "title_line": "Wind Direction at 10m (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 316, 360 ] 
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Wind speed [kt]"},
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "wrf5.wind.kt.lamma",
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "wn2": {
+               "title": {
+                  "en-US": "Wind speed variation",
+                  "it-IT": "Variazione della velocità del vento"
+               },
+               "chart": {
+                  "title_chart": "Wind Speed Variation and Direction at 10m",
+                  "title_bars": "Wind Speed variation at 10m (m/s-1)", 
+                  "var_bars": "delta_wspd10",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m/s-1",
+                  "clevels":  [ -12,-10, -8, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 8, 10 ],
+                  "ccolors": [
+                     [0, 1, 138, 255],
+                     [48, 56, 147, 255],
+                     [73, 124, 181, 255],
+                     [108, 166, 203, 255],
+                     [132, 188, 215, 255],
+                     [152, 204, 224, 255],
+                     [166, 215, 230, 255],
+                     [255, 255, 255, 255],
+                     [255, 255, 255, 255],
+                     [254, 250, 188, 255],
+                     [255, 227, 156, 255],
+                     [254, 204, 130, 255],
+                     [254, 171, 101, 255],
+                     [247, 115, 74, 255],
+                     [231, 78, 56, 255],
+                     [202, 35, 40, 255]
+                  ],
+                  "title_line": "Wind Direction variation at 10m (°N)", 
+                  "var_line": "delta_wdir10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ -45, 0, 45, 90, 135, 180, 225, 270, 315, 360 ] 
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS":"DELTA_WSPD10",
+                        "COLORSCALERANGE":"-15,+15",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"raster/wrf5_wsv",
+                        "LEGEND":"right"
+                     },
+                     {
+                        "LAYERS":"DELTA_WDIR10",
+                        "COLORSCALERANGE":"-180,180",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"contours/default"
+                     },
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Difference of wind speed at 10 meters [m/s-1]"},
+                        "type": "shaded",
+                        "a": 1.94384,
+                        "colormap": "wrf5.wsv",
+                        "var1": "DELTA_WSPD10",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "contour",
+                        "var1": "DELTA_WDIR10",
+                        "time": 0,
+                        "clev_min": -180,
+                        "clev_max": 180,
+                        "colors": "green"
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "rh2": {
+               "title": { 
+                  "en-US": "Air relative humidity at 2m and Wind Direction at 10m",
+                  "it-IT": "Umidità relativa dell’aria a 2m e direzione del vento a 10m" 
+               },
+               "chart": {
+                  "title_chart": "Relative Humidity at 2m and Wind Dir",
+                  "title_bars": "Relative Humidity at 2m (%)", 
+                  "var_bars": "rh2",
+                  "pos_bars": "left",
+                  "unit_bars": "#0.## %",
+                  "clevels": [20, 40, 60, 80, 99],
+                  "ccolors": [
+                     [244, 6, 12, 255],
+                     [254, 255, 50, 255],
+                     [0, 254, 58, 255], 
+                     [0, 254, 254, 255],
+                     [0, 120, 217, 255],
+                     [255, 12, 251, 255]
+                  ],
+                  "title_line": "Wind Direction at 10m (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+                  "layers": [
+                     {
+                        "LAYERS":"U10M:V10M-dir",
+                        "COLORSCALERANGE":"0,100",
+                        "NUMCOLORBANDS":"250",
+                        "ABOVEMAXCOLOR":"extend",
+                        "BELOWMINCOLOR":"extend",
+                        "BGCOLOR":"extend",
+                        "LOGSCALE":"false",
+                        "STYLES":"default-arrows/default"
+                     }
+                  ]
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Relative Humidity at 2m [%]"},
+                        "type": "shaded",
+                        "colormap": "wrf5.rh2",
+                        "var1": "RH2",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "versor",
+                        "a": 1.94384,
+                        "var1": "U10M",
+                        "var2": "V10M",
+                        "time": 0
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "mcape": {
+               "title": { 
+                  "en-US": "MUCAPE",
+                  "it-IT": "MUCAPE"
+               },
+               "chart": {
+                  "title_chart": "MUCAPE and Wind Dir",
+                  "title_bars": "MUCAPE", 
+                  "var_bars": "mcape",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# JKg - 1",
+                  "clevels": [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000],
+                  "ccolors":
+                     [
+                        [255, 255, 255, 255],
+                        [47, 255, 255, 255],
+                        [48, 255, 195, 255],
+                        [49, 255, 85, 255],
+                        [123, 255, 85, 255],
+                        [161, 255, 86, 255],
+                        [190, 255, 86, 255],
+                        [255, 255, 87, 255],
+                        [255, 224, 82, 255],
+                        [255, 160, 74, 255],
+                        [255, 97, 68, 255],
+                        [255, 35, 65, 255],
+                        [255, 97, 189, 255],
+                        [255, 160, 252, 255],
+                        [255, 224, 251, 255]
+                  ],
+                  "title_line": "Wind Direction (°N)", 
+                  "var_line": "wd10",
+                  "pos_line": "right",
+                  "unit_line": "#0.## °",
+                  "values_line": [ 0, 45, 90, 135, 180, 225, 270, 315, 360 ]
+               },
+               "wms": {
+
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Most unstable convective available potential energy [J/kg-1]"},
+                        "type": "shaded",
+                        "colormap":  "wrf5.mcape",
+                        "var1": "MCAPE",
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            },
+            "uh": {
+               "title": {
+                  "en-US": "Updraft Helicity",
+                  "it-IT": "Elicità del moto ascensionale"
+               },
+               "chart": {
+                  "title_chart": "Updraft Helicity ",
+                  "title_bars": "Updraft Helicity [m2/s-1]", 
+                  "var_bars": "uh",
+                  "pos_bars": "left",
+                  "unit_bars": "##.# m2/s-1",
+                  "clevels": [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195],
+                  "ccolors": [
+                     [255, 255, 255, 255],
+                     [47, 255, 255, 255],
+                     [48, 255, 195, 255],
+                     [49, 255, 85, 255],
+                     [123, 255, 85, 255],
+                     [161, 255, 86, 255],
+                     [190, 255, 86, 255],
+                     [255, 255, 87, 255],
+                     [255, 224, 82, 255],
+                     [255, 160, 74, 255],
+                     [255, 97, 68, 255],
+                     [255, 35, 65, 255],
+                     [255, 97, 189, 255],
+                     [255, 160, 252, 255],
+                     [255, 224, 251, 255]
+                  ]
+               },
+               "wms": {
+
+               },
+               "plot": {
+                  "layers": [
+                     {
+                        "text": { "en-US":"Updraft Helicity [m2/s-1]"},
+                        "type": "shaded",
+                        "colormap":  "wrf5.uh",
+                        "var1": "UH",
+                        "a": 1.94384,
+                        "time": 0,
+                        "pad": "13%",
+                        "position": "left",
+                        "ticks_position": "left",
+                        "label_size": 5
+                     },
+                     {
+                        "type": "shapefiles",
+                        "shapefiles": [
+                           {
+                              "path": "/project/data/shapefiles/Lago_Nemi",
+                              "name": "Lago_Nemi",
+                              "color": "red",
+                              "fillcolor": "blue"
+                           }
+                        ]
+                     }
+                  ]
+               }
+            }
+         }
+      }   
+   }
+}

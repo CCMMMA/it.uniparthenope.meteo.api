@@ -1,0 +1,25 @@
+FROM python:3.8
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONIOENCODING=utf-8
+ENV APP_SETTINGS=/project/etc/ccmmmaapi.conf
+
+RUN apt update
+RUN apt-get install -y --no-install-recommends libatlas-base-dev gfortran tilde logrotate vim
+
+COPY ./requirements.txt /project/requirements.txt
+RUN pip3 install -r /project/requirements.txt
+
+#RUN echo 'root:7fZ!p9Ls&XvG3bQd' | chpasswd
+
+RUN groupadd -g 60005 ccmmma
+RUN useradd -m -u 60005 -g 60005 -s /bin/bash ccmmma
+USER ccmmma
+
+COPY --chown=ccmmma:ccmmma . /project
+WORKDIR /project
+
+CMD ["uwsgi", "--ini", "ccmmmaapi.ini", "--uid", "ccmmma"]
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
+# uwsgi --ini ccmmmaapi.ini --uid ccmmma

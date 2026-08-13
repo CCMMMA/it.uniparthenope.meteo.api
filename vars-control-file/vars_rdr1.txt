@@ -1,0 +1,5 @@
+vars 3
+reflectivity=>reflectivity  0  t,y,x  Reflectivity
+rain=>rain                  0  t,y,x  Rain
+mask=>mask                  0  y,x    Mask
+endvars

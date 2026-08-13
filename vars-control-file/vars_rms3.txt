@@ -1,0 +1,9 @@
+vars 7
+zeta=>zeta  0  t,y,x   free-surface
+u=>u       11  t,z,y,x u-momentum component
+v=>v       11  t,z,y,x v-momentum component
+ubar=>ubar  0  t,y,x   vertically integrated u-momentum component
+vbar=>vbar  0  t,y,x   vertically integrated v-momentum component
+salt=>salt 11  t,z,y,x salinity
+temp=>temp 11  t,z,y,x potential temperature
+endvars

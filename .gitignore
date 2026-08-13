@@ -1,3 +1,26 @@
+.ssh/
+
+.cache/
+cache/
+
+.config/
+
+.local/
+
+.idea/
+
+JsonData/
+
+trash/
+
+www/
+
+.bash_history
+
+.python_history
+
+tmp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -106,7 +129,7 @@ ipython_config.py
 #pdm.lock
 #   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
 #   in version control.
-#   https://pdm.fming.dev/latest/usage/project/#working-with-version-control
+#   https://pdm.fming.dev/#use-with-ide
 .pdm.toml
 .pdm-python
 .pdm-build/

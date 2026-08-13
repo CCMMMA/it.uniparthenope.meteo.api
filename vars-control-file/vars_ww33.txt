@@ -1,0 +1,7 @@
+vars 5
+hs=>hs  0  t,y,x   Significant wave height
+lm=>lm  0  t,y,x   Wave length
+fp=>fp. 0  t,y,x   Peak frequency
+dir=>dir  0  t,y,x  Wave direction
+period=>period  0  t,y,x  Wave period
+endvars
