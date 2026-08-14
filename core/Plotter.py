@@ -3,16 +3,22 @@
 from core.Logger import logger
 
 try:
+    import numpy as np
+    _NUMPY_IMPORT_ERROR = None
+except ImportError as exc:
+    np = None
+    _NUMPY_IMPORT_ERROR = exc
+
+try:
     from matplotlib.colors import ListedColormap, BoundaryNorm
     from matplotlib.collections import PatchCollection
     from matplotlib.patches import Polygon
     import matplotlib.pyplot as plt
-    import numpy as np
     from mpl_toolkits.basemap import Basemap
     _PLOTTING_IMPORT_ERROR = None
 except ImportError as exc:
     ListedColormap = BoundaryNorm = PatchCollection = Polygon = None
-    plt = np = Basemap = None
+    plt = Basemap = None
     _PLOTTING_IMPORT_ERROR = exc
 
 try:
@@ -137,6 +143,9 @@ class Plotter(object):
         """Fail with a clear message when optional plotting dependencies are missing."""
         missing_dependencies = []
 
+        if _NUMPY_IMPORT_ERROR is not None:
+            missing_dependencies.append(f"numpy ({_NUMPY_IMPORT_ERROR})")
+
         if _PLOTTING_IMPORT_ERROR is not None:
             missing_dependencies.append("matplotlib/basemap")
         if _NETCDF_IMPORT_ERROR is not None:
@@ -236,15 +245,29 @@ class Plotter(object):
         if target_rows <= rows and target_cols <= cols:
             return lons, lats, data
 
-        zoom_factors = (target_rows / rows, target_cols / cols)
-        interpolation_order = 3 if min(rows, cols, target_rows, target_cols) >= 4 else 1
-        dense_values = scipy_zoom(
-            scalar_values,
-            zoom_factors,
-            order=interpolation_order,
-            mode="nearest",
-            prefilter=interpolation_order > 1,
-        )
+        if scipy_zoom is not None:
+            zoom_factors = (target_rows / rows, target_cols / cols)
+            interpolation_order = 3 if min(rows, cols, target_rows, target_cols) >= 4 else 1
+            dense_values = scipy_zoom(
+                scalar_values,
+                zoom_factors,
+                order=interpolation_order,
+                mode="nearest",
+                prefilter=interpolation_order > 1,
+            )
+        else:
+            # Keep basic grid densification available when SciPy is not
+            # installed (for example in lightweight API/test environments).
+            source_cols = np.arange(cols, dtype=float)
+            target_col_axis = np.linspace(0, cols - 1, target_cols)
+            horizontally_dense = np.vstack(
+                [np.interp(target_col_axis, source_cols, row) for row in scalar_values]
+            )
+            source_rows = np.arange(rows, dtype=float)
+            target_row_axis = np.linspace(0, rows - 1, target_rows)
+            dense_values = np.column_stack(
+                [np.interp(target_row_axis, source_rows, column) for column in horizontally_dense.T]
+            )
 
         lon_axis = np.asarray(lons[0], dtype=float)
         lat_axis = np.asarray(lats[:, 0], dtype=float)

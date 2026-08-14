@@ -38,14 +38,11 @@ The repository includes both operational documentation for deployers and pedagog
 
 ## Quick Start
 
-1. Review the deployment and development guidance in [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md).
-2. Review the production rollout guide in [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md).
-3. Read the endpoint reference in [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md) before integrating a client.
-4. Read the testing guide in [docs/TESTING.md](docs/TESTING.md) before validating changes.
-5. Verify the runtime paths and environment keys in [etc/ccmmmaapi.conf](etc/ccmmmaapi.conf).
-6. Install the Python dependencies from [requirements.txt](requirements.txt).
-7. Start the service through `uWSGI` or the project container.
-8. Open the Swagger UI exposed by Flask-RESTX at `/` to inspect and test the API surface.
+1. Follow [docs/getting_started.md](docs/getting_started.md) for a first local run.
+2. Review the dependency and deployment guidance in [docs/installation.md](docs/installation.md).
+3. Create an environment-specific settings file using [docs/configuration.md](docs/configuration.md).
+4. Review the production rollout guide in [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md).
+5. Read the endpoint and testing references before integrating or changing the API.
 
 ## Learning Paths
 
@@ -57,6 +54,10 @@ The repository includes both operational documentation for deployers and pedagog
 
 ## Documentation
 
+- Getting started: [docs/getting_started.md](docs/getting_started.md)
+- Installation and upgrades: [docs/installation.md](docs/installation.md)
+- Configuration reference: [docs/configuration.md](docs/configuration.md)
+- Extension guide: [docs/extending.md](docs/extending.md)
 - Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md)
 - Production setup guide: [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md)
 - Cache architecture and tuning guide: [docs/CACHE.md](docs/CACHE.md)
