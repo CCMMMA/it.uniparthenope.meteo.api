@@ -293,12 +293,6 @@ layers = {
                     "iconAnchor": [9, 21],
                     "popupAnchor": [20, -17]
                 },
-                "cloudy1_night.png": {
-                    "url": "http://meteo.uniparthenope.it/sites/all/themes/zircon_custom/js/images/cloudy1_night.png",
-                    "iconSize": [50, 50],
-                    "iconAnchor": [9, 21],
-                    "popupAnchor": [20, -17]
-                },
                 "sunny.png": {
                     "url": "http://meteo.uniparthenope.it/sites/all/themes/zircon_custom/js/images/sunny.png",
                     "iconSize": [50, 50],
@@ -565,4 +559,3 @@ maps = {
         ]
     },
 }
-

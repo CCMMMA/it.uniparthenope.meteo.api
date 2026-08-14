@@ -1,16 +1,12 @@
 """RESTX namespace for place discovery and geospatial lookup."""
 
-import json
 
-import pymemcache
-import pymongo
 from flask_restx import Namespace, Resource
 from core.GetParams import get_params
 from core.Places import Places
 from flask import request, jsonify
 from core.MemcachedMethodHandlers import get_resource, set_resource, load_cached_json
 import app
-from core.Logger import logger
 
 api = Namespace('places', description='Place discovery, lookup, and geospatial search endpoints.')
 

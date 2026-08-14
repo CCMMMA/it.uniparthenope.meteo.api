@@ -12,13 +12,11 @@
 #################################################
 
 from flask_restx import Namespace, Resource
-from flask import jsonify, Response, make_response, request
+from flask import jsonify
 
 from core.Logger import logger
 from core.MeteoServices import MeteoServices
-from core.MemcachedMethodHandlers import get_resource, set_resource
 
-import json
 import app
 
 api = Namespace('instruments', description='Instrument inventory and instrument-detail endpoints.')
@@ -76,7 +74,9 @@ class InstrumentsContext(Resource):
             if ws_id == identification:
                 return jsonify(ws_data)
         
-        return jsonify("Identification not found!"), 404
+        # Let Flask-RESTX serialize the string so the legacy JSON-string body is
+        # preserved without nesting a Flask Response inside a response tuple.
+        return "Identification not found!", 404
 
 '''
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 

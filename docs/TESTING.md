@@ -33,7 +33,6 @@ Coverage currently includes:
 - JSON endpoints such as `version`, `legal`, `places`, `products`, `apps`, `instruments`, and `v2`
 - binary endpoints such as plot images, legends, webcam responses, and static icons
 - CSV export endpoints
-- POST endpoints such as user login and `v2/pages/<page>`
 - optional live GET checks against a deployed API URL
 - optional side-by-side comparison checks between two deployed API URLs
 - maintenance endpoint coverage for cache invalidation and rebuild flows

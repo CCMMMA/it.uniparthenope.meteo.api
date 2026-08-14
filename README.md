@@ -4,7 +4,7 @@ meteo@uniparthenope containerized APIs
 
 `it.uniparthenope.meteo.api` is the Flask-based service layer that powers the meteorological products and application integrations exposed by the University of Naples Parthenope weather platform.
 
-The project aggregates forecast products, place metadata, legal and CMS content, generated plots, GRIB/NetCDF-derived resources, webcam assets, weather reports, and application-specific datasets behind a single HTTP API. The codebase is designed to run in a containerized environment and relies on a combination of local storage, generated assets, MongoDB, PostgreSQL, memcached, and upstream meteorological archives.
+The project aggregates forecast products, place metadata, legal and selected CMS content, generated plots, GRIB/NetCDF-derived resources, webcam assets, and application-specific datasets behind a single HTTP API. The codebase is designed to run in a containerized environment and relies on a combination of local storage, generated assets, MongoDB, PostgreSQL, memcached, and upstream meteorological archives.
 
 The repository includes both operational documentation for deployers and pedagogical tutorials for students and mobile or web developers who want to consume the API from real applications.
 
@@ -12,19 +12,39 @@ The repository includes both operational documentation for deployers and pedagog
 
 - Publish forecast, time-series, plot, legend, and GRIB-oriented endpoints for supported products.
 - Serve place search and lookup APIs backed by the configured metadata store.
-- Expose version, legal, login, instruments, webcam, and application-support endpoints.
-- Provide `v2` CMS and weather-report APIs for frontend applications.
+- Expose version, legal, instruments, webcam, and application-support endpoints.
+- Provide supported `v2` frontend configuration, map, carousel, card, and Slurm APIs.
 - Cache expensive responses through memcached and on-disk cache layers.
+- Promote OWM tile disk-cache hits into memcached and reuse a bounded tile worker pool across requests.
 - Reuse cached hourly slices and shared JSON/CSV payloads for multi-step endpoints such as `timeseries`.
 - Parallelize cold multi-time-step extraction with multiprocessing while keeping cache-hit reuse lightweight.
 - Track the most popular forecast and time-series request signatures to drive targeted cache rebuilds.
 - Generate or proxy image products, including legends, plots, and Skew-T diagrams.
 
+## API Compatibility
+
+`main` exposes the supported routes listed in
+[docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md). As part of the current API
+cleanup, the following legacy integrations are no longer registered and return
+`404`:
+
+- `POST /users/login`
+- `GET /apps/sais/index`
+- `/v2/auth/login`
+- `/v2/navbar`
+- `/v2/pages`, `/v2/pages/<page>`, and `/v2/page/detail`
+- `/v2/weatherreports/*`
+
+Clients should discover the active contract through the generated Swagger UI
+and the endpoint catalog rather than relying on these historical routes. See
+[docs/api_compatibility_matrix.md](docs/api_compatibility_matrix.md) for tracked
+compatibility details.
+
 ## Architecture Overview
 
 - [app.py](app.py): Flask application factory-style bootstrap, cache clients, and service singletons.
 - [apis/](apis): Flask-RESTX namespaces used to expose Swagger/OpenAPI documentation and HTTP routes.
-- [core/](core): domain logic for products, places, plotting, GRIB/NetCDF processing, CMS, login, Slurm integration, and helpers.
+- [core/](core): domain logic for products, places, plotting, GRIB/NetCDF processing, supported CMS content, token role resolution, Slurm integration, and helpers.
 - [etc/](etc): runtime configuration and JSON metadata.
 - [data/](data) and [static/](static): bundled assets and reference files.
 
@@ -64,6 +84,7 @@ The repository includes both operational documentation for deployers and pedagog
 - Testing and evaluation guide: [docs/TESTING.md](docs/TESTING.md)
 - Live API comparison and timing workflow: [docs/TESTING.md](docs/TESTING.md)
 - Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
+- API compatibility matrix: [docs/api_compatibility_matrix.md](docs/api_compatibility_matrix.md)
 - Step-by-step Python tutorial: [docs/PYTHON_API_TUTORIAL.md](docs/PYTHON_API_TUTORIAL.md)
 - Step-by-step Android/Kotlin tutorial: [docs/ANDROID_KOTLIN_API_TUTORIAL.md](docs/ANDROID_KOTLIN_API_TUTORIAL.md)
 - Step-by-step iOS/Swift tutorial: [docs/IOS_SWIFT_API_TUTORIAL.md](docs/IOS_SWIFT_API_TUTORIAL.md)

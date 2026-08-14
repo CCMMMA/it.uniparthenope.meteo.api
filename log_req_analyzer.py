@@ -34,7 +34,7 @@ try:
     timestamp_last_line = match_timestamp_last.group()
 
     req_log_file.close()
-except Exception as e:
+except Exception:
     logger.exception("Error extracting first and last timestamp from request log")
 
 
@@ -62,7 +62,7 @@ try:
 
     req_log_file.close()
 
-except Exception as e:
+except Exception:
     logger.exception("Error reading request log")
 
 # Creating out structure for counting and sorting 
@@ -92,7 +92,7 @@ try:
     for elem in out_sorted:
         file_out.write("route : " + elem[0] + " - count : " + str(elem[1]) + '\n') 
     file_out.close() 
-except Exception as e:
+except Exception:
     logger.exception("Error writing log analysis output")
 
 

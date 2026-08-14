@@ -430,7 +430,7 @@ headers = {
     "Authorization": f"Bearer {TOKEN}"
 }
 
-response = requests.get(f"{BASE_URL}/v2/navbar", headers=headers, timeout=15)
+response = requests.get(f"{BASE_URL}/v2/carousel", headers=headers, timeout=15)
 print(response.status_code)
 print(response.json())
 ```

@@ -4,11 +4,6 @@
 from fabric import Connection
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 # import ConfigParser
-import configparser
-import json, os
-import operator
-import sys
-from datetime import datetime
 
 
 class SlurmServices(object):

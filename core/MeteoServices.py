@@ -12,10 +12,10 @@
 #################################################
 
 import json
+import io
 import math
 import sys
 import calendar
-import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import netCDF4
 import numpy as np
@@ -27,19 +27,15 @@ import urllib.parse as urllib
 import urllib.request as urllib_request
 from flask import make_response
 import time
-import app
 
-from PIL import ImageFont
 from PIL import ImageDraw 
 from PIL import Image
-from influxdb_client import InfluxDBClient
 
 
 from core.Places import Places
 from core.Plotter import Plotter
 from datetime import datetime, timedelta
 from core.Logger import logger
-from core.Models import Instrument
 from core.MakeArchivePaths import MakeArchivePaths
 from core.SkewTServices import SkewTServices
 
@@ -1161,7 +1157,7 @@ class MeteoServices:
                             func = getattr(parts[0], parts[1])
 
                         # If inconsistent module/function rise an exception
-                        except Exception as e:
+                        except Exception:
                             pass
 
                     a = 1
@@ -1221,7 +1217,7 @@ class MeteoServices:
                                 try:
                                     # Set the value
                                     values.append(dataset.IDATE)
-                                except Exception as e:
+                                except Exception:
                                     pass
 
                             else:
@@ -1976,7 +1972,7 @@ class MeteoServices:
             #with open(imagePath, 'r') as content_file:
                 retval = content_file.read()
                 content_file.close()
-        except Exception as e:
+        except Exception:
             
             imagePath = self.config['NOIMAGE_PATH']
             imageUrl = self.config['NOIMAGE_URL']
@@ -2203,7 +2199,7 @@ class MeteoServices:
             with open(imagePath, 'rb') as content_file:
                 retval = content_file.read()
                 content_file.close()
-        except Exception as e:
+        except Exception:
             
             imagePath = self.config['NOIMAGE_PATH']
             imageUrl = self.config['NOIMAGE_URL']
@@ -2365,7 +2361,7 @@ class MeteoServices:
                     response = requests.get(url, stream=True)
 
                     if response.ok:
-                        data = requests.get(url).content
+                        data = response.content
                 except:
                     pass
 
@@ -2611,12 +2607,12 @@ class MeteoServices:
                             aggregated["link"] = "product=" + prod + "&place=" + place + "&date=" + dateTime
                             try:
                                 aggregated['wchill'] = windChill(aggregated["t2c"], aggregated["ws10"])
-                            except Exception as e:
+                            except Exception:
                                 pass
 
                             try:
                                 aggregated['winds'] = windS(aggregated["wd10"])
-                            except Exception as e:
+                            except Exception:
                                 # log.info("----------------- MeteoServices -  error windS : " + str(e))
                                 pass
 
@@ -2629,7 +2625,7 @@ class MeteoServices:
                                 aggregated['icon'], aggregated['text'] = iconText(current)
                                 aggregated['icon'] = aggregated['icon'].replace("_night", "")
                                 # print aggregated['icon']
-                            except Exception as e:
+                            except Exception:
                                 # print(str(e))
                                 pass
                             
@@ -2894,7 +2890,7 @@ class MeteoServices:
                         response = requests.get(url, stream=True)
 
                         if response.ok:
-                            data = requests.get(url).content
+                            data = response.content
                             imgLayer = Image.open(io.BytesIO(data))
                             imgBaseMap.paste(imgLayer, (0, 0), imgLayer)
 
@@ -2919,7 +2915,7 @@ class MeteoServices:
                             response = requests.get(url, stream=True)
 
                             if response.ok:
-                                data = requests.get(url).content
+                                data = response.content
                                 imgLayer = Image.open(io.BytesIO(data))
                                 imgBaseMap.paste(imgLayer, (0, 0), imgLayer)
                             else:
@@ -2937,7 +2933,7 @@ class MeteoServices:
                                 response = requests.get(url, stream=True)
 
                                 if response.ok:
-                                    data = requests.get(url).content
+                                    data = response.content
                                     imgLayer = Image.open(io.BytesIO(data))
                                     imgBaseMap.paste(imgLayer, (0, 0), imgLayer)
                             except Exception as e :
@@ -2966,7 +2962,7 @@ class MeteoServices:
                 #with open(imagePath, 'r') as content_file:
                 with open(imagePath, 'rb') as content_file:
                     retval = content_file.read()
-            except Exception as e:
+            except Exception:
                 imagePath=self.config['NOIMAGE_PATH']
                 imageUrl=self.config['NOIMAGE_URL']
         

@@ -81,36 +81,7 @@ Example:
 GET /legal/privacy
 ```
 
-## 3. `users`
-
-### `POST /users/login`
-
-Purpose:
-
-- Authenticates a user through the legacy login flow.
-
-Request body:
-
-- `name`: username
-- `pass`: password
-
-Typical response:
-
-- JSON payload containing user information, roles, or authentication status.
-
-Example:
-
-```http
-POST /users/login
-Content-Type: application/json
-
-{
-  "name": "student",
-  "pass": "secret"
-}
-```
-
-## 4. `instruments`
+## 3. `instruments`
 
 ### `GET /instruments`
 
@@ -144,7 +115,7 @@ Example:
 GET /instruments/station-01
 ```
 
-## 5. `webcam`
+## 4. `webcam`
 
 ### `GET /webcam/<place>/<location>/<cam>`
 
@@ -168,7 +139,7 @@ Example:
 GET /webcam/com63049/castelsantelmo/nord
 ```
 
-## 6. `box`
+## 5. `box`
 
 ### `GET /box/today/<place>`
 
@@ -186,7 +157,7 @@ Example:
 GET /box/today/com63049
 ```
 
-## 7. `places`
+## 6. `places`
 
 ### `GET /places`
 
@@ -304,7 +275,7 @@ Example:
 GET /places/search/byboundingbox/40.78/14.35/41.22/16.87
 ```
 
-## 8. `apps`
+## 7. `apps`
 
 ### `GET /apps/owm/<prod>/<placeprefix>/<z>/<x>/<y>.geojson`
 
@@ -328,23 +299,7 @@ Example:
 GET /apps/owm/wrf5/prov/10/552/384.geojson
 ```
 
-### `GET /apps/sais/index`
-
-Purpose:
-
-- Returns SAIS application data loaded from a JSON source file.
-
-Typical response:
-
-- JSON object with a `sam3` key.
-
-Example:
-
-```http
-GET /apps/sais/index
-```
-
-## 9. `products`
+## 8. `products`
 
 ### `GET /products`
 
@@ -745,43 +700,7 @@ Example:
 GET /products/resource/forecast/sunny.png
 ```
 
-## 10. `v2`
-
-### `GET /v2/weatherreports/latest/json`
-
-Purpose:
-
-- Returns the latest weather report.
-
-Example:
-
-```http
-GET /v2/weatherreports/latest/json
-```
-
-### `GET /v2/weatherreports/latest/<field>/json`
-
-Purpose:
-
-- Returns one field from the latest weather report.
-
-Example:
-
-```http
-GET /v2/weatherreports/latest/title/json
-```
-
-### `GET /v2/weatherreports/json`
-
-Purpose:
-
-- Returns the collection of weather reports.
-
-Example:
-
-```http
-GET /v2/weatherreports/json
-```
+## 9. `v2`
 
 ### `GET /v2/slurm/storage`
 
@@ -919,81 +838,6 @@ Example:
 
 ```http
 GET /v2/maps/weather
-```
-
-### `GET /v2/navbar`
-
-Purpose:
-
-- Returns navbar content used by the frontend.
-
-Example:
-
-```http
-GET /v2/navbar
-Authorization: Bearer <token>
-```
-
-### `GET /v2/pages`
-
-Purpose:
-
-- Lists CMS pages available to the caller.
-
-Example:
-
-```http
-GET /v2/pages
-Authorization: Bearer <token>
-```
-
-### `GET /v2/pages/<page>`
-
-Purpose:
-
-- Returns one CMS page by page id.
-
-Example:
-
-```http
-GET /v2/pages/about_us
-Authorization: Bearer <token>
-```
-
-### `POST /v2/pages/<page>`
-
-Purpose:
-
-- Creates or updates a CMS page.
-
-Authentication:
-
-- Bearer token expected
-
-Example:
-
-```http
-POST /v2/pages/about_us
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "_id": "about_us",
-  "author": "teacher01"
-}
-```
-
-### `GET /v2/auth/login`
-
-Purpose:
-
-- Resolves authentication information from the bearer token sent in the request header.
-
-Example:
-
-```http
-GET /v2/auth/login
-Authorization: Bearer <token>
 ```
 
 ## Practical First Calls

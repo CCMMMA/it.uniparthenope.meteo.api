@@ -11,10 +11,8 @@
 #
 #################################################
 
-import hashlib
 import app
 import base64
-import json
 import os
 from types import SimpleNamespace
 from flask_restx import Namespace, Resource
@@ -26,7 +24,6 @@ from core.GetParams import get_params
 from core.MemcachedMethodHandlers import delete_resource, get_resource, set_resource, load_cached_json
 from core.MeteoServices import MeteoServices, csvfy
 from core.Places import Places
-from core.GribServices import GribServices
 from core.MakeArchivePaths import MakeArchivePaths
 
 api = Namespace('products', description='Forecast products, plots, time series, GRIB exports, legends, and static product assets.')
@@ -1374,7 +1371,7 @@ class ProductsForecastIconsPng(Resource):
         Example:
         `GET /products/resource/forecast/sunny.png`
         """
-        base_path = f"./static/images/"
+        base_path = "./static/images/"
         try:
             return send_from_directory(base_path, icon)
         except FileNotFoundError:

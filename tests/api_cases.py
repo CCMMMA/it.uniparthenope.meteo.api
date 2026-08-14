@@ -11,7 +11,6 @@ AUTH_HEADERS = {"Authorization": "Bearer demo-token"}
 JSON_GET_CASES = [
     pytest.param("/version", None, lambda data: data["environment"] == "test", id="version"),
     pytest.param("/apps/owm/wrf5/prov/10/552/384.geojson", None, lambda data: data["type"] == "FeatureCollection", id="apps-owm"),
-    pytest.param("/apps/sais/index", None, lambda data: data["sam3"]["risk"] == "low", id="apps-sais-index"),
     pytest.param("/box/today/com63049", None, lambda data: data["summary"] == "Sunny", id="box-today"),
     pytest.param("/instruments", None, lambda data: "station-01" in data, id="instruments-list"),
     pytest.param("/instruments/station-01", None, lambda data: data["id"] == "station-01", id="instruments-detail"),
@@ -37,9 +36,6 @@ JSON_GET_CASES = [
     pytest.param("/products/wrf5/forecast/com63049/plot", None, lambda data: data["map"]["link"].endswith("/wrf5/com63049.png"), id="products-plot"),
     pytest.param("/products/wrf5/plot/gen/metacharts", None, lambda data: data["output"] == "gen", id="products-metacharts"),
     pytest.param("/products/wrf5/timeseries/com63049", None, lambda data: data["result"] == "ok", id="products-timeseries"),
-    pytest.param("/v2/weatherreports/latest/json", None, lambda data: data["report"] == "latest", id="v2-weatherreports-latest"),
-    pytest.param("/v2/weatherreports/latest/title/json", None, lambda data: data["title"] == "value", id="v2-weatherreports-field"),
-    pytest.param("/v2/weatherreports/json", None, lambda data: data["reports"][0]["id"] == 1, id="v2-weatherreports-all"),
     pytest.param("/v2/slurm/storage", None, lambda data: data["status"] == "ok", id="v2-slurm-storage"),
     pytest.param("/v2/slurm/info", None, lambda data: data["nodes"] == 4, id="v2-slurm-info"),
     pytest.param("/v2/slurm/queue", None, lambda data: data["jobs"] == [], id="v2-slurm-queue"),
@@ -51,9 +47,6 @@ JSON_GET_CASES = [
     pytest.param("/v2/layers/info", None, lambda data: data["id"] == "info", id="v2-layer-detail"),
     pytest.param("/v2/maps", None, lambda data: "weather" in data, id="v2-maps"),
     pytest.param("/v2/maps/weather", None, lambda data: data["id"] == "weather", id="v2-map-detail"),
-    pytest.param("/v2/navbar", AUTH_HEADERS, lambda data: data["navbar"][0]["id"] == "home", id="v2-navbar"),
-    pytest.param("/v2/pages", AUTH_HEADERS, lambda data: data["pages"][0]["_id"] == "about", id="v2-pages"),
-    pytest.param("/v2/pages/about", AUTH_HEADERS, lambda data: data["_id"] == "about", id="v2-page-detail"),
 ]
 
 
@@ -65,22 +58,4 @@ IMAGE_CASES = [
     pytest.param("/products/wrf5/forecast/com63049/map/image", "image/png", b"legacy-map-image", id="products-legacy-map-image"),
     pytest.param("/products/resource/forecast/sunny.png", "image/png", b"icon-image", id="products-static-icon"),
     pytest.param("/webcam/com63049/castelsantelmo/nord", "image/jpg", b"webcam-image", id="webcam"),
-]
-
-
-POST_CASES = [
-    pytest.param(
-        "/users/login",
-        {"name": "student", "pass": "secret"},
-        None,
-        lambda data: data["user"]["name"] == "student",
-        id="users-login",
-    ),
-    pytest.param(
-        "/v2/pages/about",
-        {"_id": "about", "author": "teacher-01"},
-        AUTH_HEADERS,
-        lambda data: data["result"] == "ok",
-        id="v2-page-upsert",
-    ),
 ]

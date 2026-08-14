@@ -3,7 +3,6 @@
 import json
 import os
 import netCDF4
-import pymongo
 import numpy as np
 from math import radians, cos, sin, asin, sqrt
 from datetime import datetime

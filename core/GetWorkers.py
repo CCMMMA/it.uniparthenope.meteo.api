@@ -12,7 +12,6 @@
 
 from requests import Session
 from core.Logger import logger
-import certifi 
 
 _session = None
 

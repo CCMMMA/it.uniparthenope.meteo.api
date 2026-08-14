@@ -18,23 +18,7 @@ class LoginServices:
 
     def __init__(self, config):
         """Initialize login services state."""
-        self.cfg = config
-
-    def authentication_login(self, user, password):
-        """Implement authentication login for login services."""
-        retval = {}
-        headers = {"Content-type": "application/json"}
-        payload = {"name": user, "pass": password}
-        r = requests.post('https://meteo.uniparthenope.it/user/login?_format=json', headers=headers, data=simplejson.dumps(payload))
-        json_r = simplejson.loads(r.text)
-        try:
-            if json_r['message'] != "":
-                pass
-        except:
-            r = requests.get('https://meteo.uniparthenope.it/jdrupal/connect?_format=json', headers=headers, cookies=r.cookies)
-        retval = simplejson.loads(r.text)
-        return retval
-
+        self.config = config
 
     def fill_invalid_token(self):
         """Implement fill invalid token for login services."""

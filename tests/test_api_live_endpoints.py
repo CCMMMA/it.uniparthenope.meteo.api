@@ -9,7 +9,7 @@ import time
 import pytest
 import requests
 
-from tests.api_cases import IMAGE_CASES, JSON_GET_CASES, POST_CASES
+from tests.api_cases import IMAGE_CASES, JSON_GET_CASES
 
 
 def _require_live_base_url(live_base_url: str | None):
@@ -168,41 +168,3 @@ def test_live_binary_endpoints(
         assert secondary_response.status_code == 200
         assert _content_type(secondary_response) == expected_mimetype
         _compare_binary_payloads(path, primary_response.content, secondary_response.content)
-
-
-@pytest.mark.parametrize("path,payload,headers,_assert_payload", POST_CASES)
-def test_live_post_endpoints(
-    live_base_url,
-    compare_base_url,
-    live_timeout,
-    allow_live_posts,
-    live_session,
-    path,
-    payload,
-    headers,
-    _assert_payload,
-    invocation_recorder,
-):
-    """Exercise POST endpoints against live targets when explicitly enabled."""
-    _require_live_base_url(live_base_url)
-    if not allow_live_posts:
-        pytest.skip("set --allow-live-posts to include mutating live POST checks")
-
-    primary_response, primary_elapsed = _request(
-        live_session, "POST", _full_url(live_base_url, path), live_timeout, headers=headers, json_body=payload
-    )
-    invocation_recorder("POST", "live-primary", _full_url(live_base_url, path), primary_elapsed, primary_response.status_code)
-
-    assert primary_response.status_code == 200
-    assert _content_type(primary_response).endswith("/json")
-    primary_payload = _json_payload(primary_response)
-
-    if compare_base_url:
-        secondary_response, secondary_elapsed = _request(
-            live_session, "POST", _full_url(compare_base_url, path), live_timeout, headers=headers, json_body=payload
-        )
-        invocation_recorder("POST", "live-compare", _full_url(compare_base_url, path), secondary_elapsed, secondary_response.status_code)
-
-        assert secondary_response.status_code == 200
-        assert _content_type(secondary_response).endswith("/json")
-        _compare_json_payloads(path, primary_payload, _json_payload(secondary_response))

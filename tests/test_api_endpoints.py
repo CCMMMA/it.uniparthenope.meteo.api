@@ -7,8 +7,8 @@ pytest plus Flask's built-in test client.
 
 from __future__ import annotations
 
-import builtins
-import io
+import importlib
+import json
 import os
 import time
 from datetime import datetime
@@ -17,7 +17,7 @@ from types import SimpleNamespace
 import pytest
 from flask import Response
 
-from tests.api_cases import AUTH_HEADERS, IMAGE_CASES, JSON_GET_CASES, POST_CASES
+from tests.api_cases import AUTH_HEADERS, IMAGE_CASES, JSON_GET_CASES
 
 
 class DummyDiskCache:
@@ -274,10 +274,6 @@ class FakeLoginServices:
         """Store configuration for compatibility with the real service."""
         self.config = config
 
-    def authentication_login(self, user, password):
-        """Return fake login payload."""
-        return {"token": "demo-token", "user": {"name": user}, "roles": ["student"]}
-
     def auth2Token(self, token):
         """Return fake bearer-token payload."""
         if not token:
@@ -299,32 +295,6 @@ class FakeCMS:
     def get_cards(self, roles, params):
         """Return fake card data."""
         return [{"id": "card-1", "roles": roles}]
-
-    def get_navbar(self, roles, params):
-        """Return fake navbar data."""
-        return [{"id": "home", "roles": roles}]
-
-    def get_pages(self, roles, params):
-        """Return fake pages list."""
-        return [
-            {"_id": "about", "author": "admin", "i18n": {"en-US": {"title": "About"}}},
-            {"_id": "services", "author": "admin", "i18n": {"en-US": {"title": "Services"}}},
-        ]
-
-    def get_page_by_id(self, roles, page, params):
-        """Return fake page detail."""
-        return {
-            "_id": page,
-            "author": "admin",
-            "i18n": {"en-US": {"title": page.title()}},
-            "permissions": ["view"],
-            "userId": params.get("userId"),
-        }
-
-    def set_page_by_id(self, roles, page, payload, params):
-        """Return fake page persistence result."""
-        return {"result": "ok", "id": page, "payload": payload, "roles": roles}
-
 
 class FakeSlurmServices:
     """Fake Slurm service for version 2 infrastructure endpoints."""
@@ -359,7 +329,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     import apis.namespace_box as ns_box
     import apis.namespace_instruments as ns_instruments
     import apis.namespace_legal as ns_legal
-    import apis.namespace_login as ns_login
     import apis.namespace_places as ns_places
     import apis.namespace_products as ns_products
     import apis.namespace_v2 as ns_v2
@@ -396,7 +365,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     monkeypatch.setattr(ns_box, "Box", FakeBox)
     monkeypatch.setattr(ns_instruments, "MeteoServices", FakeMeteoServices)
     monkeypatch.setattr(ns_legal, "MeteoServices", FakeMeteoServices)
-    monkeypatch.setattr(ns_login, "LoginServices", FakeLoginServices)
     monkeypatch.setattr(ns_places, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "MeteoServices", FakeMeteoServices)
@@ -409,21 +377,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     monkeypatch.setattr(ns_v2, "layers", {"info": {"id": "info"}})
     monkeypatch.setattr(ns_v2, "maps", {"weather": {"id": "weather"}})
     monkeypatch.setattr(
-        ns_v2.core.RRSResponseHandlers,
-        "get_latest_weather_report_jsonify",
-        lambda: {"report": "latest"},
-    )
-    monkeypatch.setattr(
-        ns_v2.core.RRSResponseHandlers,
-        "get_field_lwr_jsonify",
-        lambda field: {field: "value"},
-    )
-    monkeypatch.setattr(
-        ns_v2.core.RRSResponseHandlers,
-        "get_all_weather_reports_jsonify",
-        lambda: {"reports": [{"id": 1}]},
-    )
-    monkeypatch.setattr(
         ns_products,
         "send_from_directory",
         lambda base_path, icon: Response(b"icon-image", mimetype="image/png"),
@@ -433,17 +386,6 @@ def stub_api_dependencies(monkeypatch, app_module):
         "send_file",
         lambda *args, **kwargs: Response(b"webcam-image", mimetype="image/jpg"),
     )
-
-    real_open = builtins.open
-
-    def fake_open(path, *args, **kwargs):
-        """Serve a deterministic SAIS payload for the apps endpoint."""
-        if path == "/project/JsonData/sam3.json":
-            return io.StringIO('{"risk":"low","updated":"2026-03-27T00:00:00Z"}')
-        return real_open(path, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "open", fake_open)
-
 
 def test_grib_text_endpoint(client, invocation_recorder):
     """Ensure the text-oriented GRIB export endpoint returns plain text."""
@@ -473,22 +415,6 @@ def test_instrument_detail_missing_uses_legacy_json_string(client):
 
     assert response.status_code == 404
     assert response.get_json() == "Identification not found!"
-
-
-def test_v2_auth_login_without_token_returns_401(client):
-    """Ensure auth/login preserves the legacy 401 payload when no bearer token is supplied."""
-    response = client.get("/v2/auth/login")
-
-    assert response.status_code == 401
-    assert response.get_json() == {"errMsg": "Token not valid.", "statusCode": 401}
-
-
-def test_v2_page_detail_legacy_alias_matches_canonical_route(client):
-    """Ensure the legacy page/detail alias resolves through the same CMS serializer."""
-    response = client.get("/v2/page/detail?page=about", headers={"Authorization": "Bearer demo-token"})
-
-    assert response.status_code == 200
-    assert response.get_json()["_id"] == "about"
 
 
 def test_v2_basemap_detail_legacy_alias_matches_canonical_route(client):
@@ -697,6 +623,90 @@ def test_timeseries_json_and_csv_share_cache_payload(client, app_module, monkeyp
     assert service.calls == 1
 
 
+def test_apps_owm_promotes_disk_cache_hit_to_memcache(client, app_module, monkeypatch):
+    """Ensure a tile found on disk is promoted instead of read again next request."""
+    import apis.namespace_apps as ns_apps
+
+    tile = {"type": "FeatureCollection", "features": [{"properties": {"id": "provna"}}]}
+    memcache = {}
+
+    class DiskHitCache:
+        def __init__(self):
+            self.reads = 0
+
+        def get(self, request, ttl, path_archive=None, flag_diskcache=True, cache_key_source=None):
+            self.reads += 1
+            return tile
+
+        def set(self, *args, **kwargs):
+            raise AssertionError("an existing disk tile must not be rewritten")
+
+    diskcache = DiskHitCache()
+    monkeypatch.setattr(app_module, "cache", memcache)
+    monkeypatch.setattr(app_module, "diskcache", diskcache)
+    monkeypatch.setattr(app_module, "use_pymemcache", True)
+    monkeypatch.setattr(app_module, "use_disk_cached", True)
+    monkeypatch.setattr(
+        ns_apps,
+        "get_resource",
+        lambda request, cache, enabled: cache.get(request.url) if enabled else None,
+    )
+    monkeypatch.setattr(
+        ns_apps,
+        "set_resource",
+        lambda request, value, cache, enabled, ttl: cache.__setitem__(request.url, json.dumps(value))
+        if enabled
+        else None,
+    )
+
+    first = client.get("/apps/owm/wrf5/prov/10/552/384.geojson")
+    second = client.get("/apps/owm/wrf5/prov/10/552/384.geojson")
+
+    assert first.get_json() == tile
+    assert second.get_json() == tile
+    assert diskcache.reads == 1
+
+
+def test_tiles_reuses_worker_pool_across_cache_misses(app_module, monkeypatch):
+    """Ensure tile generation does not recreate its worker pool per request."""
+    tiles_module = importlib.import_module("core.Tiles")
+    pool_activity = {"created": 0, "maps": 0}
+
+    class FakePlacesForTiles:
+        def __init__(self, config):
+            pass
+
+        def get_places_by_bb(self, *args, **kwargs):
+            return []
+
+    class RecordingExecutor:
+        def __init__(self, **kwargs):
+            pool_activity["created"] += 1
+
+        def map(self, function, items):
+            pool_activity["maps"] += 1
+            return map(function, items)
+
+    monkeypatch.setattr(tiles_module, "Places", FakePlacesForTiles)
+    monkeypatch.setattr(tiles_module, "ThreadPoolExecutor", RecordingExecutor)
+
+    tiles = tiles_module.Tiles({"NUM_THREADS": 8})
+    tiles.places.get_places_by_bb = lambda *args, **kwargs: [
+        {"id": "provna", "pos": {"coordinates": [14.27, 40.85]}, "long_name": {"it": "Napoli"}}
+    ]
+    monkeypatch.setattr(
+        app_module.meteo_services,
+        "modelOutput",
+        lambda params: {"result": "ok", "forecast": []},
+    )
+
+    first = tiles.get_weather_ex("wrf5", "prov", {"date": "20260814Z1200"}, 10, 552, 384)
+    second = tiles.get_weather_ex("wrf5", "prov", {"date": "20260814Z1200"}, 10, 552, 384)
+
+    assert first == second
+    assert pool_activity == {"created": 1, "maps": 2}
+
+
 def test_timeseries_reuses_model_output_disk_cache(monkeypatch):
     """Ensure the time-series builder loads cached slices locally and computes misses with cache enabled."""
     from core.MeteoServices import MeteoServices
@@ -830,13 +840,40 @@ def test_binary_endpoints(client, path, expected_mimetype, expected_body, invoca
     assert response.data == expected_body
 
 
-@pytest.mark.parametrize("path,payload,headers,assert_payload", POST_CASES)
-def test_post_endpoints(client, path, payload, headers, assert_payload, invocation_recorder):
-    """Exercise the public POST endpoints exposed by the API."""
-    started = time.perf_counter()
-    response = client.post(path, json=payload, headers=headers or {})
-    invocation_recorder("POST", "local", path, (time.perf_counter() - started) * 1000.0, response.status_code)
+def test_legacy_users_login_is_not_registered(client):
+    """Ensure the retired legacy login endpoint is no longer exposed."""
+    response = client.post("/users/login", json={"name": "student", "pass": "secret"})
 
-    assert response.status_code == 200
-    assert response.is_json
-    assert assert_payload(response.get_json())
+    assert response.status_code == 404
+
+
+def test_apps_sais_index_is_not_registered(client):
+    """Ensure the retired SAIS index endpoint is no longer exposed."""
+    response = client.get("/apps/sais/index")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/v2/auth/login",
+        "/v2/navbar",
+        "/v2/pages",
+        "/v2/pages/about",
+        "/v2/page/detail?page=about",
+        "/v2/weatherreports/latest/json",
+        "/v2/weatherreports/latest/title/json",
+        "/v2/weatherreports/json",
+    ],
+)
+def test_retired_v2_endpoints_are_not_registered(client, path):
+    """Ensure retired version 2 endpoint families are no longer exposed."""
+    assert client.get(path, headers=AUTH_HEADERS).status_code == 404
+
+
+def test_retired_v2_page_write_is_not_registered(client):
+    """Ensure the retired CMS page write endpoint is no longer exposed."""
+    response = client.post("/v2/pages/about", json={"_id": "about"}, headers=AUTH_HEADERS)
+
+    assert response.status_code == 404

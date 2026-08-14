@@ -2,7 +2,6 @@
 
 from flask_restx import Api
 
-from .namespace_login import api as ns_login
 from .namespace_apps import api as ns_apps
 from .namespace_box import api as ns_box
 from .namespace_legal import api as ns_legal
@@ -35,7 +34,6 @@ api = Api(
 )
 
 # aggregation of namespace
-api.add_namespace(ns_login)
 api.add_namespace(ns_apps)
 api.add_namespace(ns_box)
 api.add_namespace(ns_legal)

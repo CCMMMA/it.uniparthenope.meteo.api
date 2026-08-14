@@ -12,7 +12,6 @@
 #################################################
 
 from core.Places import Places
-from core.Logger import logger
 
 from datetime import datetime
 import app

@@ -3,6 +3,7 @@
 import math
 import datetime
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from geojson import Feature, FeatureCollection, Point
 from core.Places import Places
 import app
@@ -17,6 +18,13 @@ class Tiles(object):
         """Initialize tiles state."""
         self.config = config
         self.places = Places(config)
+        # Reuse workers across tile requests. Creating as many as NUM_THREADS for
+        # every cache miss was particularly expensive for small, busy tiles and
+        # allowed concurrent requests to create an unbounded number of threads.
+        self._executor = ThreadPoolExecutor(
+            max_workers=max(1, int(self.config['NUM_THREADS'])),
+            thread_name_prefix="weather-tile",
+        )
 
     def num(self, zoom):
         """Implement num for tiles."""
@@ -97,11 +105,11 @@ class Tiles(object):
         # ricerco i luoghi con tali coordinate
         items = self.places.get_places_by_bb(bb['lon_min'], bb['lat_min'], bb['lon_max'], bb['lat_max'], options)
 
-        max_workers = max(1, min(self.config['NUM_THREADS'], len(items))) if items else 1
         if items:
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(self.do_stuff, prod, params, item) for item in items]
-                features = [future.result() for future in futures]
+            worker = partial(self.do_stuff, prod, params)
+            # executor.map retains MongoDB result ordering, matching the former
+            # future list while avoiding a temporary Future object list here.
+            features = list(self._executor.map(worker, items))
 
         result = FeatureCollection(features)
         return result
