@@ -523,6 +523,83 @@ def test_rendered_png_routes_use_runtime_services_and_preserve_cache_order(
     ]
 
 
+def test_legend_routes_use_runtime_service_and_url_keyed_memory_cache(
+    client, app_module, monkeypatch
+):
+    """Ensure standard and ncWMS legends use the composed service and cache."""
+    import apis.namespace_products as ns_products
+
+    calls = []
+    cache_events = []
+
+    class RecordingMeteo(FakeMeteoServices):
+        def getlegenddata(self, prod, position, output, params):
+            calls.append(("standard", prod, position, output, dict(params)))
+            return super().getlegenddata(prod, position, output, params)
+
+        def getlegenddata1(self, prod, position, output, params):
+            calls.append(("ncwms", prod, position, output, dict(params)))
+            return super().getlegenddata1(prod, position, output, params)
+
+    memory_cache = object()
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=memory_cache,
+            memory_cache_enabled=True,
+            meteo=RecordingMeteo(app_module.application.config),
+        ),
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "get_resource",
+        lambda request, cache, enabled: cache_events.append(
+            ("get", request.path, cache is memory_cache, enabled)
+        ) or None,
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "set_resource",
+        lambda request, response, cache, enabled, ttl: cache_events.append(
+            ("set", request.path, cache is memory_cache, enabled, ttl)
+        ),
+    )
+
+    class LegacyMeteoMustNotRun:
+        def __getattr__(self, name):
+            raise AssertionError(f"legacy meteo global was used for {name}")
+
+    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
+
+    standard = client.get(
+        "/products/wrf5/forecast/legend/right/waveheight?width=320&height=64"
+    )
+    ncwms = client.get(
+        "/products/wrf5/forecast/legend/right/waveheight/ncwms?width=320&height=64"
+    )
+
+    assert standard.status_code == 200
+    assert standard.get_data() == b"legend-image"
+    assert ncwms.status_code == 200
+    assert ncwms.get_data() == b"legend-image-ncwms"
+    assert [call[:4] for call in calls] == [
+        ("standard", "wrf5", "right", "waveheight"),
+        ("ncwms", "wrf5", "right", "waveheight"),
+    ]
+    assert [call[4]["width"] for call in calls] == ["320", "320"]
+    assert [call[4]["height"] for call in calls] == ["64", "64"]
+    assert [event[:2] for event in cache_events] == [
+        ("get", "/products/wrf5/forecast/legend/right/waveheight"),
+        ("set", "/products/wrf5/forecast/legend/right/waveheight"),
+        ("get", "/products/wrf5/forecast/legend/right/waveheight/ncwms"),
+        ("set", "/products/wrf5/forecast/legend/right/waveheight/ncwms"),
+    ]
+    assert all(event[2] is True and event[3] is True for event in cache_events)
+
+
 def test_timeseries_csv_endpoint(client, invocation_recorder):
     """Ensure the CSV time-series endpoint returns CSV content."""
     started = time.perf_counter()

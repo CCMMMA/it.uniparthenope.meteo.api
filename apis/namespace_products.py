@@ -824,18 +824,27 @@ class ProductsForecastBarByProdAndPositionAndOutput(Resource):
         Example:
         `GET /products/ww33/forecast/legend/right/waveheight`
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
         if res is None:
             params = get_params({
                 'width': None,
                 'height': None,
                 'date': None
             })
-            bar_data = app.meteo_services.getlegenddata(prod, position, output, params)
+            bar_data = services.meteo.getlegenddata(prod, position, output, params)
             res = {
                 'legend': base64.b64encode(bar_data).decode('utf-8')
             }
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
         else:
           res = load_cached_json(res, {})
 
@@ -857,18 +866,29 @@ class ProductsForecastBarByProdAndPositionAndOutputFromNcWMS(Resource):
         Example:
         `GET /products/ww33/forecast/legend/right/waveheight/ncwms`
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
         if res is None:
             params = get_params({
                 'width': None,
                 'height': None,
                 'date': None
             })
-            bar_data = app.meteo_services.getlegenddata1(prod, position, output, params)
+            bar_data = services.meteo.getlegenddata1(
+                prod, position, output, params
+            )
             res = {
                 'legend': base64.b64encode(bar_data).decode('utf-8')
             }
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
         else:
           res = load_cached_json(res, {})
 

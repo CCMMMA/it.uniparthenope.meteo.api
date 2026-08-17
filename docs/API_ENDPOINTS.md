@@ -602,6 +602,8 @@ GET /products/ww33/forecast/ca001/plot?dry=false
 Purpose:
 
 - Returns a legend image for a specific output field.
+- Uses the process-level meteorological service and URL-keyed memory cache, so
+  product, position, output, and query parameters define a distinct artifact.
 
 Path parameters:
 
@@ -619,6 +621,8 @@ GET /products/ww33/forecast/legend/right/waveheight
 Purpose:
 
 - Returns the legend image using the ncWMS-oriented generation path.
+- Retains a cache entry separate from the standard legend route while sharing
+  the same application-managed service lifecycle.
 
 Example:
 
