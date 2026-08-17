@@ -45,11 +45,14 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/v2/slurm/*` | `current_app.config` | Migrated; response contracts preserved |
 | `/v2/carousel`, `/v2/cards` | Removed with their CMS/authentication helpers | Retired by explicit decision; 404 enforced |
 | `/v2/basemaps`, `/v2/layers`, `/v2/maps` | Static module data | Reviewed; no application dependency |
+| `/places/*` | Runtime memory/disk caches plus `current_app.config` | Migrated; cache order and response contracts preserved |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.
 
 The instrument migration similarly reuses the composed meteorological service while retaining an upstream lookup for each request. Caching or changing that lookup frequency would alter freshness semantics and therefore requires a separate measured change. Webcam fallback resolution now uses the active Flask configuration without changing its established filesystem path or `image/jpg` media type.
+
+Place handlers retain their established lookup sequence: memcached, disk cache, and finally the MongoDB-backed `Places` service. Cold source results are written to disk and then memcached. Disk hits are not newly promoted in this migration because that would change established cache behavior; such promotion should be evaluated separately with latency and staleness measurements.
 
 ## Consequences
 

@@ -401,6 +401,66 @@ def test_instrument_detail_missing_uses_legacy_json_string(client):
     assert response.get_json() == "Identification not found!"
 
 
+def test_places_cold_lookup_preserves_cache_and_source_order(client, app_module, monkeypatch):
+    """Ensure place requests check memory, then disk, before querying the source."""
+    import apis.namespace_places as ns_places
+
+    events = []
+
+    class TrackingDiskCache:
+        def get(self, request, ttl, flag_diskcache=True):
+            events.append("disk-get")
+            return None
+
+        def set(self, request, response, response_type):
+            events.append("disk-set")
+
+    class TrackingPlaces:
+        def __init__(self, config):
+            events.append("source-init")
+
+        def get_places_by_name(self, name, params):
+            events.append("source-get")
+            return [{"id": "com63049", "long_name": {"it": "Napoli"}}]
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=object(),
+            memory_cache_enabled=True,
+            disk_cache=TrackingDiskCache(),
+            disk_cache_enabled=True,
+        ),
+    )
+    monkeypatch.setattr(
+        ns_places,
+        "get_resource",
+        lambda request, cache, enabled: events.append("memory-get") or None,
+    )
+    monkeypatch.setattr(
+        ns_places,
+        "set_resource",
+        lambda request, response, cache, enabled, ttl: events.append("memory-set"),
+    )
+    monkeypatch.setattr(ns_places, "Places", TrackingPlaces)
+
+    response = client.get("/places/search/byname/Napoli")
+
+    assert response.status_code == 200
+    assert response.get_json()[0]["id"] == "com63049"
+    assert events == [
+        "memory-get",
+        "disk-get",
+        "source-init",
+        "source-get",
+        "disk-set",
+        "memory-set",
+    ]
+
+
 def test_v2_basemap_detail_legacy_alias_matches_canonical_route(client):
     """Ensure the legacy basemap/detail alias still resolves a named basemap."""
     response = client.get("/v2/basemap/detail?name=demo")
