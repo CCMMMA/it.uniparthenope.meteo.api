@@ -18,6 +18,8 @@ Related documents:
 - Python beginner tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
 - Android equivalent tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 
+The governed API is being introduced under `/api/v1`. Existing tutorial calls remain on supported legacy paths until their versioned equivalents are published in the endpoint reference and migration guide.
+
 ## 1. What We Are Building
 
 We will create a simple iOS app with:

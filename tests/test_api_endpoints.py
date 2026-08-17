@@ -847,6 +847,22 @@ def test_legacy_users_login_is_not_registered(client):
     assert response.status_code == 404
 
 
+def test_api_v1_responses_identify_the_contract_version(client):
+    """Ensure governed endpoints expose their contract version in a response header."""
+    response = client.get("/api/v1")
+
+    assert response.status_code == 200
+    assert response.headers["API-Version"] == "1"
+
+
+def test_legacy_responses_are_unchanged_by_version_headers(client):
+    """Ensure the versioning foundation does not relabel legacy contracts."""
+    response = client.get("/version")
+
+    assert response.status_code == 200
+    assert "API-Version" not in response.headers
+
+
 def test_apps_sais_index_is_not_registered(client):
     """Ensure the retired SAIS index endpoint is no longer exposed."""
     response = client.get("/apps/sais/index")

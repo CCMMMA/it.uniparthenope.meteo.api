@@ -5,6 +5,7 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from apis import api
+from apis.versioning import register_version_response_headers
 from pymemcache.client.base import Client
 from core.MeteoServices import MeteoServices
 from core.GribServices import GribServices
@@ -30,6 +31,7 @@ db.init_app(application)
 
 CORS(application)
 api.init_app(application)
+register_version_response_headers(application)
 
 # logger.info("Test info log message")
 # logger.warning("Test warning log message")

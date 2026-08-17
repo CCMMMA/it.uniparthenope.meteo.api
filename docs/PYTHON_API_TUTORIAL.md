@@ -22,6 +22,8 @@ Related documents:
 - Android/Kotlin tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 - iOS/Swift tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
 
+The governed API is being introduced under `/api/v1`. You can inspect its version and migration metadata with `GET /api/v1`. Existing examples remain on the supported legacy paths until each resource has a documented versioned equivalent.
+
 ## 1. What Is An API?
 
 API stands for Application Programming Interface.

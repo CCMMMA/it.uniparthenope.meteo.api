@@ -9,6 +9,12 @@ AUTH_HEADERS = {"Authorization": "Bearer demo-token"}
 
 
 JSON_GET_CASES = [
+    pytest.param(
+        "/api/v1",
+        None,
+        lambda data: data["apiVersion"] == "1" and data["basePath"] == "/api/v1",
+        id="api-v1-discovery",
+    ),
     pytest.param("/version", None, lambda data: data["environment"] == "test", id="version"),
     pytest.param("/apps/owm/wrf5/prov/10/552/384.geojson", None, lambda data: data["type"] == "FeatureCollection", id="apps-owm"),
     pytest.param("/box/today/com63049", None, lambda data: data["summary"] == "Sunny", id="box-today"),

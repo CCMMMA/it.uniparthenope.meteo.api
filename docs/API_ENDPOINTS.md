@@ -29,6 +29,46 @@ Related documents:
 - Some endpoints return JSON, while others return PNG images or CSV text.
 - Several data-heavy endpoints depend on archive files, caches, and external services being available.
 
+## 0. Versioned API discovery
+
+### `GET /api/v1`
+
+Purpose:
+
+- Identifies the first governed, versioned API contract.
+- Returns stable discovery links and distinguishes the canonical `/api/v1` base path from the supported legacy layers.
+- Adds the response header `API-Version: 1`.
+
+The initial versioning release is deliberately additive. The unversioned routes and the pre-existing `/v2` routes retain their response formats and do not receive the version header.
+
+Example:
+
+```http
+GET /api/v1
+```
+
+Typical response:
+
+```json
+{
+  "name": "University of Naples Parthenope Meteo API",
+  "apiVersion": "1",
+  "basePath": "/api/v1",
+  "status": "current",
+  "implementationVersion": "4.01",
+  "environment": "production",
+  "legacy": {
+    "supported": true,
+    "unversionedBasePath": "/",
+    "existingV2BasePath": "/v2"
+  },
+  "links": {
+    "documentation": "/",
+    "openapi": "/swagger.json"
+  }
+}
+```
+
 ## 1. `version`
 
 ### `GET /version`
