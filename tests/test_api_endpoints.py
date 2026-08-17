@@ -673,6 +673,59 @@ def test_metacharts_uses_runtime_cache_chain_and_reuses_generated_payload(
     ]
 
 
+def test_plot_alt_uses_runtime_service_and_current_application_config(
+    client, app_module, monkeypatch
+):
+    """Ensure plot descriptions use composed meteo and request app configuration."""
+    import apis.namespace_products as ns_products
+
+    events = []
+
+    class RecordingMeteo(FakeMeteoServices):
+        def MakeJsonAlt(self, prod, long_name, params):
+            events.append(("describe", prod, long_name, dict(params)))
+            return {
+                "alt": f"{prod} alt text for {long_name}",
+                "lang": params["lang"],
+            }
+
+    class RecordingPlaces:
+        def __init__(self, config):
+            events.append(("places-init", config is app_module.application.config))
+
+        def get_place_by_id(self, identifier):
+            events.append(("place-get", identifier))
+            return {"id": identifier, "long_name": {"it": "Napoli"}}
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, meteo=RecordingMeteo(app_module.application.config)),
+    )
+    monkeypatch.setattr(ns_products, "Places", RecordingPlaces)
+
+    class LegacyMeteoMustNotRun:
+        def __getattr__(self, name):
+            raise AssertionError(f"legacy meteo global was used for {name}")
+
+    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
+
+    response = client.get(
+        "/products/wrf5/forecast/com63049/plot/alt?lang=it-IT&date=20260413Z1200"
+    )
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "alt": "wrf5 alt text for Napoli",
+        "lang": "it-IT",
+    }
+    assert events[:2] == [("places-init", True), ("place-get", "com63049")]
+    assert events[2][:3] == ("describe", "wrf5", "Napoli")
+    assert events[2][3]["lang"] == "it-IT"
+    assert events[2][3]["date"] == "20260413Z1200"
+
+
 def test_timeseries_csv_endpoint(client, invocation_recorder):
     """Ensure the CSV time-series endpoint returns CSV content."""
     started = time.perf_counter()

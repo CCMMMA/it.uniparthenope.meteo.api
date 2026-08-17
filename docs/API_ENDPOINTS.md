@@ -537,6 +537,15 @@ Typical response:
 
 - JSON or structured text payload useful for accessibility or compact summaries.
 
+Derivation:
+
+- The handler resolves the canonical place record, selects its established
+  Italian display name, and delegates description construction to the shared
+  meteorological service.
+- The optional `lang` query parameter is forwarded to the description service;
+  the default remains `en-US` for backward compatibility. The selected place
+  name remains Italian because that is part of the established response model.
+
 Example:
 
 ```http

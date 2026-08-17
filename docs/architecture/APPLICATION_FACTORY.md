@@ -54,6 +54,7 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/products/{prod}/forecast/{place}/plot/image` and `/products/wrf5/forecast/plot/SkewT/image` | Runtime meteo service and caches | Migrated together; PNG and cache-order contracts preserved |
 | `/products/{prod}/forecast/legend/{position}/{output}` standard and ncWMS variants | Runtime meteo service, memory cache, and application config | Migrated together; binary representation and URL-keyed cache separation preserved |
 | `/products/{prod}/plot/{output}/metacharts` | Runtime meteo service plus memory and disk caches | Migrated; memory-first order preserved and disk-hit promotion added |
+| `/products/{prod}/forecast/{place}/plot/alt` | Runtime meteo service plus request-scoped place lookup using `current_app.config` | Migrated; localized place-name and response contracts preserved |
 | Other render, chart, and cache-maintenance product routes | Transitional module globals | Pending cache-sensitive migrations |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 

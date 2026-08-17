@@ -566,6 +566,7 @@ class ProductsForecastPlotAndAlt(Resource):
         Example:
         `GET /products/wrf5/forecast/com63049/plot/alt`
         """
+        services = _runtime_services()
         params = get_params({
             'id': place,
             'filter': None,
@@ -580,9 +581,9 @@ class ProductsForecastPlotAndAlt(Resource):
             'opt': ""
         })
 
-        all_info_place = Places(app.application.config).get_place_by_id(place)
+        all_info_place = Places(current_app.config).get_place_by_id(place)
         long_name = all_info_place['long_name']['it']
-        res = app.meteo_services.MakeJsonAlt(prod, long_name, params)
+        res = services.meteo.MakeJsonAlt(prod, long_name, params)
 
         return res
 
