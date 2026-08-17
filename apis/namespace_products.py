@@ -909,21 +909,40 @@ class ProductsPlotMetacharts(Resource):
         Example:
         `GET /products/wrf5/plot/gen/metacharts`
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
        
         if res is None:
 
-            res = app.diskcache.get(request, app.diskcache_ttl, None, app.use_disk_cached)
+            res = services.disk_cache.get(
+                request,
+                services.disk_cache_ttl,
+                flag_diskcache=services.disk_cache_enabled,
+            )
       
             if res is None:
                 
-                meta_charts = app.meteo_services.plotmetacharts(prod, output)
+                meta_charts = services.meteo.plotmetacharts(prod, output)
 
                 res = meta_charts
 
-                app.diskcache.set(request, res, 'json')
+                services.disk_cache.set(
+                    request,
+                    res,
+                    'json',
+                    flag_diskcache=services.disk_cache_enabled,
+                )
 
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            # Promote both newly generated values and disk hits into memory.
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
                 
         else:
             res = load_cached_json(res, {})

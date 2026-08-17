@@ -636,6 +636,13 @@ Purpose:
 
 - Returns plotting metadata used by frontend chart systems.
 
+Cache behavior:
+
+- Metadata is resolved memory-first, then from the configured disk cache, and
+  finally from the shared meteorological service.
+- Disk hits are promoted into memory so repeated requests avoid filesystem I/O
+  and JSON decoding within the memory-cache lifetime.
+
 Example:
 
 ```http

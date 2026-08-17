@@ -600,6 +600,79 @@ def test_legend_routes_use_runtime_service_and_url_keyed_memory_cache(
     assert all(event[2] is True and event[3] is True for event in cache_events)
 
 
+def test_metacharts_uses_runtime_cache_chain_and_reuses_generated_payload(
+    client, app_module, monkeypatch
+):
+    """Ensure metacharts uses memory, disk, then one shared-service generation."""
+    import apis.namespace_products as ns_products
+
+    events = []
+
+    class RecordingMeteo(FakeMeteoServices):
+        def plotmetacharts(self, prod, output):
+            events.append(("source", prod, output))
+            return super().plotmetacharts(prod, output)
+
+    class RecordingDiskCache:
+        def get(self, request, ttl, flag_diskcache=True):
+            events.append(("disk-get", ttl, flag_diskcache))
+            return None
+
+        def set(self, request, response, response_type, flag_diskcache=True):
+            events.append(("disk-set", response_type, flag_diskcache))
+
+    memory_values = {}
+    memory_cache = object()
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=memory_cache,
+            memory_cache_enabled=True,
+            disk_cache=RecordingDiskCache(),
+            disk_cache_enabled=True,
+            disk_cache_ttl=654,
+            meteo=RecordingMeteo(app_module.application.config),
+        ),
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "get_resource",
+        lambda request, cache, enabled: events.append(
+            ("memory-get", request.path, cache is memory_cache, enabled)
+        ) or memory_values.get(request.url),
+    )
+
+    def remember(request, response, cache, enabled, ttl):
+        events.append(("memory-set", cache is memory_cache, enabled, ttl))
+        memory_values[request.url] = response
+
+    monkeypatch.setattr(ns_products, "set_resource", remember)
+
+    class LegacyMeteoMustNotRun:
+        def __getattr__(self, name):
+            raise AssertionError(f"legacy meteo global was used for {name}")
+
+    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
+
+    first = client.get("/products/wrf5/plot/gen/metacharts")
+    second = client.get("/products/wrf5/plot/gen/metacharts")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.get_json() == second.get_json()
+    assert events == [
+        ("memory-get", "/products/wrf5/plot/gen/metacharts", True, True),
+        ("disk-get", 654, True),
+        ("source", "wrf5", "gen"),
+        ("disk-set", "json", True),
+        ("memory-set", True, True, app_module.application.config["TTL_MEMCACHED"]),
+        ("memory-get", "/products/wrf5/plot/gen/metacharts", True, True),
+    ]
+
+
 def test_timeseries_csv_endpoint(client, invocation_recorder):
     """Ensure the CSV time-series endpoint returns CSV content."""
     started = time.perf_counter()
