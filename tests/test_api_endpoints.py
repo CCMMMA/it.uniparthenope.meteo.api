@@ -486,6 +486,86 @@ def test_product_metadata_routes_ignore_legacy_service_global(client, app_module
         assert response.status_code == 200, path
 
 
+def test_forecast_json_preserves_canonical_cache_and_popularity_flow(
+    client, app_module, monkeypatch
+):
+    """Ensure forecast JSON uses one key across caches and records successful use."""
+    import apis.namespace_products as ns_products
+
+    events = []
+    observed_keys = []
+
+    class TrackingMeteo(FakeMeteoServices):
+        def modelOutput(self, params, use_disk_cached=True):
+            events.append("source-get")
+            return super().modelOutput(params, use_disk_cached=use_disk_cached)
+
+    class TrackingDiskCache:
+        def get(
+            self, request, ttl, path_archive=None, flag_diskcache=True,
+            cache_key_source=None,
+        ):
+            events.append("disk-get")
+            observed_keys.append(cache_key_source)
+            return None
+
+        def set(
+            self, request, response, response_type,
+            flag_diskcache=True, cache_key_source=None,
+        ):
+            events.append("disk-set")
+            observed_keys.append(cache_key_source)
+
+    class TrackingPopularity:
+        def record(self, endpoint, prod, place, params):
+            events.append("popularity-record")
+            assert (endpoint, prod, place) == ("forecast", "wrf5", "com63049")
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=object(),
+            memory_cache_enabled=True,
+            disk_cache=TrackingDiskCache(),
+            disk_cache_enabled=True,
+            meteo=TrackingMeteo(app_module.application.config),
+            popularity=TrackingPopularity(),
+        ),
+    )
+
+    def memory_get(request, cache, enabled, cache_key_override=None):
+        events.append("memory-get")
+        observed_keys.append(cache_key_override)
+        return None
+
+    def memory_set(
+        request, response, cache, enabled, ttl, cache_key_override=None
+    ):
+        events.append("memory-set")
+        observed_keys.append(cache_key_override)
+
+    monkeypatch.setattr(ns_products, "get_resource", memory_get)
+    monkeypatch.setattr(ns_products, "set_resource", memory_set)
+
+    response = client.get("/products/wrf5/forecast/com63049")
+
+    expected_key = "products-forecast-v1|wrf5|com63049|20260413Z1200||"
+    assert response.status_code == 200
+    assert response.get_json()["result"] == "ok"
+    assert observed_keys == [expected_key, expected_key, expected_key, expected_key]
+    assert events == [
+        "memory-get",
+        "disk-get",
+        "source-get",
+        "disk-set",
+        "memory-set",
+        "popularity-record",
+    ]
+
+
 def test_v2_basemap_detail_legacy_alias_matches_canonical_route(client):
     """Ensure the legacy basemap/detail alias still resolves a named basemap."""
     response = client.get("/v2/basemap/detail?name=demo")

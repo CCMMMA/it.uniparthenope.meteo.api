@@ -60,8 +60,11 @@ def _normalized_option_string(raw_opt, ignore_fields=False):
 
 def _effective_forecast_date(timeref=None):
     """Return the effective forecast datetime used by the service layer."""
-    return app.meteo_services._format_datetime_ref(
-        app.meteo_services._parse_datetime_ref(timeref, round_to_hour=(timeref is None))
+    meteo_services = _runtime_services().meteo
+    return meteo_services._format_datetime_ref(
+        meteo_services._parse_datetime_ref(
+            timeref, round_to_hour=(timeref is None)
+        )
     )
 
 
@@ -138,7 +141,7 @@ def _popular_request_params(endpoint, prod, place, params):
 
 def _record_popular_request(endpoint, prod, place, params):
     """Record one successful forecast or time-series request."""
-    app.request_popularity_tracker.record(
+    _runtime_services().popularity.record(
         endpoint,
         prod,
         place,
@@ -355,35 +358,43 @@ class ProductsForecastByProdAndPlace(Resource):
             'opt': ""
         })
         cache_key = _forecast_cache_key(prod, place, params)
-        res = get_resource(request, app.cache, app.use_pymemcache, cache_key_override=cache_key)
+        services = _runtime_services()
+        res = get_resource(
+            request,
+            services.memory_cache,
+            services.memory_cache_enabled,
+            cache_key_override=cache_key,
+        )
 
         # Check Memcache
         if res is None:
-            res = app.diskcache.get(
+            res = services.disk_cache.get(
                 request,
-                app.diskcache_ttl,
-                app.use_disk_cached,
+                services.disk_cache_ttl,
+                services.disk_cache_enabled,
                 cache_key_source=cache_key,
             )
 
             # Check Diskcache 
             if res is None:    
-                res = app.meteo_services.modelOutput(params)
+                res = services.meteo.modelOutput(params)
 
                 if 'result' in res and "ok" not in res['result']:
                     return jsonify(res)
 
                 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'json', cache_key_source=cache_key)
+                services.disk_cache.set(
+                    request, res, 'json', cache_key_source=cache_key
+                )
 
                 # Save on Memcache
                 set_resource(
                     request,
                     res,
-                    app.cache,
-                    app.use_pymemcache,
-                    app.application.config['TTL_MEMCACHED'],
+                    services.memory_cache,
+                    services.memory_cache_enabled,
+                    current_app.config['TTL_MEMCACHED'],
                     cache_key_override=cache_key,
                 )
 
@@ -391,40 +402,6 @@ class ProductsForecastByProdAndPlace(Resource):
         if payload and payload.get("result") == "ok":
             _record_popular_request("forecast", prod, place, params)
         return jsonify(payload)
-
-
-'''
-# TESTED AND WORKING - USE MEMCACHE -- OLD VERSION
-@api.route('/<string:prod>/forecast/<string:place>')
-class ProductsForecastByProdAndPlace(Resource):
-    @api.doc()
-    def get(self, prod, place):
-        """Returns the forecast for a product given a place
-        :example: /products/wrf5/forecast/com63049
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
-        """
-        res = get_resource(request, app.cache, app.use_pymemcache)
-
-        if res is None:
-            params = get_params({
-                'place': place,
-                'filter': None,
-                'prod': prod,
-                'date': None,
-                'opt': ""
-            })
-            res = app.meteo_services.modelOutput(params)
-            if 'result' in res and "ok" not in res['result']:
-                return jsonify(res)
-
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-        return jsonify(eval(str(res)))
-'''
 
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/<string:prod>/forecast/<string:place>/plot/image')

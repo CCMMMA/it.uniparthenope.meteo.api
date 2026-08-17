@@ -48,6 +48,7 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/places/*` | Runtime memory/disk caches plus `current_app.config` | Migrated; cache order and response contracts preserved |
 | `/apps/owm/*` | Runtime caches and injected long-lived tile service | Migrated; disk-hit promotion and worker reuse preserved |
 | `/products` metadata and availability routes | `current_app.extensions["meteo_api"].meteo` | Migrated; payload contracts preserved |
+| `/products/{prod}/forecast/{place}` JSON | Runtime service, caches, and popularity tracker | Migrated; canonical key and cache order preserved |
 | Forecast, render, GRIB, time-series, and cache-maintenance product routes | Transitional module globals | Pending cache-sensitive migrations |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
