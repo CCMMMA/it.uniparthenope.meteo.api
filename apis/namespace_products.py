@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from core.Logger import logger
 from core.GetParams import get_params
 from core.MemcachedMethodHandlers import delete_resource, get_resource, set_resource, load_cached_json
-from core.MeteoServices import MeteoServices, csvfy
+from core.MeteoServices import csvfy
 from core.Places import Places
 from core.MakeArchivePaths import MakeArchivePaths
 from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
@@ -1253,54 +1253,6 @@ class ProductsRebuildByProd(Resource):
         )
 
 
-'''
-# ORIGINAL : Internal Server Error -- USE MEMCACHE 
-@api.route('/<string:prod>/timeseries/<string:place>/chart')
-class ProductsTimeSeriesByProdAndPlaceByChart(Resource):
-    @api.doc()
-    def get(self, prod, place):
-        """Returns an image url given a product code and a place code.
-        :example: /products/ww33/timeseries/ca001/chart
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns: json -- the return josn.
-        -------------------------------------------------------------------------------------------
-        """
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        if res is None:
-            params = get_params({'id': place, 'filter': None, 'prod': prod})
-            places = Places(app.application.config)
-            placeData = places.get_place_by_id(place, params)
-            # print("placeData: ", placeData)
-            if placeData is None:
-                return jsonify({
-                    "details": "Place not found.",
-                    "result": "error"
-                })
-
-            params = get_params({
-                'place': place,
-                'prod': prod,
-                'output': 'gen',
-                'hours': None,
-                'step': None
-            })
-            chartData = app.meteo_services.modelcharturl(params)
-            if 'code' in chartData:
-                return jsonify({
-                    "details": chartData,
-                    "result": "error"
-                })
-            res = {
-                'chart': chartData,
-                'place': placeData
-            }
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-        return jsonify(res)
-'''        
-
 # USE MEMCACHE
 @api.route('/<prod>/forecast/<place>/map/image')
 class ProductsForecastMapByProdAndPlace(Resource):
@@ -1313,16 +1265,26 @@ class ProductsForecastMapByProdAndPlace(Resource):
         Example:
         `GET /products/ww33/forecast/ca001/map/image`
         """
-        res=get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
         if res is None:
             params = get_params({'id':place,'filter':None, 'place':place, 'prod': prod, 'output':'gen', 'date':None,'width': 1024, 'height': 768,'dry':"false",'opt':""})
-            ms = MeteoServices(app.application.config)
-            (mapData,imageName) = ms.modelmapurl_or_image(app.use_disk_cached, params)
+            (mapData,imageName) = services.meteo.modelmapurl_or_image(
+                services.disk_cache_enabled, params
+            )
             res = {
                 'map': base64.b64encode(mapData).decode('utf-8'),
                 'imageName': imageName
             }
-            set_resource(request,res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
         else:
             res = load_cached_json(res, {})
                         

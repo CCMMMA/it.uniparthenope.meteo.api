@@ -752,6 +752,13 @@ GET /products/wrf5/rebuild/?date=20260413Z0000&hours=24
 Purpose:
 
 - Legacy image endpoint kept for older clients.
+- Preserves the established URL and PNG response while using the same
+  application-managed meteorological service as current product routes.
+
+Compatibility note:
+
+- New integrations should prefer
+  `/products/<prod>/forecast/<place>/plot/image`.
 
 Response:
 

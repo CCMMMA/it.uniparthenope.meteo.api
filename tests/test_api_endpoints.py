@@ -368,7 +368,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     monkeypatch.setattr(ns_box, "Box", FakeBox)
     monkeypatch.setattr(ns_places, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "Places", FakePlaces)
-    monkeypatch.setattr(ns_products, "MeteoServices", FakeMeteoServices)
     monkeypatch.setattr(ns_products, "csvfy", _fake_csvfy)
     monkeypatch.setattr(
         ns_products.MakeArchivePaths,
@@ -724,6 +723,72 @@ def test_plot_alt_uses_runtime_service_and_current_application_config(
     assert events[2][:3] == ("describe", "wrf5", "Napoli")
     assert events[2][3]["lang"] == "it-IT"
     assert events[2][3]["date"] == "20260413Z1200"
+
+
+def test_legacy_map_image_reuses_runtime_service_and_memory_cache(
+    client, app_module, monkeypatch
+):
+    """Ensure the compatibility image route avoids per-request service creation."""
+    import apis.namespace_products as ns_products
+
+    events = []
+
+    class RecordingMeteo(FakeMeteoServices):
+        def modelmapurl_or_image(self, use_disk_cached, params):
+            events.append(
+                ("render", use_disk_cached, params["prod"], params["place"])
+            )
+            return super().modelmapurl_or_image(use_disk_cached, params)
+
+    memory_cache = object()
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=memory_cache,
+            memory_cache_enabled=True,
+            disk_cache_enabled=True,
+            meteo=RecordingMeteo(app_module.application.config),
+        ),
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "get_resource",
+        lambda request, cache, enabled: events.append(
+            ("memory-get", cache is memory_cache, enabled)
+        ) or None,
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "set_resource",
+        lambda request, response, cache, enabled, ttl: events.append(
+            ("memory-set", cache is memory_cache, enabled, ttl)
+        ),
+    )
+
+    assert not hasattr(ns_products, "MeteoServices")
+
+    response = client.get(
+        "/products/wrf5/forecast/com63049/map/image?date=20260413Z1200"
+    )
+
+    assert response.status_code == 200
+    assert response.mimetype == "image/png"
+    assert response.get_data() == b"legacy-map-image"
+    assert events == [
+        ("memory-get", True, True),
+        ("render", True, "wrf5", "com63049"),
+        ("memory-set", True, True, app_module.application.config["TTL_MEMCACHED"]),
+    ]
+
+
+def test_inactive_timeseries_chart_route_remains_unregistered(client):
+    """Ensure removed dead chart code is not accidentally restored as an API route."""
+    response = client.get("/products/wrf5/timeseries/com63049/chart")
+
+    assert response.status_code == 404
 
 
 def test_timeseries_csv_endpoint(client, invocation_recorder):
