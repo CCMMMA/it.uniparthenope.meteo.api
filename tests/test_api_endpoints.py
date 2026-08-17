@@ -686,10 +686,18 @@ def test_apps_owm_promotes_disk_cache_hit_to_memcache(client, app_module, monkey
             raise AssertionError("an existing disk tile must not be rewritten")
 
     diskcache = DiskHitCache()
-    monkeypatch.setattr(app_module, "cache", memcache)
-    monkeypatch.setattr(app_module, "diskcache", diskcache)
-    monkeypatch.setattr(app_module, "use_pymemcache", True)
-    monkeypatch.setattr(app_module, "use_disk_cached", True)
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=memcache,
+            memory_cache_enabled=True,
+            disk_cache=diskcache,
+            disk_cache_enabled=True,
+        ),
+    )
     monkeypatch.setattr(
         ns_apps,
         "get_resource",
@@ -711,7 +719,7 @@ def test_apps_owm_promotes_disk_cache_hit_to_memcache(client, app_module, monkey
     assert diskcache.reads == 1
 
 
-def test_tiles_reuses_worker_pool_across_cache_misses(app_module, monkeypatch):
+def test_tiles_reuses_worker_pool_across_cache_misses(monkeypatch):
     """Ensure tile generation does not recreate its worker pool per request."""
     tiles_module = importlib.import_module("core.Tiles")
     pool_activity = {"created": 0, "maps": 0}
@@ -734,16 +742,14 @@ def test_tiles_reuses_worker_pool_across_cache_misses(app_module, monkeypatch):
     monkeypatch.setattr(tiles_module, "Places", FakePlacesForTiles)
     monkeypatch.setattr(tiles_module, "ThreadPoolExecutor", RecordingExecutor)
 
-    tiles = tiles_module.Tiles({"NUM_THREADS": 8})
+    class FakeMeteoForTiles:
+        def modelOutput(self, params):
+            return {"result": "ok", "forecast": []}
+
+    tiles = tiles_module.Tiles({"NUM_THREADS": 8}, FakeMeteoForTiles())
     tiles.places.get_places_by_bb = lambda *args, **kwargs: [
         {"id": "provna", "pos": {"coordinates": [14.27, 40.85]}, "long_name": {"it": "Napoli"}}
     ]
-    monkeypatch.setattr(
-        app_module.meteo_services,
-        "modelOutput",
-        lambda params: {"result": "ok", "forecast": []},
-    )
-
     first = tiles.get_weather_ex("wrf5", "prov", {"date": "20260814Z1200"}, 10, 552, 384)
     second = tiles.get_weather_ex("wrf5", "prov", {"date": "20260814Z1200"}, 10, 552, 384)
 

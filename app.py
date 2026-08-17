@@ -38,7 +38,7 @@ def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
     disk_cache = ManageDiskCache(flask_application.config["BASE_DISKCACHE"])
     meteo = MeteoServices(flask_application.config)
     grib = GribServices(flask_application.config)
-    tile_service = Tiles(flask_application.config)
+    tile_service = Tiles(flask_application.config, meteo)
     popularity = RequestPopularityTracker(
         flask_application.config.get(
             "REQUEST_POPULARITY_PATH",

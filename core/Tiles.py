@@ -6,7 +6,6 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from geojson import Feature, FeatureCollection, Point
 from core.Places import Places
-import app
 
 
 class Tiles(object):
@@ -14,9 +13,10 @@ class Tiles(object):
     config = {}
     places = None
 
-    def __init__(self, config):
+    def __init__(self, config, meteo_services):
         """Initialize tiles state."""
         self.config = config
+        self.meteo_services = meteo_services
         self.places = Places(config)
         # Reuse workers across tile requests. Creating as many as NUM_THREADS for
         # every cache miss was particularly expensive for small, busy tiles and
@@ -60,7 +60,9 @@ class Tiles(object):
         if place.startswith("euro"):
             country = place[4:6]
 
-        data = app.meteo_services.modelOutput({"prod": prod, "place": item["id"], "date": dateTime})
+        data = self.meteo_services.modelOutput(
+            {"prod": prod, "place": item["id"], "date": dateTime}
+        )
 
         if "ok" in data["result"]:
             cLon = item['pos']['coordinates'][0]
