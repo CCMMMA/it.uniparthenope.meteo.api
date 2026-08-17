@@ -329,7 +329,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     import apis.namespace_apps as ns_apps
     import apis.namespace_box as ns_box
     import apis.namespace_instruments as ns_instruments
-    import apis.namespace_legal as ns_legal
     import apis.namespace_places as ns_places
     import apis.namespace_products as ns_products
     import apis.namespace_v2 as ns_v2
@@ -383,7 +382,6 @@ def stub_api_dependencies(monkeypatch, app_module):
 
     monkeypatch.setattr(ns_box, "Box", FakeBox)
     monkeypatch.setattr(ns_instruments, "MeteoServices", FakeMeteoServices)
-    monkeypatch.setattr(ns_legal, "MeteoServices", FakeMeteoServices)
     monkeypatch.setattr(ns_places, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "MeteoServices", FakeMeteoServices)
@@ -887,6 +885,21 @@ def test_application_factory_publishes_runtime_services(app_module):
     assert services.tiles is app_module.tiles
     assert services.disk_cache is app_module.diskcache
     assert services.popularity is app_module.request_popularity_tracker
+
+
+def test_legal_handlers_use_the_shared_runtime_service(client, app_module, monkeypatch):
+    """Ensure legal requests do not construct a heavyweight MeteoServices per request."""
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setattr(
+        services.meteo,
+        "getLegalDisclaimer",
+        lambda params: {"title": "Disclaimer", "service": "shared"},
+    )
+
+    response = client.get("/legal/disclaimer")
+
+    assert response.status_code == 200
+    assert response.get_json()["service"] == "shared"
 
 
 def test_legacy_responses_are_unchanged_by_version_headers(client):

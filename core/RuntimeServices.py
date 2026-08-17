@@ -12,6 +12,9 @@ from core.RequestPopularityTracker import RequestPopularityTracker
 from core.Tiles import Tiles
 
 
+RUNTIME_SERVICES_EXTENSION = "meteo_api"
+
+
 @dataclass(frozen=True)
 class RuntimeServices:
     """Collect reusable runtime dependencies behind one application extension."""

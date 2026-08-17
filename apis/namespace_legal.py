@@ -1,10 +1,10 @@
 """RESTX namespace exposing legal and privacy content."""
 
 from flask_restx import Namespace, Resource
-from flask import jsonify
-from core.MeteoServices import MeteoServices
+from flask import current_app, jsonify
+
 from core.GetParams import get_params
-import app
+from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
 
 api = Namespace('legal', description='Legal and compliance content endpoints.')
 
@@ -24,9 +24,9 @@ class LegalDiscaimer(Resource):
         Example:
         `GET /legal/disclaimer`
         """
-        ms = MeteoServices(app.application.config)
+        meteo_services = current_app.extensions[RUNTIME_SERVICES_EXTENSION].meteo
         params = get_params({'lang': 'en-US'})
-        res = ms.getLegalDisclaimer(params)
+        res = meteo_services.getLegalDisclaimer(params)
         return jsonify(res)
 
 
@@ -45,7 +45,7 @@ class LegalPrivacy(Resource):
         Example:
         `GET /legal/privacy`
         """
-        ms = MeteoServices(app.application.config)
+        meteo_services = current_app.extensions[RUNTIME_SERVICES_EXTENSION].meteo
         params = get_params({'lang': 'en-US'})
-        res = ms.getLegalPrivacy(params)
+        res = meteo_services.getLegalPrivacy(params)
         return jsonify(res)

@@ -1,8 +1,9 @@
 """RESTX namespace exposing API version metadata."""
 
 from flask_restx import Namespace, Resource
-from flask import jsonify
-import app
+from flask import current_app, jsonify
+
+from .versioning import IMPLEMENTATION_VERSION
 
 api = Namespace('version', description='Service version and runtime environment metadata.')
 
@@ -22,5 +23,8 @@ class Version(Resource):
         Example:
         `GET /version`
         """
-        res = {'version': '4.01', 'environment': app.application.config['ENV']}
+        res = {
+            'version': IMPLEMENTATION_VERSION,
+            'environment': current_app.config['ENV'],
+        }
         return jsonify(res)

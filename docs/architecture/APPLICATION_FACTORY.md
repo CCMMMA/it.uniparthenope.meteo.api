@@ -33,6 +33,16 @@ services = current_app.extensions["meteo_api"]
 
 It must not introduce new imports of the top-level `app` module. Existing imports are migrated in bounded resource-family changes with their local and live contract tests.
 
+## Migration record
+
+| Resource family | Dependency access | Compatibility status |
+| --- | --- | --- |
+| `/version` | `current_app.config` plus shared version metadata | Migrated; response contract preserved |
+| `/legal/*` | `current_app.extensions["meteo_api"].meteo` | Migrated; response contract preserved |
+| Other legacy namespaces | Transitional module globals | Pending bounded migration |
+
+The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.
+
 ## Consequences
 
 Positive consequences include explicit service ownership, a stable seam for dependency substitution, and a gradual route away from circular imports. The factory also makes configuration ordering visible: database configuration is loaded before `db.init_app()`.

@@ -14,10 +14,7 @@ from core.Logger import logger
 from core.ManageDiskCache import ManageDiskCache
 from core.Models import db
 from core.RequestPopularityTracker import RequestPopularityTracker
-from core.RuntimeServices import RuntimeServices
-
-
-RUNTIME_SERVICES_EXTENSION = "meteo_api"
+from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION, RuntimeServices
 
 
 def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
