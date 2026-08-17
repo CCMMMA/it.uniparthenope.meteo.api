@@ -10,6 +10,8 @@ snapshots are captured.
 | Endpoint | Method | Production reference | Expected status | Expected content type | Local implementation | Parity status | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `/api/v1` | `GET` | new governed contract | `200` | `application/json` | `apis/namespace_api_v1.py` | additive | Discovery endpoint; it does not change or replace a legacy response. |
+| `/v2/carousel` | `GET` | retired CMS route | `404` | Flask-RESTX error response | not registered | retired | Removed without a compatibility alias because the CMS integration is no longer required. |
+| `/v2/cards` | `GET` | retired CMS route | `404` | Flask-RESTX error response | not registered | retired | Removed without a compatibility alias because the CMS integration is no longer required. |
 | `/instruments/<identification>` | `GET` | production live response | `200` for existing ids, `404` with JSON string for missing ids | `application/json` | `apis/namespace_instruments.py` | in-progress | Missing-id response now uses JSON quoting like production. |
 | `/v2/basemaps/<name>` | `GET` | production swagger | `200` or `404` | `application/json` | `apis/namespace_v2.py` | in-progress | Missing basemap now returns a structured `404` instead of raising `KeyError`. |
 | `/v2/basemap/detail?name=<name>` | `GET` | legacy compatibility route | `200` or `404` | `application/json` | `apis/namespace_v2.py` | added compatibility alias | Preserved as an alias for older clients. |

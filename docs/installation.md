@@ -57,7 +57,7 @@ The uWSGI configuration starts multiple worker processes. Size worker and reques
 1. Review `requirements.txt`, settings, schema, and mount changes.
 2. Build a new environment or image rather than modifying a running one.
 3. Run `python -m compileall -q app.py wsgi.py apis core tests` and `pytest -q`.
-4. Validate representative metadata, forecast, time-series, image, and authenticated routes in staging.
+4. Validate representative metadata, forecast, time-series, image, and operational routes in staging.
 5. Decide whether changed response or cache semantics require targeted invalidation and rebuild; follow [CACHE.md](CACHE.md).
 6. Roll out with enough overlap to preserve availability, then watch error rate, latency, worker memory, cache writes, and upstream failures.
 

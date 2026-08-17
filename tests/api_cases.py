@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-AUTH_HEADERS = {"Authorization": "Bearer demo-token"}
+AUTH_HEADERS = {"Authorization": "Bearer retired-route-test-token"}
 
 
 JSON_GET_CASES = [
@@ -45,8 +45,6 @@ JSON_GET_CASES = [
     pytest.param("/v2/slurm/storage", None, lambda data: data["status"] == "ok", id="v2-slurm-storage"),
     pytest.param("/v2/slurm/info", None, lambda data: data["nodes"] == 4, id="v2-slurm-info"),
     pytest.param("/v2/slurm/queue", None, lambda data: data["jobs"] == [], id="v2-slurm-queue"),
-    pytest.param("/v2/carousel", AUTH_HEADERS, lambda data: data["carousel"][0]["id"] == "hero", id="v2-carousel"),
-    pytest.param("/v2/cards", AUTH_HEADERS, lambda data: data["cards"][0]["id"] == "card-1", id="v2-cards"),
     pytest.param("/v2/basemaps", None, lambda data: "demo" in data, id="v2-basemaps"),
     pytest.param("/v2/basemaps/demo", None, lambda data: data["id"] == "demo", id="v2-basemap-detail"),
     pytest.param("/v2/layers", None, lambda data: "info" in data, id="v2-layers"),

@@ -4,7 +4,7 @@ meteo@uniparthenope containerized APIs
 
 `it.uniparthenope.meteo.api` is the Flask-based service layer that powers the meteorological products and application integrations exposed by the University of Naples Parthenope weather platform.
 
-The project aggregates forecast products, place metadata, legal and selected CMS content, generated plots, GRIB/NetCDF-derived resources, webcam assets, and application-specific datasets behind a single HTTP API. The codebase is designed to run in a containerized environment and relies on a combination of local storage, generated assets, MongoDB, PostgreSQL, memcached, and upstream meteorological archives.
+The project aggregates forecast products, place metadata, legal content, generated plots, GRIB/NetCDF-derived resources, webcam assets, and application-specific datasets behind a single HTTP API. The codebase is designed to run in a containerized environment and relies on a combination of local storage, generated assets, MongoDB, PostgreSQL, memcached, and upstream meteorological archives.
 
 The repository includes both operational documentation for deployers and pedagogical tutorials for students and mobile or web developers who want to consume the API from real applications.
 
@@ -13,7 +13,7 @@ The repository includes both operational documentation for deployers and pedagog
 - Publish forecast, time-series, plot, legend, and GRIB-oriented endpoints for supported products.
 - Serve place search and lookup APIs backed by the configured metadata store.
 - Expose version, legal, instruments, webcam, and application-support endpoints.
-- Provide supported `v2` frontend configuration, map, carousel, card, and Slurm APIs.
+- Provide retained `v2` map metadata and Slurm APIs during the versioned migration.
 - Cache expensive responses through memcached and on-disk cache layers.
 - Promote OWM tile disk-cache hits into memcached and reuse a bounded tile worker pool across requests.
 - Reuse cached hourly slices and shared JSON/CSV payloads for multi-step endpoints such as `timeseries`.
@@ -31,6 +31,7 @@ cleanup, the following legacy integrations are no longer registered and return
 - `POST /users/login`
 - `GET /apps/sais/index`
 - `/v2/auth/login`
+- `/v2/carousel` and `/v2/cards`
 - `/v2/navbar`
 - `/v2/pages`, `/v2/pages/<page>`, and `/v2/page/detail`
 - `/v2/weatherreports/*`
@@ -44,7 +45,7 @@ compatibility details.
 
 - [app.py](app.py): Flask application factory-style bootstrap, cache clients, and service singletons.
 - [apis/](apis): Flask-RESTX namespaces used to expose Swagger/OpenAPI documentation and HTTP routes.
-- [core/](core): domain logic for products, places, plotting, GRIB/NetCDF processing, supported CMS content, token role resolution, Slurm integration, and helpers.
+- [core/](core): domain logic for products, places, plotting, GRIB/NetCDF processing, Slurm integration, and helpers.
 - [etc/](etc): runtime configuration and JSON metadata.
 - [data/](data) and [static/](static): bundled assets and reference files.
 

@@ -57,6 +57,7 @@ following legacy families are intentionally not registered on `main`:
 - `POST /users/login`
 - `GET /apps/sais/index`
 - `/v2/auth/login`
+- `/v2/carousel` and `/v2/cards`
 - `/v2/navbar`
 - `/v2/pages` and `/v2/page/detail`
 - `/v2/weatherreports/*`

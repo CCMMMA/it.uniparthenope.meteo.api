@@ -416,33 +416,7 @@ This is a very important API skill:
 - path parameters go inside the URL path
 - query parameters go in `params={...}`
 
-## 16. Working With Authentication
-
-Some `v2` endpoints are easier to use when you send a bearer token.
-
-Example:
-
-```python
-import requests
-
-BASE_URL = "https://api.meteo.uniparthenope.it"
-TOKEN = "YOUR_TOKEN_HERE"
-
-headers = {
-    "Authorization": f"Bearer {TOKEN}"
-}
-
-response = requests.get(f"{BASE_URL}/v2/carousel", headers=headers, timeout=15)
-print(response.status_code)
-print(response.json())
-```
-
-Important:
-
-- never publish real tokens in public code
-- never hard-code secret values in school assignments that will be shared
-
-## 17. Saving JSON To A File
+## 16. Saving JSON To A File
 
 This is useful for analysis or homework.
 
@@ -460,7 +434,7 @@ with open("version.json", "w", encoding="utf-8") as f:
 print("Saved version.json")
 ```
 
-## 18. Common Beginner Mistakes
+## 17. Common Beginner Mistakes
 
 ### Mistake 1: using `response.text` for JSON
 
@@ -487,7 +461,7 @@ Better:
 - check `status_code`
 - or use `raise_for_status()`
 
-## 19. A Full Beginner Script
+## 18. A Full Beginner Script
 
 This final script combines several ideas:
 
@@ -534,7 +508,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## 20. What To Try Next
+## 19. What To Try Next
 
 After you finish this tutorial, try:
 
@@ -544,7 +518,7 @@ After you finish this tutorial, try:
 4. save CSV data to a file
 5. compare two different product codes
 
-## 21. Summary
+## 20. Summary
 
 You learned how to:
 

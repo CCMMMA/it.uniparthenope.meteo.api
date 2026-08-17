@@ -14,25 +14,14 @@ from .namespace_instruments import api as ns_instruments
 from .namespace_api_v1 import api as ns_api_v1
 from .versioning import CURRENT_API_BASE_PATH
 
-authorizations = {
-    "Bearer": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "Authorization",
-        "description": "Use the format: Bearer <token>"
-    }
-}
-
 api = Api(
     title="University of Naples Parthenope Meteo API",
     version="4.01",
     description=(
         "Formal API surface for forecast products, places, legal content, application integrations, "
-        "weather reports, and CMS-backed resources used by the Parthenope meteorological platform."
+        "map metadata, and operational resources used by the Parthenope meteorological platform."
     ),
     doc="/",
-    authorizations=authorizations,
-    security="Bearer"
 )
 
 # aggregation of namespace

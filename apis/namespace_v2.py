@@ -1,32 +1,12 @@
-"""RESTX namespace for version 2 endpoints, CMS content, and protected resources."""
+"""RESTX namespace for version 2 map metadata and Slurm resources."""
 
-from functools import wraps
 from flask_restx import Namespace, Resource
-from flask import jsonify, request
-import app
-from core.LoginServices import LoginServices
+from flask import current_app, jsonify, request
+
 from core.SlurmServices import SlurmServices
-from core.CMS import CMS
-from core.GetParams import get_params
 from core.DataStructuresV2 import maps, baseMaps, layers
 
-api = Namespace('v2', description='Version 2 endpoints for CMS content, Slurm data, and authenticated resources.')
-
-
-def _extract_bearer_token():
-    """Return the bearer token from the Authorization header when available."""
-    auth_header = request.headers.get("Authorization", "").strip()
-    if not auth_header:
-        return None
-
-    parts = auth_header.split(None, 1)
-    if len(parts) != 2:
-        return None
-
-    scheme, token = parts
-    if scheme.lower() != "bearer":
-        return None
-    return token.strip() or None
+api = Namespace('v2', description='Version 2 map metadata and Slurm endpoints.')
 
 
 def _resolve_mapping_detail(data, name, field_name):
@@ -34,31 +14,6 @@ def _resolve_mapping_detail(data, name, field_name):
     if name not in data:
         return jsonify({"errMsg": f"{field_name} not found.", "statusCode": 404}), 404
     return jsonify(data[name])
-
-
-def roles_from_token(f):
-    """Extract role information from an authorization token."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        """Implement decorated function."""
-        token = _extract_bearer_token()
-        roles = []
-        userId = None
-        if token:
-            ls = LoginServices(app.application.config)
-            res = ls.auth2Token(token)
-            if "meteo" in res:
-                userId = res['user']['userId']
-                roles = list(res["meteo"]["roles"])
-                roles.append("auth")
-        # Check if user have been authenticated
-        if not "auth" in roles:
-            roles.append("all")
-        kwargs['roles'] = roles
-        kwargs['userId'] = userId
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 # FROM ORIGINAL : Internal Server Error
@@ -74,7 +29,7 @@ class SlurmStorage(Resource):
         Example:
         `GET /v2/slurm/storage`
         """
-        ss = SlurmServices(app.application.config)
+        ss = SlurmServices(current_app.config)
         res = ss.get_storage_status()
         return jsonify(res)
 
@@ -91,7 +46,7 @@ class SlurmInfo(Resource):
         Example:
         `GET /v2/slurm/info`
         """
-        ss = SlurmServices(app.application.config)
+        ss = SlurmServices(current_app.config)
         res = ss.sinfo()
         return jsonify(res)
 
@@ -108,39 +63,9 @@ class SlurmQueue(Resource):
         Example:
         `GET /v2/slurm/queue`
         """
-        ss = SlurmServices(app.application.config)
+        ss = SlurmServices(current_app.config)
         res = ss.squeue()
         return jsonify(res)
-
-
-# TESTED AND WORKING
-@api.route('/carousel')
-class Carousel(Resource):
-    """Resource handler for carousel operations."""
-    @api.doc(summary="Get carousel content", security='Bearer', responses={200: "Carousel content returned"})
-    @roles_from_token
-    def get(self, **kwargs):
-        """Handle GET requests for this resource."""
-        roles = kwargs["roles"]
-        params = get_params({'lang': 'en-US'})
-        cms = CMS(app.application.config)
-        res = cms.get_carousel(roles, params)
-        return jsonify({"carousel": res})
-
-
-# TESTED AND WORKING
-@api.route('/cards')
-class Cards(Resource):
-    """Resource handler for cards operations."""
-    @api.doc(summary="Get card content", security='Bearer', responses={200: "Cards content returned"})
-    @roles_from_token
-    def get(self, **kwargs):
-        """Handle GET requests for this resource."""
-        roles = kwargs["roles"]
-        params = get_params({'lang': 'en-US'})
-        cms = CMS(app.application.config)
-        res = cms.get_cards(roles, params)
-        return jsonify({"cards": res})
 
 
 # TESTED AND WORKING

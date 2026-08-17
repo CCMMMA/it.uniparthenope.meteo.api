@@ -42,6 +42,9 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/instruments/*` | `current_app.extensions["meteo_api"].meteo` | Migrated; list, detail, and legacy 404 preserved |
 | `/webcam/*` | `current_app.config` | Migrated; JPEG fallback behavior preserved |
 | `/box/*` | No application dependency | Reviewed; already decoupled |
+| `/v2/slurm/*` | `current_app.config` | Migrated; response contracts preserved |
+| `/v2/carousel`, `/v2/cards` | Removed with their CMS/authentication helpers | Retired by explicit decision; 404 enforced |
+| `/v2/basemaps`, `/v2/layers`, `/v2/maps` | Static module data | Reviewed; no application dependency |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.

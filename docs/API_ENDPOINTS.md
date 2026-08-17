@@ -778,36 +778,6 @@ Example:
 GET /v2/slurm/queue
 ```
 
-### `GET /v2/carousel`
-
-Purpose:
-
-- Returns CMS carousel items, typically filtered by authenticated roles.
-
-Authentication:
-
-- Bearer token recommended
-
-Example:
-
-```http
-GET /v2/carousel
-Authorization: Bearer <token>
-```
-
-### `GET /v2/cards`
-
-Purpose:
-
-- Returns CMS card items.
-
-Example:
-
-```http
-GET /v2/cards
-Authorization: Bearer <token>
-```
-
 ### `GET /v2/basemaps`
 
 Purpose:

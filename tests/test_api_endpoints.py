@@ -268,35 +268,6 @@ class FakeBox:
         return {"summary": "Sunny", "params": params}
 
 
-class FakeLoginServices:
-    """Fake authentication service for login-related endpoints."""
-
-    def __init__(self, config):
-        """Store configuration for compatibility with the real service."""
-        self.config = config
-
-    def auth2Token(self, token):
-        """Return fake bearer-token payload."""
-        if not token:
-            return {"errMsg": "Token not valid.", "statusCode": 401}
-        return {"user": {"userId": "teacher-01"}, "meteo": {"roles": ["editor"]}, "token": token}
-
-
-class FakeCMS:
-    """Fake CMS service for version 2 endpoints."""
-
-    def __init__(self, config):
-        """Store configuration for compatibility with the real service."""
-        self.config = config
-
-    def get_carousel(self, roles, params):
-        """Return fake carousel data."""
-        return [{"id": "hero", "roles": roles}]
-
-    def get_cards(self, roles, params):
-        """Return fake card data."""
-        return [{"id": "card-1", "roles": roles}]
-
 class FakeSlurmServices:
     """Fake Slurm service for version 2 infrastructure endpoints."""
 
@@ -385,8 +356,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     monkeypatch.setattr(ns_products, "MeteoServices", FakeMeteoServices)
     monkeypatch.setattr(ns_products, "csvfy", _fake_csvfy)
     monkeypatch.setattr(ns_products.MakeArchivePaths, "makePath", staticmethod(lambda prod, place: f"/tmp/{prod}_{place}.nc"))
-    monkeypatch.setattr(ns_v2, "LoginServices", FakeLoginServices)
-    monkeypatch.setattr(ns_v2, "CMS", FakeCMS)
     monkeypatch.setattr(ns_v2, "SlurmServices", FakeSlurmServices)
     monkeypatch.setattr(ns_v2, "baseMaps", {"demo": {"id": "demo"}})
     monkeypatch.setattr(ns_v2, "layers", {"info": {"id": "info"}})
@@ -961,6 +930,8 @@ def test_apps_sais_index_is_not_registered(client):
     "path",
     [
         "/v2/auth/login",
+        "/v2/carousel",
+        "/v2/cards",
         "/v2/navbar",
         "/v2/pages",
         "/v2/pages/about",

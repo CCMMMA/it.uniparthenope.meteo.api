@@ -49,7 +49,6 @@ The service may require some or all of the following, depending on which endpoin
 - shared filesystem mounts for archives, history, generated products, and disk cache
 - Signal K endpoint for instruments data
 - Slurm access for queue and storage endpoints
-- CMS JSON configuration files
 
 ## Configuration
 
@@ -198,8 +197,7 @@ Use a repeatable update workflow:
 ### Security
 
 - Do not commit production credentials.
-- Validate tokens and auth-protected `v2` behavior through the existing decorators.
-- Review the login and token-handling endpoints before exposing the API publicly.
+- Keep retired authentication and CMS routes unregistered unless a new, reviewed contract explicitly requires them.
 - Put the service behind a reverse proxy with TLS termination and request limits.
 
 ## Usage Guidance
@@ -212,7 +210,7 @@ Use Swagger to:
 
 - inspect namespace groupings
 - review path and query parameters
-- test authenticated and non-authenticated endpoints
+- verify public endpoint status codes and media types
 - verify the expected content type for JSON, CSV, and PNG responses
 
 ### Core endpoint families
@@ -222,7 +220,7 @@ Use Swagger to:
 - `places`: geospatial and identifier-based place discovery
 - `products`: forecasts, plots, GRIB data, legends, time series, and related assets
 - `apps`: application-facing integration endpoints
-- `v2`: weather reports, CMS/navigation, map metadata, Slurm endpoints, and auth-related flows
+- `v2`: map metadata and Slurm endpoints retained for existing integrations
 - `webcam`: latest webcam frame retrieval
 - `instruments`: instruments inventory and lookup
 
@@ -280,7 +278,7 @@ Check:
 
 - whether the namespace dependencies are reachable
 - whether required files in `etc/` exist
-- whether auth-protected `v2` endpoints are being called without headers
+- whether callers are still requesting retired `/v2` CMS or authentication routes
 
 ### Image endpoints return fallbacks or missing content
 

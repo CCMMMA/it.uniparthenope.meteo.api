@@ -157,8 +157,6 @@ This includes:
 - `GribServices`
 - `Tiles`
 - `Places`
-- `CMS`
-- `LoginServices`
 - `SlurmServices`
 - cache handlers
 
@@ -204,7 +202,7 @@ Interpretation guide:
 
 - JSON endpoint failure: likely response structure, status code, or namespace routing changed
 - binary endpoint failure: likely wrong MIME type, image payload path, or response construction
-- POST endpoint failure: likely payload parsing, auth handling, or route registration changed
+- POST endpoint failure: likely payload parsing or route registration changed
 - GRIB text or CSV failure: likely response formatter or export behavior changed
 
 ## Per-Invocation Wallclock Timings
