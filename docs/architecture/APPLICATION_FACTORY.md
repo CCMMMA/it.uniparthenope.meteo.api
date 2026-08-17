@@ -39,9 +39,14 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | --- | --- | --- |
 | `/version` | `current_app.config` plus shared version metadata | Migrated; response contract preserved |
 | `/legal/*` | `current_app.extensions["meteo_api"].meteo` | Migrated; response contract preserved |
+| `/instruments/*` | `current_app.extensions["meteo_api"].meteo` | Migrated; list, detail, and legacy 404 preserved |
+| `/webcam/*` | `current_app.config` | Migrated; JPEG fallback behavior preserved |
+| `/box/*` | No application dependency | Reviewed; already decoupled |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.
+
+The instrument migration similarly reuses the composed meteorological service while retaining an upstream lookup for each request. Caching or changing that lookup frequency would alter freshness semantics and therefore requires a separate measured change. Webcam fallback resolution now uses the active Flask configuration without changing its established filesystem path or `image/jpg` media type.
 
 ## Consequences
 

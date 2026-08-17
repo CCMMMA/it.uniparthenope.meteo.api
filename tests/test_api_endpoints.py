@@ -328,7 +328,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     """Replace external integrations with deterministic test doubles."""
     import apis.namespace_apps as ns_apps
     import apis.namespace_box as ns_box
-    import apis.namespace_instruments as ns_instruments
     import apis.namespace_places as ns_places
     import apis.namespace_products as ns_products
     import apis.namespace_v2 as ns_v2
@@ -366,7 +365,7 @@ def stub_api_dependencies(monkeypatch, app_module):
         ),
     )
 
-    for module in (ns_apps, ns_places, ns_products, ns_instruments):
+    for module in (ns_apps, ns_places, ns_products):
         if hasattr(module, "get_resource"):
             monkeypatch.setattr(module, "get_resource", lambda *args, **kwargs: None)
         if hasattr(module, "set_resource"):
@@ -381,7 +380,6 @@ def stub_api_dependencies(monkeypatch, app_module):
             )
 
     monkeypatch.setattr(ns_box, "Box", FakeBox)
-    monkeypatch.setattr(ns_instruments, "MeteoServices", FakeMeteoServices)
     monkeypatch.setattr(ns_places, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "MeteoServices", FakeMeteoServices)
@@ -900,6 +898,48 @@ def test_legal_handlers_use_the_shared_runtime_service(client, app_module, monke
 
     assert response.status_code == 200
     assert response.get_json()["service"] == "shared"
+
+
+def test_instrument_handlers_use_the_shared_runtime_service(client, app_module, monkeypatch):
+    """Ensure instrument list and detail requests reuse the composed meteo service."""
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    calls = []
+
+    def get_instruments():
+        calls.append("getInstruments")
+        return {"station-01": {"id": "station-01", "name": "Station 01"}}
+
+    monkeypatch.setattr(services.meteo, "getInstruments", get_instruments)
+
+    list_response = client.get("/instruments")
+    detail_response = client.get("/instruments/station-01")
+
+    assert list_response.status_code == 200
+    assert detail_response.status_code == 200
+    assert detail_response.get_json()["id"] == "station-01"
+    assert calls == ["getInstruments", "getInstruments"]
+
+
+def test_webcam_fallback_uses_current_application_config(client, app_module, monkeypatch):
+    """Ensure missing webcam files use the active application's fallback asset."""
+    import apis.namespace_webcam as ns_webcam
+
+    fallback_path = "/test-assets/no-webcam.jpg"
+    sent = {}
+    monkeypatch.setitem(app_module.application.config, "NOIMAGE_PATH", fallback_path)
+    monkeypatch.setattr(ns_webcam.os.path, "isfile", lambda path: False)
+
+    def fake_send_file(path, mimetype):
+        sent.update(path=path, mimetype=mimetype)
+        return Response(b"fallback-image", mimetype=mimetype)
+
+    monkeypatch.setattr(ns_webcam, "send_file", fake_send_file)
+
+    response = client.get("/webcam/com63049/castelsantelmo/nord")
+
+    assert response.status_code == 200
+    assert response.data == b"fallback-image"
+    assert sent == {"path": fallback_path, "mimetype": "image/jpg"}
 
 
 def test_legacy_responses_are_unchanged_by_version_headers(client):

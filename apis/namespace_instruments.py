@@ -12,12 +12,10 @@
 #################################################
 
 from flask_restx import Namespace, Resource
-from flask import jsonify
+from flask import current_app, jsonify
 
 from core.Logger import logger
-from core.MeteoServices import MeteoServices
-
-import app
+from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
 
 api = Namespace('instruments', description='Instrument inventory and instrument-detail endpoints.')
 
@@ -36,14 +34,8 @@ class Instruments(Resource):
         `GET /instruments`
         """
 
-        ms = MeteoServices(app.application.config)
-        res = ms.getInstruments()
-
-        '''
-        print("\n\n")
-        logger.info(f"res : {res}")
-        print("\n\n")
-        '''
+        meteo_services = current_app.extensions[RUNTIME_SERVICES_EXTENSION].meteo
+        res = meteo_services.getInstruments()
 
         for elem in res.items():
             logger.debug("instrument entry: %s", elem)
@@ -67,8 +59,8 @@ class InstrumentsContext(Resource):
         `GET /instruments/station-01`
         """
 
-        ms = MeteoServices(app.application.config)
-        res = ms.getInstruments()
+        meteo_services = current_app.extensions[RUNTIME_SERVICES_EXTENSION].meteo
+        res = meteo_services.getInstruments()
 
         for ws_id, ws_data in res.items():
             if ws_id == identification:
@@ -77,43 +69,3 @@ class InstrumentsContext(Resource):
         # Let Flask-RESTX serialize the string so the legacy JSON-string body is
         # preserved without nesting a Flask Response inside a response tuple.
         return "Identification not found!", 404
-
-'''
-# TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE 
-@api.route('')
-class Instruments(Resource):
-    @api.doc()
-    def get(self):
-        """Returns the avaliable instruments.
-        :example: /products
-        :returns:  json -- the return json.
-        """
-
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        res = None          # To Test 
-
-        # Check Memcache
-        if res is None:
-
-            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
-
-            res = None         # To Test 
-
-            # Check Diskcache
-            if res is None:
-
-                ms = MeteoServices(app.application.config)
-                res = ms.getInstruments()
-
-                # Save on Diskcache
-                app.diskcache.set(request, res, 'json')
-
-                # Save on Memcache
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-
-                #return jsonify(res)
-               
-        return res
-'''
-
-        

@@ -1,9 +1,9 @@
 """RESTX namespace serving the latest webcam imagery."""
 
-from flask_restx import Namespace, Resource
-from flask import send_file
 import os
-import app
+
+from flask_restx import Namespace, Resource
+from flask import current_app, send_file
 
 api = Namespace('webcam', description='Latest webcam image retrieval endpoints.')
 
@@ -31,5 +31,5 @@ class Webcam(Resource):
         """
         f_name = "/home/ccmmma/prometeo/data/webcam/" + place + "/" + location + "/" + cam + ".jpg"
         if not os.path.isfile(f_name):
-            f_name = app.application.config['NOIMAGE_PATH']
+            f_name = current_app.config['NOIMAGE_PATH']
         return send_file(f_name, mimetype='image/jpg')
