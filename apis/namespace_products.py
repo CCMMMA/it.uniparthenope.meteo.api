@@ -617,7 +617,10 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
         Example:
         `GET /products/wrf5/forecast/d02/grib/text`
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
         if res is None:
             params = get_params({
                 'domain': domain,
@@ -625,9 +628,15 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
                 'date': None,
                 'opt': ""
             })
-            json_data = app.grib_services.asText(params)
+            json_data = services.grib.asText(params)
             res = json_data
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
         
         logger.debug("/grib/text response ready: %s bytes", len(res) if res is not None else 0)
         return Response(res, mimetype='text/plain')
@@ -645,7 +654,10 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
         Example:
         `GET /products/wrf5/forecast/d02/grib/json`
         """
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
         if res is None:
             params = get_params({
                 'domain': domain,
@@ -653,9 +665,15 @@ class ProductsForecastGribJsonByProdAndDomain(Resource):
                 'date': None,
                 'opt': ""
             })
-            json_data = app.grib_services.asJson(params)
+            json_data = services.grib.asJson(params)
             res = json_data
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
         return jsonify(res)
 
 

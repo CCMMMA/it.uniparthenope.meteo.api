@@ -214,6 +214,21 @@ class FakeGribServices:
         return {"grid": [1.0, 2.0], "domain": params["domain"]}
 
 
+class RecordingGribServices(FakeGribServices):
+    """Record GRIB calls while retaining deterministic response payloads."""
+
+    def __init__(self):
+        self.calls = []
+
+    def asText(self, params):
+        self.calls.append(("text", dict(params)))
+        return super().asText(params)
+
+    def asJson(self, params):
+        self.calls.append(("json", dict(params)))
+        return super().asJson(params)
+
+
 class FakeTiles:
     """Fake tile service for app-facing GeoJSON endpoints."""
 
@@ -384,6 +399,43 @@ def test_grib_text_endpoint(client, invocation_recorder):
     assert response.status_code == 200
     assert response.mimetype == "text/plain"
     assert "lon,lat,value" in response.get_data(as_text=True)
+
+
+def test_grib_exports_use_the_runtime_service(client, app_module, monkeypatch):
+    """Ensure both GRIB representations resolve their shared composed service."""
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    recording_grib = RecordingGribServices()
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, grib=recording_grib),
+    )
+
+    class LegacyGribMustNotRun:
+        def asText(self, params):
+            raise AssertionError("legacy GRIB global was used")
+
+        def asJson(self, params):
+            raise AssertionError("legacy GRIB global was used")
+
+    monkeypatch.setattr(app_module, "grib_services", LegacyGribMustNotRun())
+
+    text_response = client.get(
+        "/products/wrf5/forecast/d02/grib/text?date=20260413Z1200&opt=wind"
+    )
+    json_response = client.get(
+        "/products/wrf5/forecast/d02/grib/json?date=20260413Z1200&opt=wind"
+    )
+
+    assert text_response.status_code == 200
+    assert json_response.status_code == 200
+    assert [call[0] for call in recording_grib.calls] == ["text", "json"]
+    for representation, params in recording_grib.calls:
+        assert representation in {"text", "json"}
+        assert params["prod"] == "wrf5"
+        assert params["domain"] == "d02"
+        assert params["date"] == "20260413Z1200"
+        assert params["opt"] == "wind"
 
 
 def test_timeseries_csv_endpoint(client, invocation_recorder):

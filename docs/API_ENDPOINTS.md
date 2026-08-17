@@ -537,6 +537,8 @@ GET /products/wrf5/forecast/com63049/plot/alt
 Purpose:
 
 - Returns a text export derived from the GRIB/NetCDF product data.
+- Reuses the application-level GRIB reader and request cache; callers do not
+  need to manage the underlying dataset lifecycle.
 
 Path parameters:
 
@@ -554,6 +556,8 @@ GET /products/wrf5/forecast/d02/grib/text
 Purpose:
 
 - Returns a JSON export derived from the same GRIB-oriented data source.
+- Uses the same application-level GRIB service as the text representation while
+  retaining an independent, URL-addressed cache entry.
 
 Example:
 

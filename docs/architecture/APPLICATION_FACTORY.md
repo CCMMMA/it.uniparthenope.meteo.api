@@ -50,7 +50,8 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/products` metadata and availability routes | `current_app.extensions["meteo_api"].meteo` | Migrated; payload contracts preserved |
 | `/products/{prod}/forecast/{place}` JSON | Runtime service, caches, and popularity tracker | Migrated; canonical key and cache order preserved |
 | `/products/{prod}/timeseries/{place}` JSON and CSV | Runtime service, caches, archive config, and popularity tracker | Migrated together; shared structured cache preserved |
-| Render, GRIB, chart, and cache-maintenance product routes | Transitional module globals | Pending cache-sensitive migrations |
+| `/products/{prod}/forecast/{domain}/grib/{text,json}` | Runtime GRIB service, memory cache, and application config | Migrated together; representation and cache contracts preserved |
+| Render, chart, and cache-maintenance product routes | Transitional module globals | Pending cache-sensitive migrations |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.
