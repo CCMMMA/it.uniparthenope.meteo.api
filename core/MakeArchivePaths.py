@@ -13,16 +13,22 @@
 
 from core.Places import Places
 
-from datetime import datetime
-import app
 import os
+from datetime import datetime
 
 class MakeArchivePaths: 
     """Service or helper that encapsulates make archive paths behavior."""
 
     
-    def makePath(prod, place=None, date=None, history=None, lat=None, lon=None):
+    def makePath(
+        prod, place=None, date=None, history=None, lat=None, lon=None, config=None
+    ):
         """Implement make path for make archive paths."""
+
+        if config is None:
+            # Transitional fallback for core callers not yet dependency-injected.
+            import app
+            config = app.application.config
 
         if date is None:
             date = datetime.utcnow()
@@ -42,9 +48,9 @@ class MakeArchivePaths:
         date = datetime(year, month, day, hour, minute)
 
         if lat is not None and lon is not None:
-            domain = Places(app.application.config).get_domain_by_product_and_ll(prod, lat, lon)
+            domain = Places(config).get_domain_by_product_and_ll(prod, lat, lon)
         else:
-            domain_indeces = Places(app.application.config).get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
+            domain_indeces = Places(config).get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
         
 
         dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
@@ -54,9 +60,9 @@ class MakeArchivePaths:
             (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
 
         if history == True:
-            path = app.application.config['BASE_PATH_HISTORY'] + os.path.sep + prod + os.path.sep + domain + os.path.sep + app.application.config['HISTORY'] + os.path.sep + dateTimePath + os.path.sep + prod + "_" + domain + "_" + dateTime + ".nc"
+            path = config['BASE_PATH_HISTORY'] + os.path.sep + prod + os.path.sep + domain + os.path.sep + config['HISTORY'] + os.path.sep + dateTimePath + os.path.sep + prod + "_" + domain + "_" + dateTime + ".nc"
         elif history is None:
-            path = app.application.config['BASE_PATH'] + os.path.sep + prod + os.path.sep + domain + os.path.sep + app.application.config['ARCHIVE'] + os.path.sep + dateTimePath + os.path.sep + prod + "_" + domain + "_" + dateTime + ".nc"
+            path = config['BASE_PATH'] + os.path.sep + prod + os.path.sep + domain + os.path.sep + config['ARCHIVE'] + os.path.sep + dateTimePath + os.path.sep + prod + "_" + domain + "_" + dateTime + ".nc"
         
         return path
 

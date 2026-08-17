@@ -355,7 +355,11 @@ def stub_api_dependencies(monkeypatch, app_module):
     monkeypatch.setattr(ns_products, "Places", FakePlaces)
     monkeypatch.setattr(ns_products, "MeteoServices", FakeMeteoServices)
     monkeypatch.setattr(ns_products, "csvfy", _fake_csvfy)
-    monkeypatch.setattr(ns_products.MakeArchivePaths, "makePath", staticmethod(lambda prod, place: f"/tmp/{prod}_{place}.nc"))
+    monkeypatch.setattr(
+        ns_products.MakeArchivePaths,
+        "makePath",
+        staticmethod(lambda prod, place, **kwargs: f"/tmp/{prod}_{place}.nc"),
+    )
     monkeypatch.setattr(ns_v2, "SlurmServices", FakeSlurmServices)
     monkeypatch.setattr(ns_v2, "baseMaps", {"demo": {"id": "demo"}})
     monkeypatch.setattr(ns_v2, "layers", {"info": {"id": "info"}})
@@ -740,11 +744,19 @@ def test_timeseries_json_and_csv_share_cache_payload(client, app_module, monkeyp
     cache = MemoryCache()
     diskcache = MemoryDiskCache()
 
-    monkeypatch.setattr(app_module, "meteo_services", service)
-    monkeypatch.setattr(app_module, "cache", cache)
-    monkeypatch.setattr(app_module, "diskcache", diskcache)
-    monkeypatch.setattr(app_module, "use_pymemcache", True)
-    monkeypatch.setattr(app_module, "use_disk_cached", True)
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=cache,
+            memory_cache_enabled=True,
+            disk_cache=diskcache,
+            disk_cache_enabled=True,
+            meteo=service,
+        ),
+    )
     monkeypatch.setattr(
         ns_products,
         "get_resource",
@@ -770,6 +782,16 @@ def test_timeseries_json_and_csv_share_cache_payload(client, app_module, monkeyp
     assert json_response.status_code == 200
     assert csv_response.status_code == 200
     assert service.calls == 1
+    expected_key = "products-timeseries-v1|wrf5|com63049|20260413Z0000|1|0|"
+    assert list(cache.values) == [expected_key]
+    assert list(diskcache.values) == [expected_key]
+    timeseries_records = [
+        record
+        for record in app_module.request_popularity_tracker.records
+        if record["endpoint"] == "timeseries"
+    ]
+    assert len(timeseries_records) == 2
+    assert {record["params"]["opt"] for record in timeseries_records} == {""}
 
 
 def test_apps_owm_promotes_disk_cache_hit_to_memcache(client, app_module, monkeypatch):

@@ -70,8 +70,11 @@ def _effective_forecast_date(timeref=None):
 
 def _effective_timeseries_date(timeref=None):
     """Return the effective timeseries start datetime used by the service layer."""
-    return app.meteo_services._format_datetime_ref(
-        app.meteo_services._parse_datetime_ref(timeref, default_midnight=(timeref is None))
+    meteo_services = _runtime_services().meteo
+    return meteo_services._format_datetime_ref(
+        meteo_services._parse_datetime_ref(
+            timeref, default_midnight=(timeref is None)
+        )
     )
 
 
@@ -116,7 +119,7 @@ def _timeseries_cache_key(prod, place, params=None):
 
 def _timeseries_fields(prod):
     """Return the field dictionary used by CSV rendering without recomputing the time series."""
-    return app.meteo_services.maps["products"][prod]["fields"]
+    return _runtime_services().meteo.maps["products"][prod]["fields"]
 
 
 def _popular_request_params(endpoint, prod, place, params):
@@ -932,7 +935,13 @@ class ProductsTimeseriesByProdAndPlace(Resource):
             'opt': ""
         }
         cache_key = _timeseries_cache_key(prod, place, base_params)
-        res = get_resource(request, app.cache, app.use_pymemcache, cache_key_override=cache_key)
+        services = _runtime_services()
+        res = get_resource(
+            request,
+            services.memory_cache,
+            services.memory_cache_enabled,
+            cache_key_override=cache_key,
+        )
 
         if res is None:
 
@@ -942,19 +951,21 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                 'date': None
             })
 
-            path_archive_file = MakeArchivePaths.makePath(params['prod'], params['place'])            
+            path_archive_file = MakeArchivePaths.makePath(
+                params['prod'], params['place'], config=current_app.config
+            )
             # Check Diskcache
-            res = app.diskcache.get(
+            res = services.disk_cache.get(
                 request,
-                app.diskcache_ttl,
+                services.disk_cache_ttl,
                 path_archive_file,
-                app.use_disk_cached,
+                services.disk_cache_enabled,
                 cache_key_source=cache_key,
             )
             
             if res is None:
                 params = get_params(base_params)
-                time_series_data = app.meteo_services.timeseries(params)
+                time_series_data = services.meteo.timeseries(params)
 
                 if 'result' in time_series_data and "ok" not in time_series_data['result']:
                     return jsonify(time_series_data)
@@ -962,15 +973,17 @@ class ProductsTimeseriesByProdAndPlace(Resource):
                 res = time_series_data
 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'json', cache_key_source=cache_key)
+                services.disk_cache.set(
+                    request, res, 'json', cache_key_source=cache_key
+                )
 
                 # Save on Memcache
                 set_resource(
                     request,
                     res,
-                    app.cache,
-                    app.use_pymemcache,
-                    app.application.config['TTL_MEMCACHED'],
+                    services.memory_cache,
+                    services.memory_cache_enabled,
+                    current_app.config['TTL_MEMCACHED'],
                     cache_key_override=cache_key,
                 )
 
@@ -980,43 +993,6 @@ class ProductsTimeseriesByProdAndPlace(Resource):
             _record_popular_request("timeseries", prod, place, base_params)
         return jsonify(res)
 
-
-'''
-# TESTED AND WORKING -- USE MEMCACHE -- OLD VERSION
-@api.route('/<string:prod>/timeseries/<string:place>')
-class ProductsTimeseriesByProdAndPlace(Resource):
-    @api.doc()
-    def get(self, prod, place):
-        """Returns ......................
-        :example: /products/ww33/timeseries/ca001
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns: json -- the return josn.
-        -------------------------------------------------------------------------------------------
-        """
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        if res is None:
-            params = get_params({
-                'place': place,
-                'prod': prod,
-                'hours': 0,
-                'step': 1,
-                'md5': None,
-                'date': None,
-                'opt': ""
-            })
-            time_series_data = app.meteo_services.timeseries(params)
-            if 'result' in time_series_data and "ok" not in time_series_data['result']:
-                return jsonify(time_series_data)
-            res = time_series_data
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-        else:
-          # log.info("[*][*][*][*] Res : " + str(res))
-          res = eval(res)
-        return jsonify(res)
-'''
 
 # TESTED AND WORKING -- USE MEMCACHE AND DISKCACHE
 @api.route('/<string:prod>/timeseries/<string:place>/csv')
@@ -1041,7 +1017,13 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
             'opt': "fields"
         })
         cache_key = _timeseries_cache_key(prod, place, params)
-        res = get_resource(request, app.cache, app.use_pymemcache, cache_key_override=cache_key)
+        services = _runtime_services()
+        res = get_resource(
+            request,
+            services.memory_cache,
+            services.memory_cache_enabled,
+            cache_key_override=cache_key,
+        )
         
         # Check Memcache
         if res is None:
@@ -1051,18 +1033,22 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
                 'prod': prod,
                 'date': None
             })
-            path_archive_file = MakeArchivePaths.makePath(archive_params['prod'], archive_params['place'])
-            res = app.diskcache.get(
+            path_archive_file = MakeArchivePaths.makePath(
+                archive_params['prod'],
+                archive_params['place'],
+                config=current_app.config,
+            )
+            res = services.disk_cache.get(
                 request,
-                app.diskcache_ttl,
+                services.disk_cache_ttl,
                 path_archive_file,
-                app.use_disk_cached,
+                services.disk_cache_enabled,
                 cache_key_source=cache_key,
             )
 
             # Check Diskcache
             if res is None:
-                time_series_data = app.meteo_services.timeseries(params)
+                time_series_data = services.meteo.timeseries(params)
 
                 if 'result' in time_series_data and "ok" not in time_series_data['result']:
                     return jsonify(time_series_data)
@@ -1071,15 +1057,17 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
 
 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'json', cache_key_source=cache_key)
+                services.disk_cache.set(
+                    request, res, 'json', cache_key_source=cache_key
+                )
 
                 # Save on Memcache
                 set_resource(
                     request,
                     res,
-                    app.cache,
-                    app.use_pymemcache,
-                    app.application.config['TTL_MEMCACHED'],
+                    services.memory_cache,
+                    services.memory_cache_enabled,
+                    current_app.config['TTL_MEMCACHED'],
                     cache_key_override=cache_key,
                 )
 
@@ -1224,45 +1212,6 @@ class ProductsRebuildByProd(Resource):
             }
         )
 
-
-'''
-# TESTED AND WORKING -- USE MEMCACHE -- OLD VERSION
-@api.route('/<string:prod>/timeseries/<string:place>/csv')
-class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
-    @api.doc()
-    def get(self, prod, place):
-        """Returns ......................
-        :example: /products/wrf3/timeseries/ca001/csv
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns: csv -- the return csv.
-        -------------------------------------------------------------------------------------------
-        """
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        if res is None:
-            params = get_params({
-                'place': place,
-                'prod': prod,
-                'step': 1,
-                'md5': None,
-                'date': None,
-                'opt': ""
-            })
-            params['opt'] = params['opt'] + ",fields"
-            time_series_data = app.meteo_services.timeseries(params)
-
-            if 'result' in time_series_data and "ok" not in time_series_data['result']:
-                return jsonify(time_series_data)
-
-            res = time_series_data
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-        else:
-          res = eval(res)
-
-        return csvfy(res)
-'''
 
 '''
 # ORIGINAL : Internal Server Error -- USE MEMCACHE 
