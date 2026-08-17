@@ -17,7 +17,7 @@ import os
 from types import SimpleNamespace
 from flask_restx import Namespace, Resource
 from flask import current_app, jsonify, Response, make_response, request, send_from_directory
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from core.Logger import logger
 from core.GetParams import get_params
@@ -39,7 +39,7 @@ def _cache_request_with_default_date():
     """Build a cache-key request object with a default forecast date when one is omitted."""
     cache_url = request.url
     if "date" not in request.args:
-        ncep_date = datetime.utcnow().strftime("%Y%m%dZ%H00")
+        ncep_date = datetime.now(timezone.utc).strftime("%Y%m%dZ%H00")
         separator = '&' if '?' in cache_url else '?'
         cache_url = f"{cache_url}{separator}date={ncep_date}"
     return SimpleNamespace(url=cache_url)
@@ -419,14 +419,21 @@ class ProductsForecastMapByProdAndPlace(Resource):
         `GET /products/ww33/forecast/ca001/plot/image`
         """
 
+        services = _runtime_services()
         cache_request = _cache_request_with_default_date()
         
         # Check Memecache
-        res = get_resource(cache_request, app.cache, app.use_pymemcache)
+        res = get_resource(
+            cache_request, services.memory_cache, services.memory_cache_enabled
+        )
 
         if res is None:
 
-            res2 = app.diskcache.get(cache_request, app.diskcache_ttl, app.use_disk_cached)
+            res2 = services.disk_cache.get(
+                cache_request,
+                services.disk_cache_ttl,
+                flag_diskcache=services.disk_cache_enabled,
+            )
 
             # Check Diskcache 
             if res2 is None:
@@ -444,7 +451,9 @@ class ProductsForecastMapByProdAndPlace(Resource):
                     'opt': ""
                 })
                 
-                (mapData, imageName) = app.meteo_services.ModelPlotImage(app.use_disk_cached, params)
+                (mapData, imageName) = services.meteo.ModelPlotImage(
+                    services.disk_cache_enabled, params
+                )
             
                 res = {
                     'plot': base64.b64encode(mapData).decode('utf-8'),
@@ -453,10 +462,21 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 }
                 
                 # Save on Diskcache
-                app.diskcache.set(cache_request, base64.b64encode(mapData).decode('utf-8'), 'plot')
+                services.disk_cache.set(
+                    cache_request,
+                    base64.b64encode(mapData).decode('utf-8'),
+                    'plot',
+                    flag_diskcache=services.disk_cache_enabled,
+                )
 
                 # Save on Memcache 
-                set_resource(cache_request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+                set_resource(
+                    cache_request,
+                    res,
+                    services.memory_cache,
+                    services.memory_cache_enabled,
+                    current_app.config['TTL_MEMCACHED'],
+                )
             
             else:
                 # Data in Diskcache
@@ -477,55 +497,6 @@ class ProductsForecastMapByProdAndPlace(Resource):
         # response.headers['Content-Disposition'] = 'attachment; filename=' + res['imageName']
         return response
 
-'''
-# TESTED AND WORKING -- USE MEMCACHE -- OLD VERSION 
-@api.route('/<string:prod>/forecast/<string:place>/plot/image')
-class ProductsForecastMapByProdAndPlace(Resource):
-    @api.doc()
-    def get(self, prod, place):
-        """Returns the forecast plot as image or url given a product code and a place
-        :example: /products/ww33/forecast/ca001/plot/image
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
-        """
-        
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        if res is None:
-            params = get_params({
-                'id': place,
-                'filter': None,
-                'place': place,
-                'prod': prod,
-                'output': 'gen',
-                'date': None,
-                'width': 1024,
-                'height': 768,
-                'dry': "false",
-                'opt': ""
-            })
-            
-            (mapData, imageName) = app.meteo_services.ModelPlotImage(app.use_disk_cached, params)
-        
-            res = {
-                'plot': base64.b64encode(mapData).decode('utf-8'),
-                # 'plot': mapData,
-                'imageName': imageName
-            }
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-        else:
-            res = eval(res)
-        
-        response = make_response(base64.b64decode(res['plot']))
-        # response = make_response(res['plot'])
-        response.headers['Content-Type'] = 'image/png'
-        # response.headers['Content-Disposition'] = 'attachment; filename=' + res['imageName']
-        return response
-'''
-
 # @api.route('/wrf5/forecast/<string:place>/<float:lat>/<float:lon>/plot/SkewT/image')
 @api.route('/wrf5/forecast/plot/SkewT/image')
 class ProductSkewTByProdAndPlace(Resource):
@@ -540,9 +511,12 @@ class ProductSkewTByProdAndPlace(Resource):
         `GET /products/wrf5/forecast/plot/SkewT/image?date=20250915Z1000`
         """
      
+        services = _runtime_services()
         cache_request = _cache_request_with_default_date()
         
-        res = get_resource(cache_request, app.cache, app.use_pymemcache)
+        res = get_resource(
+            cache_request, services.memory_cache, services.memory_cache_enabled
+        )
 
         if res is None:
             
@@ -553,7 +527,9 @@ class ProductSkewTByProdAndPlace(Resource):
                 'date': None,
             })
 
-            (mapData, imageName) = app.meteo_services.ModelPlotSkewT(app.use_disk_cached, params)
+            (mapData, imageName) = services.meteo.ModelPlotSkewT(
+                services.disk_cache_enabled, params
+            )
 
             res = {
                 'plot': base64.b64encode(mapData).decode('utf-8'),
@@ -561,7 +537,13 @@ class ProductSkewTByProdAndPlace(Resource):
                 'imageName': imageName
             }
 
-            set_resource(cache_request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            set_resource(
+                cache_request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
   
         else:
             # Data in Memcache

@@ -485,6 +485,11 @@ Response:
 
 - PNG image
 
+Cache behavior:
+
+- Requests check the process-level memory cache before the configured disk
+  cache. A cold request renders once and promotes the result into both layers.
+
 Examples:
 
 ```http
@@ -505,6 +510,12 @@ Typical use:
 
 - atmospheric profile diagnostics
 - teaching and advanced meteorological analysis
+
+Operational behavior:
+
+- The diagram is rendered by the shared meteorological service and retained in
+  the process-level memory cache, avoiding repeated service construction and
+  duplicate rendering for identical request URLs.
 
 Examples:
 

@@ -438,6 +438,91 @@ def test_grib_exports_use_the_runtime_service(client, app_module, monkeypatch):
         assert params["opt"] == "wind"
 
 
+def test_rendered_png_routes_use_runtime_services_and_preserve_cache_order(
+    client, app_module, monkeypatch
+):
+    """Ensure rendered images use composed services and the established caches."""
+    import apis.namespace_products as ns_products
+
+    events = []
+
+    class RecordingMeteo(FakeMeteoServices):
+        def ModelPlotImage(self, use_disk_cached, params):
+            events.append(("plot-render", use_disk_cached, params["date"]))
+            return super().ModelPlotImage(use_disk_cached, params)
+
+        def ModelPlotSkewT(self, use_disk_cached, params):
+            events.append(("skewt-render", use_disk_cached, params["date"]))
+            return super().ModelPlotSkewT(use_disk_cached, params)
+
+    class RecordingDiskCache:
+        def get(self, request, ttl, flag_diskcache=True):
+            events.append(("disk-get", flag_diskcache))
+            return None
+
+        def set(self, request, response, response_type, flag_diskcache=True):
+            events.append(("disk-set", response_type, flag_diskcache))
+
+    runtime_meteo = RecordingMeteo(app_module.application.config)
+    memory_cache = object()
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=memory_cache,
+            memory_cache_enabled=True,
+            disk_cache=RecordingDiskCache(),
+            disk_cache_enabled=True,
+            disk_cache_ttl=321,
+            meteo=runtime_meteo,
+        ),
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "get_resource",
+        lambda request, cache, enabled: events.append(
+            ("memory-get", cache is memory_cache, enabled)
+        ) or None,
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "set_resource",
+        lambda request, response, cache, enabled, ttl: events.append(
+            ("memory-set", cache is memory_cache, enabled, ttl)
+        ),
+    )
+
+    class LegacyMeteoMustNotRun:
+        def __getattr__(self, name):
+            raise AssertionError(f"legacy meteo global was used for {name}")
+
+    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
+
+    plot_response = client.get(
+        "/products/wrf5/forecast/com63049/plot/image?date=20260413Z1200"
+    )
+    skewt_response = client.get(
+        "/products/wrf5/forecast/plot/SkewT/image?date=20260413Z1200"
+    )
+
+    assert plot_response.status_code == 200
+    assert plot_response.get_data() == b"plot-image"
+    assert skewt_response.status_code == 200
+    assert skewt_response.get_data() == b"skewt-image"
+    assert events == [
+        ("memory-get", True, True),
+        ("disk-get", True),
+        ("plot-render", True, "20260413Z1200"),
+        ("disk-set", "plot", True),
+        ("memory-set", True, True, app_module.application.config["TTL_MEMCACHED"]),
+        ("memory-get", True, True),
+        ("skewt-render", True, "20260413Z1200"),
+        ("memory-set", True, True, app_module.application.config["TTL_MEMCACHED"]),
+    ]
+
+
 def test_timeseries_csv_endpoint(client, invocation_recorder):
     """Ensure the CSV time-series endpoint returns CSV content."""
     started = time.perf_counter()
