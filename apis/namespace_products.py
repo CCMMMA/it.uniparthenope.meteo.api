@@ -11,7 +11,6 @@
 #
 #################################################
 
-import app
 import base64
 import os
 from types import SimpleNamespace
@@ -80,7 +79,9 @@ def _effective_timeseries_date(timeref=None):
 
 def _request_window(date_value=None, hours=None):
     """Return the inclusive start/exclusive end window for maintenance endpoints."""
-    start = app.meteo_services._parse_datetime_ref(date_value, default_midnight=(date_value is None))
+    start = _runtime_services().meteo._parse_datetime_ref(
+        date_value, default_midnight=(date_value is None)
+    )
     duration_hours = int(hours if hours is not None else 168)
     return start, start + timedelta(hours=duration_hours)
 
@@ -154,25 +155,43 @@ def _record_popular_request(endpoint, prod, place, params):
 
 def _top_level_cache_delete(cache_key):
     """Delete one top-level cache entry from memcache and disk cache."""
-    deleted_disk = app.diskcache.delete(cache_key_source=cache_key, flag_diskcache=app.use_disk_cached)
-    deleted_mem = delete_resource(None, app.cache, app.use_pymemcache, cache_key_override=cache_key)
+    services = _runtime_services()
+    deleted_disk = services.disk_cache.delete(
+        cache_key_source=cache_key,
+        flag_diskcache=services.disk_cache_enabled,
+    )
+    deleted_mem = delete_resource(
+        None,
+        services.memory_cache,
+        services.memory_cache_enabled,
+        cache_key_override=cache_key,
+    )
     return deleted_disk, deleted_mem
 
 
 def _warm_forecast_cache(prod, place, params):
     """Build and store one forecast payload under the canonical cache key."""
+    services = _runtime_services()
     cache_key = _forecast_cache_key(prod, place, params)
-    response = app.meteo_services.modelOutput(params)
+    response = services.meteo.modelOutput(
+        params, use_disk_cached=services.disk_cache_enabled
+    )
     if 'result' in response and "ok" not in response['result']:
         return {"cache_key": cache_key, "status": "skipped", "details": response}
 
-    app.diskcache.set(request=None, res=response, type_file='json', cache_key_source=cache_key)
+    services.disk_cache.set(
+        request=None,
+        res=response,
+        type_file='json',
+        flag_diskcache=services.disk_cache_enabled,
+        cache_key_source=cache_key,
+    )
     set_resource(
         None,
         response,
-        app.cache,
-        app.use_pymemcache,
-        app.application.config['TTL_MEMCACHED'],
+        services.memory_cache,
+        services.memory_cache_enabled,
+        current_app.config['TTL_MEMCACHED'],
         cache_key_override=cache_key,
     )
     return {"cache_key": cache_key, "status": "ok"}
@@ -180,18 +199,25 @@ def _warm_forecast_cache(prod, place, params):
 
 def _warm_timeseries_cache(prod, place, params):
     """Build and store one time-series payload under the canonical cache key."""
+    services = _runtime_services()
     cache_key = _timeseries_cache_key(prod, place, params)
-    response = app.meteo_services.timeseries(params)
+    response = services.meteo.timeseries(params)
     if 'result' in response and "ok" not in response['result']:
         return {"cache_key": cache_key, "status": "skipped", "details": response}
 
-    app.diskcache.set(request=None, res=response, type_file='json', cache_key_source=cache_key)
+    services.disk_cache.set(
+        request=None,
+        res=response,
+        type_file='json',
+        flag_diskcache=services.disk_cache_enabled,
+        cache_key_source=cache_key,
+    )
     set_resource(
         None,
         response,
-        app.cache,
-        app.use_pymemcache,
-        app.application.config['TTL_MEMCACHED'],
+        services.memory_cache,
+        services.memory_cache_enabled,
+        current_app.config['TTL_MEMCACHED'],
         cache_key_override=cache_key,
     )
     return {"cache_key": cache_key, "status": "ok"}
@@ -1087,13 +1113,16 @@ class ProductsInvalidateByProdAndPlace(Resource):
     )
     def get(self, prod, place):
         """Invalidate per-hour, forecast, and time-series caches for one product/place window."""
+        services = _runtime_services()
         start, end = _request_window(request.args.get("date"), request.args.get("hours"))
         hours = int(request.args.get("hours", 168))
 
         deleted_model_output = 0
         current = start
         while current < end:
-            cache_path = app.meteo_services._model_output_cache_path(prod, place, current.strftime("%Y%m%dZ%H%M"))
+            cache_path = services.meteo._model_output_cache_path(
+                prod, place, current.strftime("%Y%m%dZ%H%M")
+            )
             if os.path.isfile(cache_path):
                 os.remove(cache_path)
                 deleted_model_output += 1
@@ -1103,9 +1132,9 @@ class ProductsInvalidateByProdAndPlace(Resource):
         deleted_top_level_mem = 0
         matched_requests = []
 
-        for record in app.request_popularity_tracker.matching_requests(prod=prod, place=place):
+        for record in services.popularity.matching_requests(prod=prod, place=place):
             params = record["params"]
-            record_start = app.meteo_services._parse_datetime_ref(params["date"])
+            record_start = services.meteo._parse_datetime_ref(params["date"])
             record_end = record_start + timedelta(hours=max(1, int(params.get("hours", 0) or 0)))
             if record_end <= start or record_start >= end:
                 continue
@@ -1150,13 +1179,22 @@ class ProductsRebuildByProd(Resource):
     )
     def get(self, prod):
         """Rebuild caches for the most popular forecast and time-series signatures of one product."""
+        services = _runtime_services()
         start, _ = _request_window(request.args.get("date"), request.args.get("hours"))
         hours = int(request.args.get("hours", 168))
-        limit = int(request.args.get("limit", app.application.config.get("POPULAR_REQUESTS_LIMIT", 25)))
+        limit = int(
+            request.args.get(
+                "limit", current_app.config.get("POPULAR_REQUESTS_LIMIT", 25)
+            )
+        )
         start_ref = start.strftime("%Y%m%dZ%H%M")
 
-        forecast_records = app.request_popularity_tracker.top_requests(prod=prod, endpoint="forecast", limit=limit)
-        timeseries_records = app.request_popularity_tracker.top_requests(prod=prod, endpoint="timeseries", limit=limit)
+        forecast_records = services.popularity.top_requests(
+            prod=prod, endpoint="forecast", limit=limit
+        )
+        timeseries_records = services.popularity.top_requests(
+            prod=prod, endpoint="timeseries", limit=limit
+        )
 
         forecast_results = []
         for record in forecast_records:

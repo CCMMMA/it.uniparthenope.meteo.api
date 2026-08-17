@@ -272,6 +272,11 @@ Recommended sequence after a targeted data refresh:
 2. call the rebuild endpoint for the product
 3. compare live timings against production or pre-production using the pytest live suite
 
+Both operations use the application-owned popularity tracker and cache clients.
+Consequently, their effects are scoped to the same configured cache backends as
+normal traffic, and rebuild never silently enables a disabled disk or memory
+layer.
+
 ### Swagger loads but endpoints error
 
 Check:

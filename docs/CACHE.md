@@ -363,12 +363,17 @@ The invalidate endpoint:
 - removes the per-hour `modelOutput(...)` JSON cache files under `CACHE_JSON`
 - removes matching top-level forecast and time-series cache entries from memcache and disk cache
 - scopes the work to one product/place and one time window
+- resolves the meteo service, both cache layers, and the persisted popularity
+  tracker from the active Flask application's runtime-service container
 
 The rebuild endpoint:
 
 - looks up the most popular forecast and time-series signatures for the selected product
 - rebuilds them for the requested start date and hour window
 - uses the popularity tracker so operators can warm the caches that matter most first
+- writes through the configured disk and memory layers using the same canonical
+  keys as the public forecast and time-series handlers; disabled cache layers
+  remain disabled during operational warming
 
 Examples:
 

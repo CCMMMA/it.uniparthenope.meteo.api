@@ -57,7 +57,7 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/products/{prod}/forecast/{place}/plot/alt` | Runtime meteo service plus request-scoped place lookup using `current_app.config` | Migrated; localized place-name and response contracts preserved |
 | `/products/{prod}/forecast/{place}/map/image` | Runtime meteo service and memory cache | Migrated; legacy PNG compatibility contract preserved without per-request service construction |
 | `/products/{prod}/forecast/{place}/plot` | Runtime meteo service plus memory and disk caches | Migrated; JSON/inline response behavior and fallback URL preserved, with disk-hit promotion added |
-| Cache-maintenance product routes | Transitional module globals | Pending cache-sensitive migration |
+| `/products/{prod}/invalidate/{place}/` and `/products/{prod}/rebuild/` | Runtime meteo service, caches, popularity tracker, and application config | Migrated together; canonical-key invalidation and popularity-driven warming preserved |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.

@@ -1130,10 +1130,20 @@ def test_invalidate_endpoint_removes_matching_cache_entries(client, app_module, 
     cache_dir = tmp_path / "model-cache"
     cache_dir.mkdir()
 
-    monkeypatch.setattr(app_module, "request_popularity_tracker", tracker)
-    monkeypatch.setattr(app_module, "diskcache", DeletingDiskCache())
+    deleting_disk_cache = DeletingDiskCache()
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            disk_cache=deleting_disk_cache,
+            disk_cache_enabled=True,
+            popularity=tracker,
+        ),
+    )
     monkeypatch.setattr(
-        app_module.meteo_services,
+        services.meteo,
         "_model_output_cache_path",
         lambda prod, place, timeref: str(cache_dir / f"{prod}_{place}_{timeref}.json"),
     )
@@ -1150,6 +1160,7 @@ def test_invalidate_endpoint_removes_matching_cache_entries(client, app_module, 
     assert payload["deleted_model_output_files"] == 2
     assert payload["matched_popular_requests"] == 2
     assert len(deleted_memcache_keys) == 2
+    assert len(deleting_disk_cache.deleted) == 2
 
 
 def test_rebuild_endpoint_warms_popular_requests(client, app_module, monkeypatch):
@@ -1179,7 +1190,12 @@ def test_rebuild_endpoint_warms_popular_requests(client, app_module, monkeypatch
     warmed_forecasts = []
     warmed_timeseries = []
 
-    monkeypatch.setattr(app_module, "request_popularity_tracker", tracker)
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, popularity=tracker),
+    )
     monkeypatch.setattr(
         ns_products,
         "_warm_forecast_cache",
@@ -1202,6 +1218,87 @@ def test_rebuild_endpoint_warms_popular_requests(client, app_module, monkeypatch
     assert payload["timeseries_rebuilt"] == 1
     assert warmed_forecasts == [("wrf5", "com63049", "20260413Z0000"), ("wrf5", "com63049", "20260413Z0100")]
     assert warmed_timeseries == [("wrf5", "ca001", "20260413Z0000", 2, 3)]
+
+
+def test_cache_warm_helpers_honor_runtime_cache_enablement(
+    app_module, monkeypatch
+):
+    """Ensure operational warming never enables a configured-off cache layer."""
+    import apis.namespace_products as ns_products
+
+    events = []
+
+    class RecordingMeteo(FakeMeteoServices):
+        def modelOutput(self, params, use_disk_cached=True):
+            events.append(("forecast-source", use_disk_cached))
+            return super().modelOutput(params, use_disk_cached=use_disk_cached)
+
+        def timeseries(self, params):
+            events.append(("timeseries-source",))
+            return super().timeseries(params)
+
+    class RecordingDiskCache:
+        def set(
+            self, request, res, type_file="plot", flag_diskcache=True,
+            cache_key_source=None,
+        ):
+            events.append(("disk-set", flag_diskcache, cache_key_source))
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=object(),
+            memory_cache_enabled=False,
+            disk_cache=RecordingDiskCache(),
+            disk_cache_enabled=False,
+            meteo=RecordingMeteo(app_module.application.config),
+        ),
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "set_resource",
+        lambda request, response, cache, enabled, ttl, cache_key_override=None: events.append(
+            ("memory-set", enabled, cache_key_override)
+        ),
+    )
+
+    assert not hasattr(ns_products, "app")
+    with app_module.application.app_context():
+        forecast_result = ns_products._warm_forecast_cache(
+            "wrf5",
+            "com63049",
+            {
+                "prod": "wrf5",
+                "place": "com63049",
+                "date": "20260413Z1200",
+                "filter": None,
+                "opt": "",
+            },
+        )
+        timeseries_result = ns_products._warm_timeseries_cache(
+            "wrf5",
+            "com63049",
+            {
+                "prod": "wrf5",
+                "place": "com63049",
+                "date": "20260413Z0000",
+                "hours": 2,
+                "step": 1,
+                "opt": "",
+            },
+        )
+
+    assert forecast_result["status"] == "ok"
+    assert timeseries_result["status"] == "ok"
+    assert events[0] == ("forecast-source", False)
+    assert events[1][0:2] == ("disk-set", False)
+    assert events[2][0:2] == ("memory-set", False)
+    assert events[3] == ("timeseries-source",)
+    assert events[4][0:2] == ("disk-set", False)
+    assert events[5][0:2] == ("memory-set", False)
 
 
 def test_timeseries_json_and_csv_share_cache_payload(client, app_module, monkeypatch):
