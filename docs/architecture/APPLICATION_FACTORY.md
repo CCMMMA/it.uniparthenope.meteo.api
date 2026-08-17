@@ -47,6 +47,8 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/v2/basemaps`, `/v2/layers`, `/v2/maps` | Static module data | Reviewed; no application dependency |
 | `/places/*` | Runtime memory/disk caches plus `current_app.config` | Migrated; cache order and response contracts preserved |
 | `/apps/owm/*` | Runtime caches and injected long-lived tile service | Migrated; disk-hit promotion and worker reuse preserved |
+| `/products` metadata and availability routes | `current_app.extensions["meteo_api"].meteo` | Migrated; payload contracts preserved |
+| Forecast, render, GRIB, time-series, and cache-maintenance product routes | Transitional module globals | Pending cache-sensitive migrations |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.

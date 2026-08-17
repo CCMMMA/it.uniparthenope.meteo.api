@@ -16,7 +16,7 @@ import base64
 import os
 from types import SimpleNamespace
 from flask_restx import Namespace, Resource
-from flask import jsonify, Response, make_response, request, send_from_directory
+from flask import current_app, jsonify, Response, make_response, request, send_from_directory
 from datetime import datetime, timedelta
 
 from core.Logger import logger
@@ -25,8 +25,14 @@ from core.MemcachedMethodHandlers import delete_resource, get_resource, set_reso
 from core.MeteoServices import MeteoServices, csvfy
 from core.Places import Places
 from core.MakeArchivePaths import MakeArchivePaths
+from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
 
 api = Namespace('products', description='Forecast products, plots, time series, GRIB exports, legends, and static product assets.')
+
+
+def _runtime_services():
+    """Return composed dependencies for incrementally migrated product handlers."""
+    return current_app.extensions[RUNTIME_SERVICES_EXTENSION]
 
 
 def _cache_request_with_default_date():
@@ -196,7 +202,7 @@ class Products(Resource):
         Example:
         `GET /products`
         """
-        res = app.meteo_services.getProds()
+        res = _runtime_services().meteo.getProds()
         return jsonify(products=res)
 
 # TESTED AND WORKING - NO CACHE USE 
@@ -218,7 +224,7 @@ class ProductsAvailable(Resource):
             'offset_post': 0,
             'date': None
         })
-        res = app.meteo_services.getProductAvail(params)
+        res = _runtime_services().meteo.getProductAvail(params)
         return jsonify(avail=res)
 
 
@@ -242,7 +248,7 @@ class ProductsAvailableCalendar(Resource):
             'timeZone': None,
             "baseUrl": "https://app.meteo.uniparthenope.it/index.html?page=products"
         })
-        res = app.meteo_services.getProductAvailCalendar(params)
+        res = _runtime_services().meteo.getProductAvailCalendar(params)
         return jsonify(res)
 
 
@@ -258,7 +264,7 @@ class ProductsMap(Resource):
         Example:
         `GET /products/maps`
         """
-        res = app.meteo_services.getMaps()
+        res = _runtime_services().meteo.getMaps()
         return jsonify(maps=res)
 
 
@@ -274,7 +280,7 @@ class ProductsThemesByProd(Resource):
         Example:
         `GET /products/wrf5/maps/themes`
         """
-        res = app.meteo_services.getThemes(prod)
+        res = _runtime_services().meteo.getThemes(prod)
         return jsonify(themes=res)
 
 
@@ -294,7 +300,7 @@ class ProductsOutputsByProd(Resource):
         if prod is None or prod == "" or prod == "null":
             prod="wrf5"
 
-        res = app.meteo_services.getProds(prod)
+        res = _runtime_services().meteo.getProds(prod)
         return jsonify(outputs=res)
 
 
@@ -310,7 +316,7 @@ class ProductsOutputsByProd(Resource):
         Example:
         `GET /products/wrf5/outputs`
         """
-        res = app.meteo_services.getOutputs(prod)
+        res = _runtime_services().meteo.getOutputs(prod)
         return jsonify(outputs=res)
 
 
@@ -326,7 +332,7 @@ class ProductsFieldsByProd(Resource):
         Example:
         `GET /products/wrf5/fields`
         """
-        res = app.meteo_services.getFields(prod)
+        res = _runtime_services().meteo.getFields(prod)
         return jsonify(fields=res)
 
 # TESTED AND WORKING - USE MEMCACHE AND DISKCACHE 

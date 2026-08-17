@@ -461,6 +461,31 @@ def test_places_cold_lookup_preserves_cache_and_source_order(client, app_module,
     ]
 
 
+def test_product_metadata_routes_ignore_legacy_service_global(client, app_module, monkeypatch):
+    """Ensure migrated metadata handlers resolve MeteoServices from the container."""
+
+    class LegacyServiceTrap:
+        def __getattr__(self, name):
+            raise AssertionError(f"metadata handler used legacy service attribute {name}")
+
+    monkeypatch.setattr(app_module, "meteo_services", LegacyServiceTrap())
+
+    paths = [
+        "/products",
+        "/products/wrf5/com63049/avail",
+        "/products/wrf5/com63049/avail/calendar",
+        "/products/maps",
+        "/products/wrf5/maps/themes",
+        "/products/wrf5",
+        "/products/wrf5/outputs",
+        "/products/wrf5/fields",
+    ]
+
+    for path in paths:
+        response = client.get(path)
+        assert response.status_code == 200, path
+
+
 def test_v2_basemap_detail_legacy_alias_matches_canonical_route(client):
     """Ensure the legacy basemap/detail alias still resolves a named basemap."""
     response = client.get("/v2/basemap/detail?name=demo")
