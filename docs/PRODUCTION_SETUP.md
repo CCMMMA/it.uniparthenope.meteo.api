@@ -13,6 +13,12 @@ Related documents:
 
 This document describes a practical production setup for `it.uniparthenope.meteo.api`, including infrastructure dependencies, filesystem layout, configuration, container runtime expectations, validation, and rollout guidance.
 
+## Application bootstrap
+
+`app.create_app()` is the application factory and composition root. It creates the Flask application, loads `APP_SETTINGS`, initializes extensions, and constructs the reusable meteorological, GRIB, tile, cache, and popularity-tracking services.
+
+The WSGI contract remains backward compatible: `wsgi.py` exports the fully initialized `application` object, and existing uWSGI configuration does not need to change. Tests and future deployment tools may use `create_app()` when they require an independently constructed application.
+
 ## Required Services
 
 Prepare the following before starting the API:

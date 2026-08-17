@@ -11,6 +11,7 @@ import importlib
 import json
 import os
 import time
+from dataclasses import replace
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -337,16 +338,34 @@ def stub_api_dependencies(monkeypatch, app_module):
     fake_meteo_services = FakeMeteoServices(app_module.application.config)
     fake_grib_services = FakeGribServices()
     fake_tiles = FakeTiles()
+    fake_disk_cache = DummyDiskCache()
+    fake_popularity_tracker = FakePopularityTracker()
 
-    monkeypatch.setattr(app_module, "diskcache", DummyDiskCache())
+    monkeypatch.setattr(app_module, "diskcache", fake_disk_cache)
     monkeypatch.setattr(app_module, "cache", None)
     monkeypatch.setattr(app_module, "use_pymemcache", False)
     monkeypatch.setattr(app_module, "use_disk_cached", False)
-    monkeypatch.setattr(app_module, "request_popularity_tracker", FakePopularityTracker())
+    monkeypatch.setattr(app_module, "request_popularity_tracker", fake_popularity_tracker)
     monkeypatch.setattr(app_module, "meteo_services", fake_meteo_services)
     monkeypatch.setattr(app_module, "grib_services", fake_grib_services)
     monkeypatch.setattr(app_module, "tiles", fake_tiles)
     monkeypatch.setitem(app_module.application.config, "ENV", "test")
+    runtime_services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            runtime_services,
+            memory_cache=None,
+            memory_cache_enabled=False,
+            disk_cache=fake_disk_cache,
+            disk_cache_enabled=False,
+            meteo=fake_meteo_services,
+            grib=fake_grib_services,
+            tiles=fake_tiles,
+            popularity=fake_popularity_tracker,
+        ),
+    )
 
     for module in (ns_apps, ns_places, ns_products, ns_instruments):
         if hasattr(module, "get_resource"):
@@ -853,6 +872,21 @@ def test_api_v1_responses_identify_the_contract_version(client):
 
     assert response.status_code == 200
     assert response.headers["API-Version"] == "1"
+
+
+def test_application_factory_publishes_runtime_services(app_module):
+    """Ensure new handlers can resolve dependencies without importing module globals."""
+    import wsgi
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+
+    assert callable(app_module.create_app)
+    assert wsgi.application is app_module.application
+    assert services.meteo is app_module.meteo_services
+    assert services.grib is app_module.grib_services
+    assert services.tiles is app_module.tiles
+    assert services.disk_cache is app_module.diskcache
+    assert services.popularity is app_module.request_popularity_tracker
 
 
 def test_legacy_responses_are_unchanged_by_version_headers(client):

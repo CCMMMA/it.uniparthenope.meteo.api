@@ -9,6 +9,21 @@
 
 Preserve existing response envelopes, status codes, media types, and cache keys unless a versioned breaking change is explicitly intended.
 
+## Application and service access
+
+`app.create_app()` is the composition root: it loads deployment configuration, initializes Flask extensions, creates reusable runtime services, and publishes them under `current_app.extensions["meteo_api"]`.
+
+New handlers should obtain shared dependencies from that extension instead of importing the `app` module. For example:
+
+```python
+from flask import current_app
+
+services = current_app.extensions["meteo_api"]
+forecast = services.meteo.modelOutput(params)
+```
+
+The module-level names such as `app.meteo_services` and `app.diskcache` remain temporarily available for legacy handlers. They form a compatibility bridge, not the preferred extension point. Migrate them resource-by-resource so each change can retain explicit endpoint contract tests.
+
 ## Adding an endpoint
 
 1. Locate the closest namespace and copy its Flask-RESTX resource conventions.

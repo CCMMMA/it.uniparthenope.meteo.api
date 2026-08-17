@@ -12,61 +12,106 @@ from core.GribServices import GribServices
 from core.Tiles import Tiles
 from core.Logger import logger
 from core.ManageDiskCache import ManageDiskCache
-from core.Models import db 
+from core.Models import db
 from core.RequestPopularityTracker import RequestPopularityTracker
+from core.RuntimeServices import RuntimeServices
 
-application = Flask(__name__)
 
-# Load deployment settings before extensions are initialized.  Flask-SQLAlchemy
-# reads its connection settings during init_app(), so loading APP_SETTINGS later
-# made SQLALCHEMY_DATABASE_URI overrides ineffective.
-application.config.from_envvar('APP_SETTINGS', silent=False)
-application.config.setdefault(
-    'SQLALCHEMY_DATABASE_URI',
-    os.environ.get('DATABASE_URL', 'postgresql://user:password@postgres:5432/cnmost'),
-)
-application.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
+RUNTIME_SERVICES_EXTENSION = "meteo_api"
 
-db.init_app(application)
 
-CORS(application)
-api.init_app(application)
-register_version_response_headers(application)
+def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
+    """Construct reusable adapters and services from validated Flask configuration."""
+    memory_cache = None
+    memory_cache_enabled = True
 
-# logger.info("Test info log message")
-# logger.warning("Test warning log message")
-# logger.error("Test error log message")
+    try:
+        memory_cache = Client(
+            flask_application.config.get("MEMCACHED_SERVER", "memcached:11211"),
+            connect_timeout=0.2,
+            timeout=0.5,
+            no_delay=True,
+        )
+    except Exception as memcache_error:
+        logger.error("[*]Memcached Error : %s", memcache_error)
+        memory_cache_enabled = False
 
-# ------------------ Diskcached   - Local [ url - local file ] --------------------------
-use_disk_cached = True
-diskcache = ManageDiskCache(application.config['BASE_DISKCACHE'])
-diskcache_ttl = application.config['TTL_DISKCACHE']
-
-# ------------------ Pymemcache / Memcache - [url]-[res] ---------------
-cache = None
-use_pymemcache = True
-
-try:
-    cache = Client(
-        application.config.get('MEMCACHED_SERVER', 'memcached:11211'),
-        connect_timeout=0.2,
-        timeout=0.5,
-        no_delay=True,
+    disk_cache_enabled = True
+    disk_cache_ttl = flask_application.config["TTL_DISKCACHE"]
+    disk_cache = ManageDiskCache(flask_application.config["BASE_DISKCACHE"])
+    meteo = MeteoServices(flask_application.config)
+    grib = GribServices(flask_application.config)
+    tile_service = Tiles(flask_application.config)
+    popularity = RequestPopularityTracker(
+        flask_application.config.get(
+            "REQUEST_POPULARITY_PATH",
+            os.path.join(flask_application.config["BASE_DISKCACHE"], "request-popularity.json"),
+        ),
+        top_limit=flask_application.config.get("POPULAR_REQUESTS_LIMIT", 25),
+        flush_every=flask_application.config.get("REQUEST_POPULARITY_FLUSH_EVERY", 100),
+        flush_interval_seconds=flask_application.config.get(
+            "REQUEST_POPULARITY_FLUSH_INTERVAL", 10.0
+        ),
     )
-    # cache = Client([('172.18.0.10', 11211)])
-except Exception as memcache_error:
-    logger.error("[*]Memcached Error : %s", memcache_error)
-    use_pymemcache = False
+    return RuntimeServices(
+        memory_cache=memory_cache,
+        memory_cache_enabled=memory_cache_enabled,
+        disk_cache=disk_cache,
+        disk_cache_enabled=disk_cache_enabled,
+        disk_cache_ttl=disk_cache_ttl,
+        meteo=meteo,
+        grib=grib,
+        tiles=tile_service,
+        popularity=popularity,
+    )
 
-meteo_services = MeteoServices(application.config)
-grib_services = GribServices(application.config)
-tiles = Tiles(application.config)
-request_popularity_tracker = RequestPopularityTracker(
-    application.config.get(
-        "REQUEST_POPULARITY_PATH",
-        os.path.join(application.config["BASE_DISKCACHE"], "request-popularity.json"),
-    ),
-    top_limit=application.config.get("POPULAR_REQUESTS_LIMIT", 25),
-    flush_every=application.config.get("REQUEST_POPULARITY_FLUSH_EVERY", 100),
-    flush_interval_seconds=application.config.get("REQUEST_POPULARITY_FLUSH_INTERVAL", 10.0),
-)
+
+def _publish_legacy_globals(
+    flask_application: Flask, services: RuntimeServices
+) -> None:
+    """Keep existing handlers operational while they migrate to app extensions."""
+    global application
+    global cache, use_pymemcache
+    global diskcache, use_disk_cached, diskcache_ttl
+    global meteo_services, grib_services, tiles, request_popularity_tracker
+
+    application = flask_application
+    cache = services.memory_cache
+    use_pymemcache = services.memory_cache_enabled
+    diskcache = services.disk_cache
+    use_disk_cached = services.disk_cache_enabled
+    diskcache_ttl = services.disk_cache_ttl
+    meteo_services = services.meteo
+    grib_services = services.grib
+    tiles = services.tiles
+    request_popularity_tracker = services.popularity
+
+
+def create_app() -> Flask:
+    """Create and fully initialize one meteorological API application."""
+    flask_application = Flask(__name__)
+
+    # Flask-SQLAlchemy reads its connection settings during init_app(), so the
+    # deployment configuration must be loaded before any extension is initialized.
+    flask_application.config.from_envvar("APP_SETTINGS", silent=False)
+    flask_application.config.setdefault(
+        "SQLALCHEMY_DATABASE_URI",
+        os.environ.get(
+            "DATABASE_URL", "postgresql://user:password@postgres:5432/cnmost"
+        ),
+    )
+    flask_application.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+
+    db.init_app(flask_application)
+    CORS(flask_application)
+    api.init_app(flask_application)
+    register_version_response_headers(flask_application)
+
+    services = _create_runtime_services(flask_application)
+    flask_application.extensions[RUNTIME_SERVICES_EXTENSION] = services
+    _publish_legacy_globals(flask_application, services)
+    return flask_application
+
+
+# Preserve the established ``from app import application`` deployment contract.
+application = create_app()
