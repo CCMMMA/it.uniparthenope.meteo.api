@@ -791,6 +791,107 @@ def test_inactive_timeseries_chart_route_remains_unregistered(client):
     assert response.status_code == 404
 
 
+def test_forecast_plot_uses_runtime_cache_chain_and_reuses_payload(
+    client, app_module, monkeypatch
+):
+    """Ensure plot metadata uses memory, disk, then one runtime-service render."""
+    import apis.namespace_products as ns_products
+
+    events = []
+    memory_values = {}
+    memory_cache = object()
+
+    class RecordingMeteo(FakeMeteoServices):
+        def ModelPlotUrl(self, use_disk_cached, params):
+            events.append(
+                ("render", use_disk_cached, params["prod"], params["place"])
+            )
+            return super().ModelPlotUrl(use_disk_cached, params)
+
+    class RecordingDiskCache:
+        def get(self, request, ttl, flag_diskcache=True):
+            events.append(("disk-get", ttl, flag_diskcache))
+            return None
+
+        def set(self, request, response, response_type, flag_diskcache=True):
+            events.append(("disk-set", response_type, flag_diskcache))
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(
+            services,
+            memory_cache=memory_cache,
+            memory_cache_enabled=True,
+            disk_cache=RecordingDiskCache(),
+            disk_cache_enabled=True,
+            disk_cache_ttl=987,
+            meteo=RecordingMeteo(app_module.application.config),
+        ),
+    )
+    monkeypatch.setattr(
+        ns_products,
+        "get_resource",
+        lambda request, cache, enabled: events.append(
+            ("memory-get", cache is memory_cache, enabled)
+        ) or memory_values.get(request.url),
+    )
+
+    def remember(request, response, cache, enabled, ttl):
+        events.append(("memory-set", cache is memory_cache, enabled, ttl))
+        memory_values[request.url] = response
+
+    monkeypatch.setattr(ns_products, "set_resource", remember)
+
+    class LegacyMeteoMustNotRun:
+        def __getattr__(self, name):
+            raise AssertionError(f"legacy meteo global was used for {name}")
+
+    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
+
+    path = "/products/wrf5/forecast/com63049/plot?date=20260413Z1200"
+    first = client.get(path)
+    second = client.get(path)
+
+    assert first.status_code == 200
+    assert second.get_json() == first.get_json()
+    assert first.get_json()["map"]["link"].endswith("/wrf5/com63049.png")
+    assert events == [
+        ("memory-get", True, True),
+        ("disk-get", 987, True),
+        ("render", True, "wrf5", "com63049"),
+        ("disk-set", "json", True),
+        ("memory-set", True, True, app_module.application.config["TTL_MEMCACHED"]),
+        ("memory-get", True, True),
+    ]
+
+
+def test_forecast_plot_error_uses_configured_fallback_url(
+    client, app_module, monkeypatch
+):
+    """Ensure plot generation failures preserve the configured fallback payload."""
+
+    class FailingMeteo(FakeMeteoServices):
+        def ModelPlotUrl(self, use_disk_cached, params):
+            return ({"code": 503, "message": "plot unavailable"}, None)
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, meteo=FailingMeteo(app_module.application.config)),
+    )
+
+    response = client.get("/products/wrf5/forecast/com63049/plot")
+    payload = response.get_json()
+
+    assert response.status_code == 200
+    assert payload["result"] == "error"
+    assert payload["details"]["code"] == 503
+    assert payload["map"]["link"] == app_module.application.config["NOIMAGE_URL"]
+
+
 def test_timeseries_csv_endpoint(client, invocation_recorder):
     """Ensure the CSV time-series endpoint returns CSV content."""
     started = time.perf_counter()

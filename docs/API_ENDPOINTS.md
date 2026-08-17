@@ -596,6 +596,15 @@ Typical response:
 - JSON with map links, image names, and optional forecast fields
 - or a PNG response if `dry=false`
 
+Cache and failure semantics:
+
+- Requests resolve memory cache, disk cache, and the shared plot service in
+  that order. Disk hits are promoted to memory to avoid repeated filesystem
+  reads and JSON decoding.
+- If plot generation reports an error, the response retains `result: error`,
+  includes the service details, and exposes the configured `NOIMAGE_URL` as the
+  fallback map link.
+
 Examples:
 
 ```http

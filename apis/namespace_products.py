@@ -673,12 +673,19 @@ class ProductsForecastMapByProdAndPlace(Resource):
         `GET /products/ww33/forecast/ca001/plot`
         """
         
-        res = get_resource(request, app.cache, app.use_pymemcache)
+        services = _runtime_services()
+        res = get_resource(
+            request, services.memory_cache, services.memory_cache_enabled
+        )
 
         # Check Memcache
         if res is None:
 
-            res = app.diskcache.get(request, app.diskcache_ttl, app.use_disk_cached)
+            res = services.disk_cache.get(
+                request,
+                services.disk_cache_ttl,
+                flag_diskcache=services.disk_cache_enabled,
+            )
 
             # Check Disckcache
             if res is None:
@@ -697,14 +704,16 @@ class ProductsForecastMapByProdAndPlace(Resource):
                     'dry': 'true',
                     'opt': ""
                 })
-                (mapData, imageName) = app.meteo_services.ModelPlotUrl(app.use_disk_cached, params)
+                (mapData, imageName) = services.meteo.ModelPlotUrl(
+                    services.disk_cache_enabled, params
+                )
 
                 if 'code' in mapData:
                     return jsonify({
                         "details": mapData,
                         "result": "error",
                         "map": {
-                            "link": app.application.config['NOIMAGE_URL']
+                            "link": current_app.config['NOIMAGE_URL']
                         }
                     })
                 res = {
@@ -713,7 +722,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 }
 
                 if 'data' in params['opt']:
-                    forecastData = app.meteo_services.modelOutput(params)
+                    forecastData = services.meteo.modelOutput(params)
                     if 'result' in forecastData and 'ok' in forecastData['result']:
                         res['forecast'] = forecastData['forecast']
                         if 'place' in params['opt']:
@@ -722,96 +731,34 @@ class ProductsForecastMapByProdAndPlace(Resource):
                             res['fields'] = forecastData['fields']
 
                 # Save on Diskcache
-                app.diskcache.set(request, res, 'json')
+                services.disk_cache.set(
+                    request,
+                    res,
+                    'json',
+                    flag_diskcache=services.disk_cache_enabled,
+                )
 
-                # Save on Memcache
-                set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
+            # Promote both newly generated values and disk hits into memory.
+            set_resource(
+                request,
+                res,
+                services.memory_cache,
+                services.memory_cache_enabled,
+                current_app.config['TTL_MEMCACHED'],
+            )
         
         else:
            res = load_cached_json(res, {})
 
         params = get_params({'dry': 'true'})
         if 'dry' in params and params['dry'] is not None and params['dry'].lower() == "false":
-            response = app.application.make_response(res['map'])
+            response = current_app.make_response(res['map'])
             # print(str(res['map']))
             response.headers['Content-Type'] = 'image/png'
             # response.headers['Content-Disposition'] = 'attachment; filename='+res['imageName']
             return response
         return jsonify(res)
 
-
-'''
-# TESTED AND WORKING -- USE MEMCACHE -- OLD VERSION 
-@api.route('/<string:prod>/forecast/<string:place>/plot')
-class ProductsForecastMapByProdAndPlace(Resource):
-    @api.doc()
-    def get(self, prod, place):
-        """Returns the forecast plot as image or url given a product code and a place
-        :example: /products/ww33/forecast/ca001/plot
-        :param prod: The code of the product.
-        :type prod: str.
-        :param place: The code of the place.
-        :type place: str.
-        :returns:  json -- the return josn.
-        -------------------------------------------------------------------------------------------
-        """
-        # TODO: hard-code -- to remove 
-        if prod == 'rdr1':
-            return None
-
-        res = get_resource(request, app.cache, app.use_pymemcache)
-        if res is None:
-            params = get_params({
-                'id': place,
-                'filter': None,
-                'place': place,
-                'prod': prod,
-                'output': 'gen',
-                'date': None,
-                'mode': 'grads',
-                'run': None,
-                'width': None,
-                'height': None,
-                'dry': 'true',
-                'opt': ""
-            })
-            (mapData, imageName) = app.meteo_services.ModelPlotUrl(app.use_disk_cached, params)
-
-            if 'code' in mapData:
-                return jsonify({
-                    "details": mapData,
-                    "result": "error",
-                    "map": {
-                        "link": app.application.config['NOIMAGE_URL']
-                    }
-                })
-            res = {
-                'map': mapData,
-                'imageName': imageName
-            }
-
-            if 'data' in params['opt']:
-                forecastData = app.meteo_services.modelOutput(params)
-                if 'result' in forecastData and 'ok' in forecastData['result']:
-                    res['forecast'] = forecastData['forecast']
-                    if 'place' in params['opt']:
-                        res['place'] = forecastData['place']
-                    if 'place' in params['opt']:
-                        res['fields'] = forecastData['fields']
-
-            set_resource(request, res, app.cache, app.use_pymemcache, app.application.config['TTL_MEMCACHED'])
-        else:
-           res = eval(res)
-
-        params = get_params({'dry': 'true'})
-        if 'dry' in params and params['dry'] is not None and params['dry'].lower() == "false":
-            response = app.application.make_response(res['map'])
-            # print(str(res['map']))
-            response.headers['Content-Type'] = 'image/png'
-            # response.headers['Content-Disposition'] = 'attachment; filename='+res['imageName']
-            return response
-        return jsonify(res)
-'''
 
 # TESTED AND WORKING -- USE MEMCACHE 
 @api.route('/<string:prod>/forecast/legend/<string:position>/<string:output>')
