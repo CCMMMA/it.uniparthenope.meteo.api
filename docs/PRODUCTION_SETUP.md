@@ -89,6 +89,21 @@ Also verify hostnames and credentials for:
 - MongoDB
 - memcached
 
+### API-key database schema
+
+Before enabling API-key management in an environment, back up PostgreSQL and
+apply the checked-in schema migration exactly once:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/001_api_keys.sql
+```
+
+The migration creates request, key, and lifecycle-audit tables. Application
+startup deliberately does not call `db.create_all()` in production: schema
+changes remain an explicit, reviewable deployment operation. Deploy the domain
+code before any future authentication middleware, verify the tables and indexes,
+and keep existing endpoint enforcement disabled during this checkpoint.
+
 ## Container Build
 
 The repository ships a [Dockerfile](../Dockerfile) that:

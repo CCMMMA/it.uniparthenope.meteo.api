@@ -20,6 +20,7 @@ The repository includes both operational documentation for deployers and pedagog
 - Reuse cached hourly slices and shared JSON/CSV payloads for multi-step endpoints such as `timeseries`.
 - Parallelize cold multi-time-step extraction with multiprocessing while keeping cache-hit reuse lightweight.
 - Track the most popular forecast and time-series request signatures to drive targeted cache rebuilds.
+- Provide a persistent, scope-aware API-key lifecycle domain with salted scrypt hashing and auditable rotation/revocation.
 - Generate or proxy image products, including legends, plots, and Skew-T diagrams.
 
 ## API Compatibility
@@ -88,6 +89,8 @@ for the currently available versioned resource mappings.
 - Live API comparison and timing workflow: [docs/TESTING.md](docs/TESTING.md)
 - Endpoint catalog: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
 - API compatibility matrix: [docs/api_compatibility_matrix.md](docs/api_compatibility_matrix.md)
+- API v1 migration guide: [docs/API_V1_MIGRATION.md](docs/API_V1_MIGRATION.md)
+- API-key and endpoint access policy: [docs/API_KEY_POLICY.md](docs/API_KEY_POLICY.md)
 - Step-by-step Python tutorial: [docs/PYTHON_API_TUTORIAL.md](docs/PYTHON_API_TUTORIAL.md)
 - Step-by-step Android/Kotlin tutorial: [docs/ANDROID_KOTLIN_API_TUTORIAL.md](docs/ANDROID_KOTLIN_API_TUTORIAL.md)
 - Step-by-step iOS/Swift tutorial: [docs/IOS_SWIFT_API_TUTORIAL.md](docs/IOS_SWIFT_API_TUTORIAL.md)

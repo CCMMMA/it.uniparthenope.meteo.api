@@ -202,6 +202,34 @@ Use a repeatable update workflow:
 
 ## Usage Guidance
 
+### API-key lifecycle foundation
+
+The application runtime now contains an `ApiKeyService` implementing request,
+issuance, validation, immediate rotation, and revocation. No existing HTTP route
+requires a key yet. This separation lets operators deploy and verify the schema
+before authentication changes affect clients.
+
+Operational rules:
+
+- apply `migrations/001_api_keys.sql` before using the service;
+- display issued or rotated plaintext credentials exactly once over an approved
+  secure channel;
+- log only the non-secret `key_prefix`, never the full credential or hash;
+- grant only a subset of the scopes the consumer requested;
+- rotate on suspected disclosure and revoke keys whose ownership or purpose is
+  no longer valid; and
+- retain audit records according to the institutional security policy.
+
+The authoritative endpoint classification, scope catalogue, credential format,
+and future HTTP error contract are defined in
+[API_KEY_POLICY.md](API_KEY_POLICY.md).
+
+Legacy authentication is currently observation-only. Operators should aggregate
+`Legacy API-key observation` log records by non-secret prefix, route family, and
+outcome. An `invalid` or `unavailable` observation never blocks the request in
+this phase; alerting must therefore be informational rather than treated as a
+client outage.
+
 ### Swagger / OpenAPI
 
 Flask-RESTX exposes a Swagger interface for interactive endpoint discovery and testing at the application root path `/`. This should be the primary manual exploration entrypoint for developers and integrators.

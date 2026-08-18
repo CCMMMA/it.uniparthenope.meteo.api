@@ -6,6 +6,7 @@ from flask import Flask
 from flask_cors import CORS
 from apis import api
 from apis.versioning import register_version_response_headers
+from apis.authentication import register_api_key_observation
 from pymemcache.client.base import Client
 from core.MeteoServices import MeteoServices
 from core.GribServices import GribServices
@@ -15,6 +16,7 @@ from core.ManageDiskCache import ManageDiskCache
 from core.Models import db
 from core.RequestPopularityTracker import RequestPopularityTracker
 from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION, RuntimeServices
+from core.ApiKeyService import ApiKeyService
 
 
 def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
@@ -50,6 +52,7 @@ def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
             "REQUEST_POPULARITY_FLUSH_INTERVAL", 10.0
         ),
     )
+    api_keys = ApiKeyService(flask_application.config)
     return RuntimeServices(
         memory_cache=memory_cache,
         memory_cache_enabled=memory_cache_enabled,
@@ -60,6 +63,7 @@ def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
         grib=grib,
         tiles=tile_service,
         popularity=popularity,
+        api_keys=api_keys,
     )
 
 
@@ -106,6 +110,7 @@ def create_app() -> Flask:
 
     services = _create_runtime_services(flask_application)
     flask_application.extensions[RUNTIME_SERVICES_EXTENSION] = services
+    register_api_key_observation(flask_application)
     _publish_legacy_globals(flask_application, services)
     return flask_application
 

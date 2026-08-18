@@ -16,10 +16,16 @@ The refactoring must preserve the established WSGI symbol and all endpoint behav
 
 1. creates the Flask object;
 2. loads deployment configuration;
-3. initializes database, CORS, RESTX, and version-response behavior;
+3. initializes database, CORS, RESTX, version-response behavior, and legacy
+   API-key observation middleware;
 4. constructs long-lived runtime services;
 5. stores one typed `RuntimeServices` container in `application.extensions["meteo_api"]`; and
 6. publishes compatibility globals for handlers that have not yet migrated.
+
+The runtime container also owns a stateless `ApiKeyService`. Its relational
+session is application-scoped through Flask-SQLAlchemy; credential secrets are
+generated only during lifecycle operations and are never retained by the
+container.
 
 The module still evaluates `application = create_app()` so `from app import application` and `wsgi:application` remain valid.
 

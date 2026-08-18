@@ -21,6 +21,14 @@ Related documents:
 - Python tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
 - Android tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 - iOS tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
+- API-key and endpoint access policy: [API_KEY_POLICY.md](API_KEY_POLICY.md)
+
+API-key lifecycle services and persistence are implemented, but no key-management
+HTTP endpoints or enforcing authentication middleware are published in this
+checkpoint. Legacy routes do accept optional observation-only `X-API-Key`
+credentials: validation never blocks the request, and a presented key receives
+an `API-Key-Observation` diagnostic header. Endpoint access behavior remains
+unchanged.
 
 ## Common Notes
 

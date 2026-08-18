@@ -18,6 +18,8 @@ from types import SimpleNamespace
 import pytest
 from flask import Response
 
+from core.ApiKeyService import ApiKeyValidationError
+
 from tests.api_cases import AUTH_HEADERS, IMAGE_CASES, JSON_GET_CASES
 
 
@@ -1682,6 +1684,7 @@ def test_application_factory_publishes_runtime_services(app_module):
     assert services.tiles is app_module.tiles
     assert services.disk_cache is app_module.diskcache
     assert services.popularity is app_module.request_popularity_tracker
+    assert services.api_keys is not None
 
 
 def test_legal_handlers_use_the_shared_runtime_service(client, app_module, monkeypatch):
@@ -1747,6 +1750,111 @@ def test_legacy_responses_are_unchanged_by_version_headers(client):
 
     assert response.status_code == 200
     assert "API-Version" not in response.headers
+
+
+def test_legacy_api_key_observation_validates_scope_without_enforcement(
+    client, app_module, monkeypatch
+):
+    """Ensure a valid observed key identifies a legacy caller without blocking."""
+    calls = []
+
+    class ObservingApiKeys:
+        def validate(self, plaintext, required_scopes=(), record_usage=False):
+            calls.append((plaintext, required_scopes, record_usage))
+            return SimpleNamespace(key_prefix="meteo_test_public")
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, api_keys=ObservingApiKeys()),
+    )
+
+    response = client.get(
+        "/products/wrf5/forecast/com63049",
+        headers={"X-API-Key": "meteo_test_public.a-secure-observation-secret-value"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["result"] == "ok"
+    assert response.headers["API-Key-Observation"] == "valid"
+    assert calls == [
+        (
+            "meteo_test_public.a-secure-observation-secret-value",
+            ("forecast:read",),
+            False,
+        )
+    ]
+
+
+def test_legacy_api_key_observation_never_rejects_invalid_or_unavailable_keys(
+    client, app_module, monkeypatch
+):
+    """Ensure observation failures preserve legacy status and response payloads."""
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+
+    class InvalidApiKeys:
+        def validate(self, *args, **kwargs):
+            raise ApiKeyValidationError("invalid API key")
+
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, api_keys=InvalidApiKeys()),
+    )
+    invalid = client.get(
+        "/version",
+        headers={"X-API-Key": "meteo_test_unknown.a-secure-observation-secret-value"},
+    )
+
+    class UnavailableApiKeys:
+        def validate(self, *args, **kwargs):
+            raise RuntimeError("credential database unavailable")
+
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, api_keys=UnavailableApiKeys()),
+    )
+    unavailable = client.get(
+        "/version",
+        headers={"X-API-Key": "meteo_test_unknown.a-secure-observation-secret-value"},
+    )
+
+    assert invalid.status_code == 200
+    assert invalid.get_json()["environment"] == "test"
+    assert invalid.headers["API-Key-Observation"] == "invalid"
+    assert unavailable.status_code == 200
+    assert unavailable.get_json() == invalid.get_json()
+    assert unavailable.headers["API-Key-Observation"] == "unavailable"
+
+
+def test_api_key_observation_is_legacy_only_and_absent_keys_add_no_header(
+    client, app_module, monkeypatch
+):
+    """Ensure v1 and anonymous legacy traffic remain outside observation output."""
+
+    class MustNotValidate:
+        def validate(self, *args, **kwargs):
+            raise AssertionError("v1 observation unexpectedly ran")
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(
+        app_module.application.extensions,
+        app_module.RUNTIME_SERVICES_EXTENSION,
+        replace(services, api_keys=MustNotValidate()),
+    )
+
+    versioned = client.get(
+        "/api/v1/products",
+        headers={"X-API-Key": "meteo_test_public.a-secure-observation-secret-value"},
+    )
+    anonymous_legacy = client.get("/version")
+
+    assert versioned.status_code == 200
+    assert "API-Key-Observation" not in versioned.headers
+    assert anonymous_legacy.status_code == 200
+    assert "API-Key-Observation" not in anonymous_legacy.headers
 
 
 def test_apps_sais_index_is_not_registered(client):

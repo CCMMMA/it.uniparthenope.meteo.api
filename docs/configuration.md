@@ -56,6 +56,14 @@ pass `config=` when invoking `MakeArchivePaths.makePath` directly.
 | `TIMESERIES_PARALLEL_MODE` | Multi-slice execution mode; the current production example uses `processes`. |
 | `POPULAR_REQUESTS_LIMIT` | Maximum hot request signatures selected for rebuild. |
 | `REQUEST_POPULARITY_FLUSH_EVERY` | Event count that triggers popularity persistence. |
+| `API_KEY_ENVIRONMENT` | Non-secret environment label embedded in issued key prefixes; defaults to `ENV`. |
+| `API_KEY_DEFAULT_LIFETIME_DAYS` | Default positive credential lifetime; defaults to 365 days. |
+| `API_KEY_ALLOWED_SCOPES` | Optional iterable overriding the documented scope allow-list. |
+| `API_KEY_SCRYPT_N`, `API_KEY_SCRYPT_R`, `API_KEY_SCRYPT_P` | Scrypt work factors. `N` must be a power of two and at least 16384. |
+
+Do not reduce scrypt work factors after issuing credentials. Validation accepts
+stored parameters only up to the configured security ceiling, preventing a
+tampered database record from requesting unbounded hashing work.
 | `REQUEST_POPULARITY_FLUSH_INTERVAL` | Maximum persistence interval in seconds. |
 
 Increasing workers can multiply memory and storage pressure. Benchmark with realistic NetCDF files and concurrent requests. Read [CACHE.md](CACHE.md) before changing TTL, cache-key, popularity, invalidation, or rebuild behavior.

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from core.GribServices import GribServices
+from core.ApiKeyService import ApiKeyService
 from core.ManageDiskCache import ManageDiskCache
 from core.MeteoServices import MeteoServices
 from core.RequestPopularityTracker import RequestPopularityTracker
@@ -28,3 +29,4 @@ class RuntimeServices:
     grib: GribServices
     tiles: Tiles
     popularity: RequestPopularityTracker
+    api_keys: ApiKeyService
