@@ -17,6 +17,23 @@ Related documents:
 - Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
 - Cache guide: [CACHE.md](CACHE.md)
 
+## GitHub CI/CD
+
+The `.github/workflows/ci-cd.yml` workflow runs for pull requests targeting
+`main`, pushes to `main`, version tags matching `v*`, and manual dispatches.
+It installs the complete application dependency set on Python 3.8, validates
+Python syntax, and runs the full offline suite with `pytest`. The JUnit report
+is retained as a workflow artifact for 14 days, including on failed runs.
+
+After the test job succeeds, pushes to `main` and version tags publish the
+Docker image to GitHub Container Registry at
+`ghcr.io/<repository-owner>/<repository-name>`. Main-branch images receive
+`latest` and commit-SHA tags; version tags also produce a matching image tag.
+Pull requests and manual runs never publish an image.
+
+Live endpoint tests remain opt-in because they require network access and may
+exercise a deployed service. They are not part of the default CI gate.
+
 ## What Is Tested
 
 The endpoint suite lives in:
