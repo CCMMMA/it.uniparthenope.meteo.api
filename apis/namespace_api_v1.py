@@ -38,6 +38,7 @@ class ApiV1Discovery(Resource):
                 "links": {
                     "documentation": "/",
                     "openapi": "/swagger.json",
+                    "products": f"{CURRENT_API_BASE_PATH}/products",
                 },
             }
         )

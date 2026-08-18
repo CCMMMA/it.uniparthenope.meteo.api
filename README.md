@@ -13,6 +13,7 @@ The repository includes both operational documentation for deployers and pedagog
 - Publish forecast, time-series, plot, legend, and GRIB-oriented endpoints for supported products.
 - Serve place search and lookup APIs backed by the configured metadata store.
 - Expose version, legal, instruments, webcam, and application-support endpoints.
+- Publish governed product discovery and metadata resources under `/api/v1/products` while preserving legacy response compatibility.
 - Provide retained `v2` map metadata and Slurm APIs during the versioned migration.
 - Cache expensive responses through memcached and on-disk cache layers.
 - Promote OWM tile disk-cache hits into memcached and reuse a bounded tile worker pool across requests.
@@ -39,7 +40,8 @@ cleanup, the following legacy integrations are no longer registered and return
 Clients should discover the active contract through the generated Swagger UI
 and the endpoint catalog rather than relying on these historical routes. See
 [docs/api_compatibility_matrix.md](docs/api_compatibility_matrix.md) for tracked
-compatibility details.
+compatibility details and [docs/API_V1_MIGRATION.md](docs/API_V1_MIGRATION.md)
+for the currently available versioned resource mappings.
 
 ## Architecture Overview
 

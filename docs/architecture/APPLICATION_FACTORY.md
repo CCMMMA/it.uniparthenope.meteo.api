@@ -58,6 +58,7 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/products/{prod}/forecast/{place}/map/image` | Runtime meteo service and memory cache | Migrated; legacy PNG compatibility contract preserved without per-request service construction |
 | `/products/{prod}/forecast/{place}/plot` | Runtime meteo service plus memory and disk caches | Migrated; JSON/inline response behavior and fallback URL preserved, with disk-hit promotion added |
 | `/products/{prod}/invalidate/{place}/` and `/products/{prod}/rebuild/` | Runtime meteo service, caches, popularity tracker, and application config | Migrated together; canonical-key invalidation and popularity-driven warming preserved |
+| `/api/v1/products/*` metadata and availability | Runtime meteo service | First operational v1 family; additive paths with explicit legacy response-parity tests |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
 Archive-path construction is also dependency-explicit. `MakeArchivePaths.makePath`

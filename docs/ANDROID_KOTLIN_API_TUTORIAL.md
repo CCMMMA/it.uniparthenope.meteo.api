@@ -19,7 +19,10 @@ Related documents:
 - Python beginner tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
 - iOS equivalent tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
 
-The governed API is being introduced under `/api/v1`. Existing tutorial calls remain on supported legacy paths until their versioned equivalents are published in the endpoint reference and migration guide.
+The governed API is available under `/api/v1`. New Android integrations should
+use `GET /api/v1/products` and the related versioned product metadata routes.
+Existing tutorial calls remain supported on legacy paths while other resource
+families are migrated.
 
 ## 1. What We Are Building
 

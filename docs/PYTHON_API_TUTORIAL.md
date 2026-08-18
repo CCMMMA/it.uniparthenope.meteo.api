@@ -22,7 +22,17 @@ Related documents:
 - Android/Kotlin tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 - iOS/Swift tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
 
-The governed API is being introduced under `/api/v1`. You can inspect its version and migration metadata with `GET /api/v1`. Existing examples remain on the supported legacy paths until each resource has a documented versioned equivalent.
+The governed API is available under `/api/v1`. Product discovery and metadata
+now have versioned equivalents; for new code, begin with:
+
+```python
+products = requests.get(f"{BASE_URL}/api/v1/products", timeout=10)
+products.raise_for_status()
+print(products.json()["products"])
+```
+
+Existing legacy examples remain supported while additional resource families
+receive documented versioned equivalents.
 
 ## 1. What Is An API?
 

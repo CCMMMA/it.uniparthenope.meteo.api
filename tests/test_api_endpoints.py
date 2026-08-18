@@ -1633,6 +1633,40 @@ def test_api_v1_responses_identify_the_contract_version(client):
 
     assert response.status_code == 200
     assert response.headers["API-Version"] == "1"
+    assert response.get_json()["links"]["products"] == "/api/v1/products"
+
+
+@pytest.mark.parametrize(
+    "legacy_path,v1_path",
+    [
+        ("/products", "/api/v1/products"),
+        ("/products/maps", "/api/v1/products/maps"),
+        ("/products/wrf5/maps/themes", "/api/v1/products/wrf5/maps/themes"),
+        ("/products/wrf5", "/api/v1/products/wrf5"),
+        ("/products/wrf5/outputs", "/api/v1/products/wrf5/outputs"),
+        ("/products/wrf5/fields", "/api/v1/products/wrf5/fields"),
+        (
+            "/products/wrf5/com63049/avail",
+            "/api/v1/products/wrf5/com63049/availability",
+        ),
+        (
+            "/products/wrf5/com63049/avail/calendar",
+            "/api/v1/products/wrf5/com63049/availability/calendar",
+        ),
+    ],
+)
+def test_api_v1_product_metadata_matches_legacy_contract(
+    client, legacy_path, v1_path
+):
+    """Ensure additive v1 product resources preserve legacy response schemas."""
+    legacy_response = client.get(legacy_path)
+    v1_response = client.get(v1_path)
+
+    assert legacy_response.status_code == 200
+    assert v1_response.status_code == 200
+    assert v1_response.get_json() == legacy_response.get_json()
+    assert "API-Version" not in legacy_response.headers
+    assert v1_response.headers["API-Version"] == "1"
 
 
 def test_application_factory_publishes_runtime_services(app_module):

@@ -64,10 +64,33 @@ Typical response:
   },
   "links": {
     "documentation": "/",
-    "openapi": "/swagger.json"
+    "openapi": "/swagger.json",
+    "products": "/api/v1/products"
   }
 }
 ```
+
+## 0.1 Version 1 product metadata
+
+The first operational v1 resource family is product discovery and metadata.
+These routes are additive: their legacy equivalents remain supported and return
+the same JSON schemas, while v1 responses additionally carry `API-Version: 1`.
+
+| Version 1 endpoint | Legacy equivalent |
+| --- | --- |
+| `GET /api/v1/products` | `GET /products` |
+| `GET /api/v1/products/maps` | `GET /products/maps` |
+| `GET /api/v1/products/<prod>/maps/themes` | `GET /products/<prod>/maps/themes` |
+| `GET /api/v1/products/<prod>` | `GET /products/<prod>` |
+| `GET /api/v1/products/<prod>/outputs` | `GET /products/<prod>/outputs` |
+| `GET /api/v1/products/<prod>/fields` | `GET /products/<prod>/fields` |
+| `GET /api/v1/products/<prod>/<place>/availability` | `GET /products/<prod>/<place>/avail` |
+| `GET /api/v1/products/<prod>/<place>/availability/calendar` | `GET /products/<prod>/<place>/avail/calendar` |
+
+The canonical v1 spelling uses `availability` instead of the historical
+abbreviation `avail`. Query parameters and response envelopes remain unchanged
+during this compatibility phase. See [API_V1_MIGRATION.md](API_V1_MIGRATION.md)
+for migration rules and examples.
 
 ## 1. `version`
 

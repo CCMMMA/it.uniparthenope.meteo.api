@@ -12,6 +12,7 @@ from .namespace_version import api as ns_version
 from .namespace_webcam import api as ns_webcam
 from .namespace_instruments import api as ns_instruments
 from .namespace_api_v1 import api as ns_api_v1
+from .namespace_api_v1_products import api as ns_api_v1_products
 from .versioning import CURRENT_API_BASE_PATH
 
 api = Api(
@@ -35,3 +36,4 @@ api.add_namespace(ns_version)
 api.add_namespace(ns_webcam)
 api.add_namespace(ns_instruments)
 api.add_namespace(ns_api_v1, path=CURRENT_API_BASE_PATH)
+api.add_namespace(ns_api_v1_products, path=f"{CURRENT_API_BASE_PATH}/products")
