@@ -10,13 +10,14 @@
 #
 #################################################
 
+from datetime import datetime
 import json
 import os
-import time
 from pathlib import Path
-from datetime import datetime
-import hashlib  # hash function for 128bit encryption
+import tempfile
+import time
 
+from core.cache_keys import make_cache_key
 from core.Logger import logger
 
 class ManageDiskCache:
@@ -26,20 +27,21 @@ class ManageDiskCache:
 
     def __init__(self, path_diskcache):
         """Initialize manage disk cache state."""
+        self.base_diskcache = Path(path_diskcache)
+        # Preserve the historical misspelled attribute for external callers.
         self.base_diskcace = path_diskcache
 
     def _daily_cache_dir(self, day=None):
         """Internal helper for daily cache dir."""
         day = day or datetime.today()
-        return Path(self.base_diskcace) / str(day.year) / str(day.month) / str(day.day)
+        return self.base_diskcache / str(day.year) / str(day.month) / str(day.day)
 
     def _iter_daily_cache_dirs(self):
         """Yield every existing daily cache directory."""
-        base_path = Path(self.base_diskcace)
-        if not base_path.exists():
+        if not self.base_diskcache.exists():
             return
 
-        for year_dir in base_path.iterdir():
+        for year_dir in self.base_diskcache.iterdir():
             if not year_dir.is_dir():
                 continue
             for month_dir in year_dir.iterdir():
@@ -51,8 +53,7 @@ class ManageDiskCache:
 
     def _cache_key(self, request=None, cache_key_source=None):
         """Return the stable disk-cache key derived from a request URL or explicit source."""
-        source = cache_key_source if cache_key_source is not None else request.url
-        return hashlib.md5(str(source).encode('utf-8')).hexdigest()
+        return make_cache_key(request, cache_key_source)
 
     def _cache_file(self, request, extension, day=None, cache_key_source=None):
         """Return the full cache-file path for a request and extension."""
@@ -79,25 +80,58 @@ class ManageDiskCache:
         if cached_file is None:
             return None
 
-        final_path = str(cached_file)
-
-        if path_archive and os.path.exists(path_archive):
-            if os.path.getmtime(path_archive) > os.path.getmtime(final_path):
-                logger.info("DISK 1 : File '%s' older than archive source, deleting it", final_path)
-                os.remove(final_path)
-                return None
-
-        if (time.time() - os.path.getmtime(final_path)) > ttl:
-            logger.info("DISK 1 : File '%s' expired, deleting it", final_path)
-            os.remove(final_path)
+        try:
+            cached_mtime = cached_file.stat().st_mtime
+        except FileNotFoundError:
+            # Another worker may invalidate an entry between lookup and stat.
             return None
 
-        if cached_file.suffix in {".json", ".csv"}:
-            with open(cached_file, 'r', encoding='utf-8') as file:
-                return json.load(file)
+        if path_archive:
+            try:
+                archive_mtime = Path(path_archive).stat().st_mtime
+            except FileNotFoundError:
+                archive_mtime = None
+            if archive_mtime is not None and archive_mtime > cached_mtime:
+                logger.info("Disk cache file '%s' predates its archive source", cached_file)
+                cached_file.unlink(missing_ok=True)
+                return None
 
-        with open(cached_file, 'rb') as file:
-            return file.read()
+        if (time.time() - cached_mtime) > ttl:
+            logger.info("Disk cache file '%s' expired", cached_file)
+            cached_file.unlink(missing_ok=True)
+            return None
+
+        try:
+            if cached_file.suffix in {".json", ".csv"}:
+                with cached_file.open("r", encoding="utf-8") as file:
+                    return json.load(file)
+            return cached_file.read_bytes()
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
+            # Treat truncated or concurrently removed entries as ordinary misses.
+            logger.warning("Unable to read disk cache file '%s': %s", cached_file, exc)
+            cached_file.unlink(missing_ok=True)
+            return None
+
+    @staticmethod
+    def _write_atomic(cache_file, payload, *, binary):
+        """Write a complete cache entry before atomically publishing its path."""
+        mode = "wb" if binary else "w"
+        kwargs = {} if binary else {"encoding": "utf-8"}
+        descriptor, temporary_name = tempfile.mkstemp(
+            dir=cache_file.parent,
+            prefix=f".{cache_file.name}.",
+            suffix=".tmp",
+        )
+        try:
+            with os.fdopen(descriptor, mode, **kwargs) as file:
+                if binary:
+                    file.write(payload)
+                else:
+                    json.dump(payload, file)
+            os.replace(temporary_name, cache_file)
+        except BaseException:
+            Path(temporary_name).unlink(missing_ok=True)
+            raise
 
     # type --> plot - json - csv
     def set(self, request, res, type_file='plot', flag_diskcache=True, cache_key_source=None): 
@@ -117,13 +151,11 @@ class ManageDiskCache:
         cache_file = self._cache_file(request, extension, cache_key_source=cache_key_source)
 
         if extension in {'.json', '.csv'}:
-            with open(cache_file, 'w', encoding='utf-8') as file:
-                json.dump(res, file)
+            self._write_atomic(cache_file, res, binary=False)
             return
 
         payload = res.encode('utf-8') if isinstance(res, str) else res
-        with open(cache_file, 'wb') as file:
-            file.write(payload)
+        self._write_atomic(cache_file, payload, binary=True)
 
     def delete(self, request=None, flag_diskcache=True, cache_key_source=None):
         """Delete cached files matching a request URL or canonical cache key."""

@@ -86,6 +86,7 @@ The shared memcache logic lives in:
 
 Important properties of the current implementation:
 
+- memcache and disk cache use the shared key builder in `core/cache_keys.py`
 - the key is stable for the same request URL
 - dictionaries and lists are serialized as JSON before storage
 - strings are stored as encoded UTF-8 bytes
@@ -162,6 +163,12 @@ When storing to disk cache:
 - JSON and CSV cache entries are written as JSON text
 - plot cache entries are written as binary payloads
 - the required daily directory is created automatically
+- each entry is written to a temporary sibling and atomically renamed into
+  place, so concurrent readers never observe a partially written response
+
+Malformed, concurrently removed, and expired entries are treated as cache
+misses and removed. The request can therefore rebuild them from the source
+instead of failing because the cache itself is damaged.
 
 This behavior is important because plot endpoints should not be written in text mode, while structured payloads should be written in a stable text representation.
 

@@ -10,6 +10,7 @@ Primary entrypoints and code areas:
 - `wsgi.py`: WSGI entrypoint.
 - `apis/`: Flask-RESTX namespaces and route handlers.
 - `core/`: business logic for products, places, plotting, GRIB/NetCDF access, cache helpers, and external services.
+- `docs/architecture/CORE_SERVICES.md`: dependency boundaries and maintenance rules for `core/`.
 - `etc/`: JSON and config files used at runtime.
 - `data/` and `static/`: bundled assets and reference data.
 
@@ -29,6 +30,10 @@ When editing this project:
 7. If you touch popularity tracking, invalidation, or rebuild behavior, update the related cache and operations documentation together with the code.
 8. When adding or retiring routes, update `docs/API_ENDPOINTS.md`, the client tutorials, the compatibility matrix, and both local and live endpoint tests in the same change.
 9. Do not restore retired compatibility routes without an explicit requirement and coverage for their authentication, response, and operational dependencies.
+10. Keep shared cache-key construction in `core/cache_keys.py`; memory and disk
+    cache keys must remain byte-for-byte compatible.
+11. Prefer comments that explain intent, invariants, or non-obvious tradeoffs.
+    Avoid line-by-line narration of code that is already clear from its names.
 
 ## Optimization Priorities
 
@@ -71,6 +76,7 @@ unregistered unless the API contract is deliberately changed.
 - Check which branch is active before assessing repository contents. `main` and `master` differ substantially.
 - Treat `main` as the current application branch. Use `master` only when a task explicitly targets or compares the historical branch.
 - If you change cache semantics or path construction, verify the related config keys in `etc/ccmmmaapi.conf`.
+- Disk-cache writes must remain atomic so concurrent requests cannot read partial JSON or binary artifacts.
 - OWM tile requests use memcached as the first-level cache and disk cache as the second level. Preserve promotion of disk hits back into memcached and honor `use_disk_cached` when writing.
 - `core/Tiles.py` owns a long-lived, bounded `ThreadPoolExecutor`; do not recreate it inside request handlers or per-tile cache misses.
 - If you change forecast or time-series cache keys, update the invalidate/rebuild endpoints and the popularity-tracker normalization logic together.

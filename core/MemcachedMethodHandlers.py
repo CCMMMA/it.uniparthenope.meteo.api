@@ -6,15 +6,15 @@
 #
 #################################################
 
-import hashlib  # hash function for 128bit encryption
 import json
+
+from core.cache_keys import make_cache_key
 from core.Logger import logger
 
 
 def _cache_key(request_in=None, cache_key_override=None):
     """Return the stable memcache key derived from the request URL or an explicit key."""
-    source = cache_key_override if cache_key_override is not None else request_in.url
-    return hashlib.md5(str(source).encode('utf-8')).hexdigest()
+    return make_cache_key(request_in, cache_key_override)
 
 
 def _decode_cached_value(value):
