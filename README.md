@@ -65,8 +65,9 @@ for the currently available versioned resource mappings.
 1. Follow [docs/getting_started.md](docs/getting_started.md) for a first local run.
 2. Review the dependency and deployment guidance in [docs/installation.md](docs/installation.md).
 3. Create an environment-specific settings file using [docs/configuration.md](docs/configuration.md).
-4. Review the production rollout guide in [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md).
-5. Read the endpoint and testing references before integrating or changing the API.
+4. For a container stack, follow [docs/DOCKER_COMPOSE_SETUP.md](docs/DOCKER_COMPOSE_SETUP.md).
+5. Review the production rollout guide in [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md).
+6. Read the endpoint and testing references before integrating or changing the API.
 
 ## Learning Paths
 
@@ -84,6 +85,7 @@ for the currently available versioned resource mappings.
 - Extension guide: [docs/extending.md](docs/extending.md)
 - Operational and development guide: [docs/OPERATIONS_AND_USAGE.md](docs/OPERATIONS_AND_USAGE.md)
 - Production setup guide: [docs/PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md)
+- Docker Compose setup guide: [docs/DOCKER_COMPOSE_SETUP.md](docs/DOCKER_COMPOSE_SETUP.md)
 - Cache architecture and tuning guide: [docs/CACHE.md](docs/CACHE.md)
 - Testing and evaluation guide: [docs/TESTING.md](docs/TESTING.md)
 - Live API comparison and timing workflow: [docs/TESTING.md](docs/TESTING.md)

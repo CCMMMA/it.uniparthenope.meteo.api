@@ -3,6 +3,7 @@
 Related documents:
 
 - Operational guide: [OPERATIONS_AND_USAGE.md](OPERATIONS_AND_USAGE.md)
+- Docker Compose guide: [DOCKER_COMPOSE_SETUP.md](DOCKER_COMPOSE_SETUP.md)
 - Cache guide: [CACHE.md](CACHE.md)
 - Endpoint reference: [API_ENDPOINTS.md](API_ENDPOINTS.md)
 - Python tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)

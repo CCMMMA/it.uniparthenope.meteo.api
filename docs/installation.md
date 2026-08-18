@@ -31,6 +31,9 @@ Only start the services required for the endpoints you are developing. Unit test
 
 ## Docker image
 
+For a complete nginx, API, MongoDB, PostgreSQL, and memcached stack, follow the
+step-by-step [Docker Compose setup guide](DOCKER_COMPOSE_SETUP.md).
+
 Build from the repository root:
 
 ```bash
