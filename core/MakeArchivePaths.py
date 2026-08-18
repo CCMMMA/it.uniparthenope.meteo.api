@@ -14,24 +14,19 @@
 from core.Places import Places
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 class MakeArchivePaths: 
     """Service or helper that encapsulates make archive paths behavior."""
 
     
     def makePath(
-        prod, place=None, date=None, history=None, lat=None, lon=None, config=None
+        prod, place=None, date=None, history=None, lat=None, lon=None, *, config
     ):
-        """Implement make path for make archive paths."""
-
-        if config is None:
-            # Transitional fallback for core callers not yet dependency-injected.
-            import app
-            config = app.application.config
+        """Build an archive path using the caller's explicit application config."""
 
         if date is None:
-            date = datetime.utcnow()
+            date = datetime.now(timezone.utc)
             year = date.year
             month = date.month
             day = date.day

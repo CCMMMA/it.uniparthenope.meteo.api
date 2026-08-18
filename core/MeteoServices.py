@@ -484,7 +484,9 @@ class MeteoServices:
         if os.path.isfile(cache_path) is False:
             return False
 
-        path_archive = MakeArchivePaths.makePath(item["prod"], item["place"])
+        path_archive = MakeArchivePaths.makePath(
+            item["prod"], item["place"], config=self.config
+        )
 
         if os.path.isfile(path_archive) and os.path.getmtime(path_archive) > os.path.getmtime(cache_path):
             return False
@@ -1042,7 +1044,9 @@ class MeteoServices:
                 os.makedirs(cache_dir)
             elif os.path.isfile(imagePath):
 
-                path_archive = MakeArchivePaths.makePath(prod, place)
+                path_archive = MakeArchivePaths.makePath(
+                    prod, place, config=self.config
+                )
 
                 if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
                     logger.info(f"DISK 2 : File '{imagePath}' not consistent respect to ARCHIVE file !")
@@ -1937,7 +1941,9 @@ class MeteoServices:
         if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
             os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
         else:
-            path_archive = MakeArchivePaths.makePath(params['prod'], params['place'], timeref)
+            path_archive = MakeArchivePaths.makePath(
+                params['prod'], params['place'], timeref, config=self.config
+            )
 
             if os.path.isfile(imagePath):
                 
@@ -2169,7 +2175,15 @@ class MeteoServices:
 
         retval['link'] = imageUrl
 
-        path_archive = MakeArchivePaths.makePath(params['prod'], None, timeref, True, lat, lon)
+        path_archive = MakeArchivePaths.makePath(
+            params['prod'],
+            None,
+            timeref,
+            True,
+            lat,
+            lon,
+            config=self.config,
+        )
 
         if os.path.exists(self.config['BASE_SKEWT'] + os.path.sep + relativePath) is False:
             os.makedirs(self.config['BASE_SKEWT'] + os.path.sep + relativePath)

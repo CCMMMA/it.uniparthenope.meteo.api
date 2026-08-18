@@ -38,6 +38,11 @@ The committed `etc/ccmmmaapi.conf` is a deployment example, not a portable devel
 
 Use absolute paths. Create writable directories before startup, keep path ownership aligned with the service user, and preserve the archive layout expected by `core/MakeArchivePaths.py` and the meteorological services. Do not point two environments at the same writable cache unless their data, URLs, and cache semantics are identical.
 
+Archive-path construction receives the active application configuration
+explicitly from `MeteoServices` or the request handler. There is no fallback to
+a module-global Flask application; tests and auxiliary callers must therefore
+pass `config=` when invoking `MakeArchivePaths.makePath` directly.
+
 ## Cache and concurrency settings
 
 | Key | Meaning |

@@ -60,6 +60,12 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/products/{prod}/invalidate/{place}/` and `/products/{prod}/rebuild/` | Runtime meteo service, caches, popularity tracker, and application config | Migrated together; canonical-key invalidation and popularity-driven warming preserved |
 | Other legacy namespaces | Transitional module globals | Pending bounded migration |
 
+Archive-path construction is also dependency-explicit. `MakeArchivePaths.makePath`
+requires the owning service or request handler to supply its configuration; it
+never imports the composition root as a fallback. This prevents core-to-web
+dependency inversion and ensures application-factory instances cannot silently
+read paths from a different process-global application.
+
 The legal migration also removes construction of a new `MeteoServices` object for every request. Legal content now uses the process-level service created by the composition root, avoiding repeated parsing of maps and legal configuration files.
 
 The instrument migration similarly reuses the composed meteorological service while retaining an upstream lookup for each request. Caching or changing that lookup frequency would alter freshness semantics and therefore requires a separate measured change. Webcam fallback resolution now uses the active Flask configuration without changing its established filesystem path or `image/jpg` media type.
