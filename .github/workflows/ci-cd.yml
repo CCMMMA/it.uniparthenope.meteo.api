@@ -47,7 +47,8 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          # wrf-python still uses numpy.distutils, which requires setuptools < 60.
+          python -m pip install --upgrade pip "setuptools<60" wheel
           python -m pip install --requirement requirements.txt
 
       - name: Validate Python syntax
