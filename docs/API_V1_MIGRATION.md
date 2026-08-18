@@ -1,5 +1,10 @@
 # Migrating Clients to API Version 1
 
+External consumers should use the consolidated
+[API v1 Consumer Migration and Authentication Guide](API_CONSUMER_GUIDE.md).
+Release owners and operators should use
+[API Versioning, Deprecation, and Access Governance](API_GOVERNANCE.md).
+
 ## Purpose and scope
 
 API version 1 provides a governed contract under `/api/v1`. Migration is
@@ -7,10 +12,9 @@ incremental: a resource family becomes canonical only after its v1 endpoints,
 legacy parity tests, endpoint reference, compatibility matrix, and client
 examples are published together.
 
-The first operational family covers product discovery, product metadata, and
-availability. Forecast, time-series, image, GRIB, place, and operational routes
-remain on their documented legacy paths until equivalent v1 contracts are
-released.
+Product discovery, metadata, availability, structured forecast, and time-series
+resources now have v1 contracts. Image, GRIB, place, and operational routes
+remain on legacy paths until equivalent v1 contracts are released.
 
 ## Compatibility model
 
@@ -26,7 +30,9 @@ Every v1 response includes:
 API-Version: 1
 ```
 
-Legacy responses do not receive this header and remain unchanged.
+Legacy responses do not receive `API-Version`. Replaced forecast and time-series
+routes do receive the separately governed deprecation headers described below;
+their status, media type, and body remain unchanged.
 
 ## Product endpoint mapping
 
@@ -40,6 +46,13 @@ Legacy responses do not receive this header and remain unchanged.
 | `/products/{prod}/fields` | `/api/v1/products/{prod}/fields` |
 | `/products/{prod}/{place}/avail` | `/api/v1/products/{prod}/{place}/availability` |
 | `/products/{prod}/{place}/avail/calendar` | `/api/v1/products/{prod}/{place}/availability/calendar` |
+| `/products/{prod}/forecast/{place}` | `/api/v1/products/{prod}/forecast/{place}` |
+| `/products/{prod}/timeseries/{place}` | `/api/v1/products/{prod}/timeseries/{place}` |
+| `/products/{prod}/timeseries/{place}/csv` | `/api/v1/products/{prod}/timeseries/{place}/csv` |
+
+The new forecast and time-series routes require `X-API-Key` with respectively
+`forecast:read` and `timeseries:read`. Payload and query semantics remain
+compatible with the corresponding legacy resource.
 
 ## Safe migration procedure
 
@@ -66,7 +79,7 @@ assert versioned.json() == legacy.json()
 
 ## Deprecation boundary
 
-Publication of a v1 equivalent does not by itself deprecate its legacy route.
-Legacy deprecation begins only after a separate policy release defines notice,
-telemetry, migration support, and sunset dates. Clients should migrate early,
-but must not infer a removal date that has not been explicitly announced.
+Only the three legacy routes with functional replacements above emit
+`Deprecation: true` and a `Link` with `rel="successor-version"`. Other legacy
+routes remain unmarked. A deployment may set `LEGACY_API_SUNSET` to an announced
+HTTP-date; when unset, no `Sunset` header is emitted.

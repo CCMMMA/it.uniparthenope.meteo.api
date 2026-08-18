@@ -20,7 +20,7 @@ The refactoring must preserve the established WSGI symbol and all endpoint behav
    API-key observation middleware;
 4. constructs long-lived runtime services;
 5. stores one typed `RuntimeServices` container in `application.extensions["meteo_api"]`; and
-6. publishes compatibility globals for handlers that have not yet migrated.
+6. exposes the initialized Flask application through the established WSGI symbol.
 
 The runtime container also owns a stateless `ApiKeyService`. Its relational
 session is application-scoped through Flask-SQLAlchemy; credential secrets are
@@ -64,8 +64,8 @@ It must not introduce new imports of the top-level `app` module. Existing import
 | `/products/{prod}/forecast/{place}/map/image` | Runtime meteo service and memory cache | Migrated; legacy PNG compatibility contract preserved without per-request service construction |
 | `/products/{prod}/forecast/{place}/plot` | Runtime meteo service plus memory and disk caches | Migrated; JSON/inline response behavior and fallback URL preserved, with disk-hit promotion added |
 | `/products/{prod}/invalidate/{place}/` and `/products/{prod}/rebuild/` | Runtime meteo service, caches, popularity tracker, and application config | Migrated together; canonical-key invalidation and popularity-driven warming preserved |
-| `/api/v1/products/*` metadata and availability | Runtime meteo service | First operational v1 family; additive paths with explicit legacy response-parity tests |
-| Other legacy namespaces | Transitional module globals | Pending bounded migration |
+| `/api/v1/products/*` metadata, availability, forecast, and time series | Runtime meteo service, caches, popularity tracker, and scoped API-key service | Governed v1 resources with explicit legacy response-parity tests |
+| All registered namespaces | Runtime container, active Flask config, or dependency-free static data | Audited; no service/cache compatibility globals remain |
 
 Archive-path construction is also dependency-explicit. `MakeArchivePaths.makePath`
 requires the owning service or request handler to supply its configuration; it
@@ -85,7 +85,11 @@ OWM tile handlers retain their distinct promotion policy: a disk hit is written 
 
 Positive consequences include explicit service ownership, a stable seam for dependency substitution, and a gradual route away from circular imports. The factory also makes configuration ordering visible: database configuration is loaded before `db.init_app()`.
 
-During the transition, the extension container and legacy globals reference the same objects. This duplication is intentional and is verified by a bootstrap contract test. The factory currently creates heavyweight services eagerly because changing their lifetime could alter cache, worker-pool, and request behavior. Lazy construction may be considered only after measurement and dedicated lifecycle tests.
+The runtime container is now the single owner-facing dependency boundary. A
+bootstrap contract test asserts that the former module-level aliases are absent.
+The factory creates heavyweight services eagerly because changing their lifetime
+could alter cache, worker-pool, and request behavior. Lazy construction may be
+considered only after measurement and dedicated lifecycle tests.
 
 ## Validation
 

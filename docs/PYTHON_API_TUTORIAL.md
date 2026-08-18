@@ -71,6 +71,7 @@ pip install requests
 Create a file called `hello_api.py`:
 
 ```python
+import os
 import requests
 
 BASE_URL = "https://api.meteo.uniparthenope.it"
@@ -100,6 +101,7 @@ JSON objects become Python dictionaries.
 Example:
 
 ```python
+import os
 import requests
 
 BASE_URL = "https://api.meteo.uniparthenope.it"
@@ -180,6 +182,7 @@ Example place:
 - `com63049`
 
 ```python
+import os
 import requests
 
 BASE_URL = "https://api.meteo.uniparthenope.it"
@@ -187,7 +190,10 @@ BASE_URL = "https://api.meteo.uniparthenope.it"
 product = "wrf5"
 place = "com63049"
 
-response = requests.get(f"{BASE_URL}/products/{product}/forecast/{place}")
+response = requests.get(
+    f"{BASE_URL}/api/v1/products/{product}/forecast/{place}",
+    headers={"X-API-Key": os.environ["METEO_API_KEY"]},
+)
 forecast_data = response.json()
 
 print("Top-level keys:", forecast_data.keys())
@@ -221,11 +227,15 @@ print(json.dumps(data, indent=2))
 A time series gives values over time.
 
 ```python
+import os
 import requests
 
 BASE_URL = "https://api.meteo.uniparthenope.it"
 
-response = requests.get(f"{BASE_URL}/products/ww33/timeseries/ca001")
+response = requests.get(
+    f"{BASE_URL}/api/v1/products/ww33/timeseries/ca001",
+    headers={"X-API-Key": os.environ["METEO_API_KEY"]},
+)
 data = response.json()
 
 print("Keys:", data.keys())

@@ -122,7 +122,7 @@ interface WeatherApiService {
         @Query("term") term: String
     ): List<PlaceSuggestion>
 
-    @GET("products/{product}/forecast/{place}")
+    @GET("api/v1/products/{product}/forecast/{place}")
     suspend fun getForecast(
         @Path("product") product: String,
         @Path("place") place: String
@@ -143,19 +143,35 @@ Create a file called `ApiClient.kt`:
 ```kotlin
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.OkHttpClient
 
 object ApiClient {
     private const val BASE_URL = "https://api.meteo.uniparthenope.it/"
 
     val service: WeatherApiService by lazy {
+        val authenticatedClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("X-API-Key", BuildConfig.METEO_API_KEY)
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
         Retrofit.Builder()
             .baseUrl(BASE_URL)
+            .client(authenticatedClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(WeatherApiService::class.java)
     }
 }
 ```
+
+`BuildConfig.METEO_API_KEY` is acceptable only for a local tutorial build: build
+constants are recoverable from an APK. A production mobile application must not
+bundle a long-lived institutional key. Route protected calls through a trusted
+backend or another operator-approved credential broker, and inject secrets only
+into that controlled runtime.
 
 ## 9. Create a Simple Layout
 

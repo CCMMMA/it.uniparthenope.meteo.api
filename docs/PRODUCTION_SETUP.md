@@ -96,6 +96,7 @@ apply the checked-in schema migration exactly once:
 
 ```bash
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/001_api_keys.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/002_api_usage_events.sql
 ```
 
 The migration creates request, key, and lifecycle-audit tables. Application

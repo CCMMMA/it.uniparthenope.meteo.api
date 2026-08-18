@@ -327,14 +327,6 @@ def stub_api_dependencies(monkeypatch, app_module):
     fake_disk_cache = DummyDiskCache()
     fake_popularity_tracker = FakePopularityTracker()
 
-    monkeypatch.setattr(app_module, "diskcache", fake_disk_cache)
-    monkeypatch.setattr(app_module, "cache", None)
-    monkeypatch.setattr(app_module, "use_pymemcache", False)
-    monkeypatch.setattr(app_module, "use_disk_cached", False)
-    monkeypatch.setattr(app_module, "request_popularity_tracker", fake_popularity_tracker)
-    monkeypatch.setattr(app_module, "meteo_services", fake_meteo_services)
-    monkeypatch.setattr(app_module, "grib_services", fake_grib_services)
-    monkeypatch.setattr(app_module, "tiles", fake_tiles)
     monkeypatch.setitem(app_module.application.config, "ENV", "test")
     runtime_services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
     monkeypatch.setitem(
@@ -412,15 +404,6 @@ def test_grib_exports_use_the_runtime_service(client, app_module, monkeypatch):
         replace(services, grib=recording_grib),
     )
 
-    class LegacyGribMustNotRun:
-        def asText(self, params):
-            raise AssertionError("legacy GRIB global was used")
-
-        def asJson(self, params):
-            raise AssertionError("legacy GRIB global was used")
-
-    monkeypatch.setattr(app_module, "grib_services", LegacyGribMustNotRun())
-
     text_response = client.get(
         "/products/wrf5/forecast/d02/grib/text?date=20260413Z1200&opt=wind"
     )
@@ -495,12 +478,6 @@ def test_rendered_png_routes_use_runtime_services_and_preserve_cache_order(
         ),
     )
 
-    class LegacyMeteoMustNotRun:
-        def __getattr__(self, name):
-            raise AssertionError(f"legacy meteo global was used for {name}")
-
-    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
-
     plot_response = client.get(
         "/products/wrf5/forecast/com63049/plot/image?date=20260413Z1200"
     )
@@ -568,12 +545,6 @@ def test_legend_routes_use_runtime_service_and_url_keyed_memory_cache(
             ("set", request.path, cache is memory_cache, enabled, ttl)
         ),
     )
-
-    class LegacyMeteoMustNotRun:
-        def __getattr__(self, name):
-            raise AssertionError(f"legacy meteo global was used for {name}")
-
-    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
 
     standard = client.get(
         "/products/wrf5/forecast/legend/right/waveheight?width=320&height=64"
@@ -652,12 +623,6 @@ def test_metacharts_uses_runtime_cache_chain_and_reuses_generated_payload(
 
     monkeypatch.setattr(ns_products, "set_resource", remember)
 
-    class LegacyMeteoMustNotRun:
-        def __getattr__(self, name):
-            raise AssertionError(f"legacy meteo global was used for {name}")
-
-    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
-
     first = client.get("/products/wrf5/plot/gen/metacharts")
     second = client.get("/products/wrf5/plot/gen/metacharts")
 
@@ -705,12 +670,6 @@ def test_plot_alt_uses_runtime_service_and_current_application_config(
         replace(services, meteo=RecordingMeteo(app_module.application.config)),
     )
     monkeypatch.setattr(ns_products, "Places", RecordingPlaces)
-
-    class LegacyMeteoMustNotRun:
-        def __getattr__(self, name):
-            raise AssertionError(f"legacy meteo global was used for {name}")
-
-    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
 
     response = client.get(
         "/products/wrf5/forecast/com63049/plot/alt?lang=it-IT&date=20260413Z1200"
@@ -846,12 +805,6 @@ def test_forecast_plot_uses_runtime_cache_chain_and_reuses_payload(
 
     monkeypatch.setattr(ns_products, "set_resource", remember)
 
-    class LegacyMeteoMustNotRun:
-        def __getattr__(self, name):
-            raise AssertionError(f"legacy meteo global was used for {name}")
-
-    monkeypatch.setattr(app_module, "meteo_services", LegacyMeteoMustNotRun())
-
     path = "/products/wrf5/forecast/com63049/plot?date=20260413Z1200"
     first = client.get(path)
     second = client.get(path)
@@ -973,14 +926,8 @@ def test_places_cold_lookup_preserves_cache_and_source_order(client, app_module,
     ]
 
 
-def test_product_metadata_routes_ignore_legacy_service_global(client, app_module, monkeypatch):
-    """Ensure migrated metadata handlers resolve MeteoServices from the container."""
-
-    class LegacyServiceTrap:
-        def __getattr__(self, name):
-            raise AssertionError(f"metadata handler used legacy service attribute {name}")
-
-    monkeypatch.setattr(app_module, "meteo_services", LegacyServiceTrap())
+def test_product_metadata_routes_use_runtime_container(client):
+    """Ensure migrated metadata handlers remain operational through the container."""
 
     paths = [
         "/products",
@@ -1091,7 +1038,7 @@ def test_forecast_and_timeseries_requests_are_tracked(client, app_module):
     client.get("/products/wrf5/forecast/com63049")
     client.get("/products/wrf5/timeseries/com63049")
 
-    recorded = app_module.request_popularity_tracker.records
+    recorded = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION].popularity.records
     assert any(item["endpoint"] == "forecast" and item["prod"] == "wrf5" and item["place"] == "com63049" for item in recorded)
     assert any(item["endpoint"] == "timeseries" and item["prod"] == "wrf5" and item["place"] == "com63049" for item in recorded)
 
@@ -1392,7 +1339,7 @@ def test_timeseries_json_and_csv_share_cache_payload(client, app_module, monkeyp
     assert list(diskcache.values) == [expected_key]
     timeseries_records = [
         record
-        for record in app_module.request_popularity_tracker.records
+        for record in app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION].popularity.records
         if record["endpoint"] == "timeseries"
     ]
     assert len(timeseries_records) == 2
@@ -1671,19 +1618,20 @@ def test_api_v1_product_metadata_matches_legacy_contract(
     assert v1_response.headers["API-Version"] == "1"
 
 
-def test_application_factory_publishes_runtime_services(app_module):
-    """Ensure new handlers can resolve dependencies without importing module globals."""
+def test_application_factory_publishes_only_runtime_container(app_module):
+    """Ensure dependencies are owned by the extension rather than compatibility globals."""
     import wsgi
 
     services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
 
     assert callable(app_module.create_app)
     assert wsgi.application is app_module.application
-    assert services.meteo is app_module.meteo_services
-    assert services.grib is app_module.grib_services
-    assert services.tiles is app_module.tiles
-    assert services.disk_cache is app_module.diskcache
-    assert services.popularity is app_module.request_popularity_tracker
+    for retired_name in (
+        "cache", "use_pymemcache", "diskcache", "use_disk_cached",
+        "diskcache_ttl", "meteo_services", "grib_services", "tiles",
+        "request_popularity_tracker",
+    ):
+        assert not hasattr(app_module, retired_name)
     assert services.api_keys is not None
 
 
@@ -1889,3 +1837,78 @@ def test_retired_v2_page_write_is_not_registered(client):
     response = client.post("/v2/pages/about", json={"_id": "about"}, headers=AUTH_HEADERS)
 
     assert response.status_code == 404
+
+
+def test_v1_forecast_and_timeseries_enforce_scopes_and_match_legacy(client, app_module, monkeypatch):
+    """Ensure governed resources authenticate while preserving legacy payloads."""
+    usage = []
+
+    class GovernedApiKeys:
+        def validate(self, plaintext, required_scopes=(), record_usage=False):
+            granted = {"forecast-key": {"forecast:read"}, "timeseries-key": {"timeseries:read"}}.get(plaintext, set())
+            if not set(required_scopes).issubset(granted):
+                raise ApiKeyValidationError("API key lacks required scope")
+            return SimpleNamespace(api_key_id=plaintext, key_prefix=f"meteo_test_{plaintext}", owner_email="consumer@example.test", organization="Test Consumer")
+
+        def record_usage(self, **event):
+            usage.append(event)
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(app_module.application.extensions, app_module.RUNTIME_SERVICES_EXTENSION, replace(services, api_keys=GovernedApiKeys()))
+
+    missing = client.get("/api/v1/products/wrf5/forecast/com63049")
+    forbidden = client.get("/api/v1/products/wrf5/forecast/com63049", headers={"X-API-Key": "timeseries-key"})
+    legacy_forecast = client.get("/products/wrf5/forecast/com63049")
+    v1_forecast = client.get("/api/v1/products/wrf5/forecast/com63049", headers={"X-API-Key": "forecast-key"})
+    legacy_timeseries = client.get("/products/wrf5/timeseries/com63049")
+    v1_timeseries = client.get("/api/v1/products/wrf5/timeseries/com63049", headers={"X-API-Key": "timeseries-key"})
+
+    assert missing.status_code == 401
+    assert forbidden.status_code == 403
+    assert v1_forecast.get_json() == legacy_forecast.get_json()
+    assert v1_timeseries.get_json() == legacy_timeseries.get_json()
+    assert v1_forecast.headers["API-Version"] == "1"
+    assert {event["route"] for event in usage} == {
+        "/api/v1/products/<string:prod>/forecast/<string:place>",
+        "/api/v1/products/<string:prod>/timeseries/<string:place>",
+    }
+
+
+def test_deprecation_headers_exist_only_for_functional_v1_replacements(client):
+    """Ensure legacy retirement signalling follows actual replacement coverage."""
+    forecast = client.get("/products/wrf5/forecast/com63049")
+    timeseries_csv = client.get("/products/wrf5/timeseries/com63049/csv")
+    metadata = client.get("/products/wrf5/outputs")
+    image = client.get("/products/wrf5/forecast/com63049/plot/image")
+
+    assert forecast.headers["Deprecation"] == "true"
+    assert "successor-version" in forecast.headers["Link"]
+    assert timeseries_csv.headers["Deprecation"] == "true"
+    assert "Sunset" not in forecast.headers
+    assert "Deprecation" not in metadata.headers
+    assert "Deprecation" not in image.headers
+
+
+def test_usage_report_requires_admin_scope(client, app_module, monkeypatch):
+    """Ensure consumer keys cannot read administrative attribution data."""
+    class ReportingApiKeys:
+        def validate(self, plaintext, required_scopes=(), record_usage=False):
+            if plaintext != "admin-key":
+                raise ApiKeyValidationError("API key lacks required scope")
+            return SimpleNamespace(api_key_id="admin-id", key_prefix="meteo_test_admin", owner_email="admin@example.test", organization="Operations")
+
+        def usage_report(self, limit=100):
+            return {"sampleSize": 0, "limit": limit, "consumers": [], "routes": [], "recent": []}
+
+        def record_usage(self, **event):
+            return None
+
+    services = app_module.application.extensions[app_module.RUNTIME_SERVICES_EXTENSION]
+    monkeypatch.setitem(app_module.application.extensions, app_module.RUNTIME_SERVICES_EXTENSION, replace(services, api_keys=ReportingApiKeys()))
+
+    denied = client.get("/api/v1/admin/usage", headers={"X-API-Key": "consumer-key"})
+    allowed = client.get("/api/v1/admin/usage?limit=25", headers={"X-API-Key": "admin-key"})
+
+    assert denied.status_code == 403
+    assert allowed.status_code == 200
+    assert allowed.get_json()["limit"] == 25

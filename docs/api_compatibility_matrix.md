@@ -11,6 +11,7 @@ snapshots are captured.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `/api/v1` | `GET` | new governed contract | `200` | `application/json` | `apis/namespace_api_v1.py` | additive | Discovery endpoint; it does not change or replace a legacy response. |
 | `/api/v1/products/*` metadata and availability | `GET` | governed v1 contract with legacy parity tests | `200` | `application/json` | `apis/namespace_api_v1_products.py` | additive | Canonical v1 paths reuse runtime services and preserve the corresponding legacy response schemas. |
+| `/api/v1/products/{prod}/forecast/{place}` and `/timeseries/{place}[\/csv]` | `GET` | governed v1 contract with authenticated legacy parity tests | `200` | JSON or CSV | `apis/namespace_api_v1_products.py` | additive; legacy deprecated | Reuses canonical caches and payload generation; v1 requires the resource scope. |
 | `/v2/carousel` | `GET` | retired CMS route | `404` | Flask-RESTX error response | not registered | retired | Removed without a compatibility alias because the CMS integration is no longer required. |
 | `/v2/cards` | `GET` | retired CMS route | `404` | Flask-RESTX error response | not registered | retired | Removed without a compatibility alias because the CMS integration is no longer required. |
 | `/instruments/<identification>` | `GET` | production live response | `200` for existing ids, `404` with JSON string for missing ids | `application/json` | `apis/namespace_instruments.py` | in-progress | Missing-id response now uses JSON quoting like production. |

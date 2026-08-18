@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from flask import Flask
 
-from core.ApiKeyModels import ApiKey, ApiKeyAuditEvent, ApiKeyRequest
+from core.ApiKeyModels import ApiKey, ApiKeyAuditEvent, ApiKeyRequest, ApiUsageEvent
 from core.ApiKeyService import ApiKeyError, ApiKeyHasher, ApiKeyService, ApiKeyValidationError
 from core.Models import db
 
@@ -146,3 +146,27 @@ def test_issuance_cannot_escalate_beyond_requested_scopes(api_key_service):
 
     assert request.status == "pending"
     assert ApiKey.query.count() == 0
+
+
+def test_usage_events_are_consumer_attributed_and_reported(api_key_service):
+    """Ensure request telemetry identifies consumers without storing secrets."""
+    request = api_key_service.request_key(
+        requester_name="Dorothy Vaughan",
+        requester_email="dorothy@example.test",
+        organization="Weather Computing Group",
+        purpose="Evaluate forecast response performance",
+        scopes=["forecast:read"],
+    )
+    issued = api_key_service.issue_request(request.id, actor="operator@example.test")
+    principal = api_key_service.validate(issued.plaintext, ["forecast:read"])
+    event = api_key_service.record_usage(
+        principal, "GET", "/api/v1/products/<prod>/forecast/<place>", "1", 200, 12.5
+    )
+    report = api_key_service.usage_report(limit=10)
+
+    assert ApiUsageEvent.query.count() == 1
+    assert event.key_prefix == principal.key_prefix
+    assert issued.plaintext not in str(event.to_dict())
+    assert report["sampleSize"] == 1
+    assert report["consumers"][0]["ownerEmail"] == "dorothy@example.test"
+    assert report["routes"][0]["requests"] == 1

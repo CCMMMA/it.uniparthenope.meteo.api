@@ -1,5 +1,8 @@
 # API-Key and Endpoint Access Policy
 
+For client-facing procedures, see [API_CONSUMER_GUIDE.md](API_CONSUMER_GUIDE.md).
+For approval roles and release gates, see [API_GOVERNANCE.md](API_GOVERNANCE.md).
+
 ## 1. Purpose
 
 API keys identify non-human client applications, support attributable usage
@@ -20,7 +23,7 @@ management endpoints are released with dedicated compatibility tests.
 | Public legal | `/legal/disclaimer`, `/legal/privacy` | No API key; legal terms must remain inspectable before credential use. |
 | Public v1 metadata | `/api/v1/products` and product metadata/availability | Public during the adoption phase; eligible for an anonymous low quota later. |
 | Transitional legacy | Existing unversioned read endpoints and retained `/v2` endpoints | No enforcement change until a versioned replacement and deprecation notice exist. |
-| Consumer protected | Future v1 forecast, time-series, image, GRIB, tile, and bulk place resources | Valid API key plus the resource scope. |
+| Consumer protected | v1 forecast and time-series; future v1 image, GRIB, tile, and bulk place resources | Valid API key plus the resource scope. |
 | Operator protected | Cache invalidation/rebuild and API-key issuance, rotation, and revocation interfaces | Separate operator authentication; a consumer key alone is insufficient. |
 
 Submitting an API-key request may become a public operation, but it must be
@@ -77,9 +80,9 @@ middleware will accept an explicit request header and redact it from logs.
 Management operations are transactional. Rotation either persists the new key
 and invalidates the old key together, or neither transition is committed.
 
-## 6. HTTP enforcement contract (future middleware)
+## 6. HTTP enforcement contract
 
-When enforcement is enabled for a resource, missing or invalid credentials
+For v1 forecast and time-series resources, missing or invalid credentials
 return `401`, insufficient scope returns `403`, and exhausted quotas return
 `429` with retry metadata. Errors must use a stable v1 envelope without
 revealing whether a prefix exists.
@@ -101,14 +104,19 @@ API-Key-Observation: unavailable
 ```
 
 All three outcomes continue to the legacy handler unchanged. Missing keys do not
-produce the header. `/api/v1` is excluded from this transitional middleware;
-authentication for governed resources will be introduced by an explicit v1
-contract change. Logs contain only the non-secret key prefix.
+produce the header. Governed v1 forecast and time-series resources instead
+enforce their documented scopes. Logs contain only the non-secret key prefix.
 
 ## 7. Audit and privacy
 
 Lifecycle events record request/key identifiers, action, actor, timestamp, and
 minimal structured context. Secrets and secret hashes are excluded from domain
-serializers and event data. Request-level usage telemetry is a separate concern:
-it may reference the public key identifier but must define retention, IP-address
-handling, aggregation, and access controls before collection begins.
+serializers and event data. Each authenticated invocation creates a separate
+usage event attributed to its key, owner, and organization. Events contain the
+method, route template, API version, status, duration, and time; they omit query
+strings, bodies, raw IP addresses, and user agents. The bounded
+`GET /api/v1/admin/usage` report requires `keys:admin`. Until a second operator
+identity mechanism is integrated, deployments must additionally restrict this
+route at the institutional gateway or private network boundary; a consumer key
+alone is not sufficient authority under this policy. Operators define data
+retention according to institutional policy.

@@ -60,6 +60,7 @@ pass `config=` when invoking `MakeArchivePaths.makePath` directly.
 | `API_KEY_DEFAULT_LIFETIME_DAYS` | Default positive credential lifetime; defaults to 365 days. |
 | `API_KEY_ALLOWED_SCOPES` | Optional iterable overriding the documented scope allow-list. |
 | `API_KEY_SCRYPT_N`, `API_KEY_SCRYPT_R`, `API_KEY_SCRYPT_P` | Scrypt work factors. `N` must be a power of two and at least 16384. |
+| `LEGACY_API_SUNSET` | Optional formally announced HTTP-date emitted only on legacy forecast/time-series routes that have v1 replacements. Omit until governance approves a date. |
 
 Do not reduce scrypt work factors after issuing credentials. Validation accepts
 stored parameters only up to the configured security ceiling, preventing a

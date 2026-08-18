@@ -22,13 +22,14 @@ Related documents:
 - Android tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 - iOS tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
 - API-key and endpoint access policy: [API_KEY_POLICY.md](API_KEY_POLICY.md)
+- External migration and authentication guide: [API_CONSUMER_GUIDE.md](API_CONSUMER_GUIDE.md)
+- Versioning, deprecation, and access governance: [API_GOVERNANCE.md](API_GOVERNANCE.md)
 
-API-key lifecycle services and persistence are implemented, but no key-management
-HTTP endpoints or enforcing authentication middleware are published in this
-checkpoint. Legacy routes do accept optional observation-only `X-API-Key`
-credentials: validation never blocks the request, and a presented key receives
-an `API-Key-Observation` diagnostic header. Endpoint access behavior remains
-unchanged.
+API-key lifecycle services and persistence are implemented; public key-management
+HTTP endpoints are intentionally not published. V1 forecast and time-series
+resources enforce scoped `X-API-Key` credentials. Legacy routes remain
+observation-only: validation never blocks a legacy request, and a presented key
+receives an `API-Key-Observation` diagnostic header.
 
 ## Common Notes
 
@@ -73,16 +74,18 @@ Typical response:
   "links": {
     "documentation": "/",
     "openapi": "/swagger.json",
-    "products": "/api/v1/products"
+    "products": "/api/v1/products",
+    "usageReport": "/api/v1/admin/usage"
   }
 }
 ```
 
-## 0.1 Version 1 product metadata
+## 0.1 Version 1 product resources
 
-The first operational v1 resource family is product discovery and metadata.
-These routes are additive: their legacy equivalents remain supported and return
-the same JSON schemas, while v1 responses additionally carry `API-Version: 1`.
+The operational v1 family covers product discovery, metadata, availability,
+structured forecasts, and time series. Legacy equivalents remain supported and
+preserve their response bodies, while v1 responses additionally carry
+`API-Version: 1`.
 
 | Version 1 endpoint | Legacy equivalent |
 | --- | --- |
@@ -94,6 +97,27 @@ the same JSON schemas, while v1 responses additionally carry `API-Version: 1`.
 | `GET /api/v1/products/<prod>/fields` | `GET /products/<prod>/fields` |
 | `GET /api/v1/products/<prod>/<place>/availability` | `GET /products/<prod>/<place>/avail` |
 | `GET /api/v1/products/<prod>/<place>/availability/calendar` | `GET /products/<prod>/<place>/avail/calendar` |
+| `GET /api/v1/products/<prod>/forecast/<place>` | `GET /products/<prod>/forecast/<place>` |
+| `GET /api/v1/products/<prod>/timeseries/<place>` | `GET /products/<prod>/timeseries/<place>` |
+| `GET /api/v1/products/<prod>/timeseries/<place>/csv` | `GET /products/<prod>/timeseries/<place>/csv` |
+
+The forecast and time-series v1 routes require `X-API-Key` and their named
+resource scope. `GET /api/v1/admin/usage` requires `keys:admin` and returns a
+bounded consumer-attributed usage report.
+
+Authentication errors use a stable JSON envelope:
+
+```json
+{"error": {"code": "api_key_required", "message": "X-API-Key is required"}}
+```
+
+The code is `invalid_api_key` for malformed, unknown, inactive, or expired
+credentials and `insufficient_scope` for a valid key lacking the endpoint scope.
+The first two cases return `401`; insufficient scope returns `403`.
+
+The administrative usage route must also be restricted by the deployment's
+operator gateway or private network policy until a second operator-identity
+mechanism is integrated. It is not a consumer self-service endpoint.
 
 The canonical v1 spelling uses `availability` instead of the historical
 abbreviation `avail`. Query parameters and response envelopes remain unchanged

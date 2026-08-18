@@ -131,3 +131,39 @@ class ApiKeyAuditEvent(db.Model):
             "eventData": dict(self.event_data or {}),
             "occurredAt": self.occurred_at.isoformat() if self.occurred_at else None,
         }
+
+
+class ApiUsageEvent(db.Model):
+    """Record one authenticated API invocation without credential secrets."""
+
+    __tablename__ = "api_usage_events"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    api_key_id = db.Column(
+        db.String(36), db.ForeignKey("api_keys.id"), nullable=False, index=True
+    )
+    key_prefix = db.Column(db.String(80), nullable=False, index=True)
+    owner_email = db.Column(db.String(320), nullable=False, index=True)
+    organization = db.Column(db.String(200), nullable=True, index=True)
+    method = db.Column(db.String(12), nullable=False)
+    route = db.Column(db.String(255), nullable=False, index=True)
+    api_version = db.Column(db.String(16), nullable=False, index=True)
+    status_code = db.Column(db.Integer, nullable=False, index=True)
+    duration_ms = db.Column(db.Float, nullable=False)
+    occurred_at = db.Column(db.DateTime, nullable=False, default=utcnow, index=True)
+
+    def to_dict(self):
+        """Return an administrative representation with no secret material."""
+        return {
+            "id": self.id,
+            "apiKeyId": self.api_key_id,
+            "keyPrefix": self.key_prefix,
+            "ownerEmail": self.owner_email,
+            "organization": self.organization,
+            "method": self.method,
+            "route": self.route,
+            "apiVersion": self.api_version,
+            "statusCode": self.status_code,
+            "durationMs": self.duration_ms,
+            "occurredAt": self.occurred_at.isoformat() if self.occurred_at else None,
+        }

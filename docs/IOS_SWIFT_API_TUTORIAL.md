@@ -96,6 +96,11 @@ import Foundation
 
 final class WeatherApiClient {
     private let baseURL = "https://api.meteo.uniparthenope.it"
+    private let apiKey: String
+
+    init(apiKey: String) {
+        self.apiKey = apiKey
+    }
 
     func getVersion() async throws -> VersionResponse {
         let url = URL(string: "\(baseURL)/version")!
@@ -114,13 +119,21 @@ final class WeatherApiClient {
     }
 
     func getForecast(product: String, place: String) async throws -> [String: Any] {
-        let url = URL(string: "\(baseURL)/products/\(product)/forecast/\(place)")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let url = URL(string: "\(baseURL)/api/v1/products/\(product)/forecast/\(place)")!
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
+        let (data, _) = try await URLSession.shared.data(for: request)
         let object = try JSONSerialization.jsonObject(with: data, options: [])
         return object as? [String: Any] ?? [:]
     }
 }
 ```
+
+Pass an API key only for local development or from an operator-approved runtime
+credential mechanism. Never place a long-lived key in source code, `Info.plist`,
+or the distributed application bundle. Production apps should call a trusted
+backend that holds the institutional credential and applies user-level abuse
+controls.
 
 Why do we use `[String: Any]` for the forecast?
 

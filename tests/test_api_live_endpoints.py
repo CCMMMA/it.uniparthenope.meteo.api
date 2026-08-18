@@ -110,6 +110,28 @@ def test_live_timeseries_csv_endpoint(live_base_url, compare_base_url, live_time
         assert primary_response.text == secondary_response.text
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/products/wrf5/forecast/com63049",
+        "/api/v1/products/wrf5/timeseries/com63049",
+        "/api/v1/products/wrf5/timeseries/com63049/csv",
+    ],
+)
+def test_live_v1_data_resources_reject_anonymous_requests(
+    live_base_url, live_timeout, live_session, path, invocation_recorder
+):
+    """Verify the deployed v1 authentication boundary without requiring a secret."""
+    _require_live_base_url(live_base_url)
+    response, elapsed = _request(
+        live_session, "GET", _full_url(live_base_url, path), live_timeout
+    )
+    invocation_recorder("GET", "live-primary", _full_url(live_base_url, path), elapsed, response.status_code)
+    assert response.status_code == 401
+    assert response.headers["API-Version"] == "1"
+    assert response.json()["error"]["code"] == "api_key_required"
+
+
 @pytest.mark.parametrize("path,headers,_assert_payload", JSON_GET_CASES)
 def test_live_json_get_endpoints(
     live_base_url,

@@ -67,27 +67,6 @@ def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
     )
 
 
-def _publish_legacy_globals(
-    flask_application: Flask, services: RuntimeServices
-) -> None:
-    """Keep existing handlers operational while they migrate to app extensions."""
-    global application
-    global cache, use_pymemcache
-    global diskcache, use_disk_cached, diskcache_ttl
-    global meteo_services, grib_services, tiles, request_popularity_tracker
-
-    application = flask_application
-    cache = services.memory_cache
-    use_pymemcache = services.memory_cache_enabled
-    diskcache = services.disk_cache
-    use_disk_cached = services.disk_cache_enabled
-    diskcache_ttl = services.disk_cache_ttl
-    meteo_services = services.meteo
-    grib_services = services.grib
-    tiles = services.tiles
-    request_popularity_tracker = services.popularity
-
-
 def create_app() -> Flask:
     """Create and fully initialize one meteorological API application."""
     flask_application = Flask(__name__)
@@ -111,7 +90,6 @@ def create_app() -> Flask:
     services = _create_runtime_services(flask_application)
     flask_application.extensions[RUNTIME_SERVICES_EXTENSION] = services
     register_api_key_observation(flask_application)
-    _publish_legacy_globals(flask_application, services)
     return flask_application
 
 

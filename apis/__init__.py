@@ -13,6 +13,7 @@ from .namespace_webcam import api as ns_webcam
 from .namespace_instruments import api as ns_instruments
 from .namespace_api_v1 import api as ns_api_v1
 from .namespace_api_v1_products import api as ns_api_v1_products
+from .namespace_api_v1_admin import api as ns_api_v1_admin
 from .versioning import CURRENT_API_BASE_PATH
 
 api = Api(
@@ -23,6 +24,9 @@ api = Api(
         "map metadata, and operational resources used by the Parthenope meteorological platform."
     ),
     doc="/",
+    authorizations={
+        "apiKey": {"type": "apiKey", "in": "header", "name": "X-API-Key"}
+    },
 )
 
 # aggregation of namespace
@@ -37,3 +41,4 @@ api.add_namespace(ns_webcam)
 api.add_namespace(ns_instruments)
 api.add_namespace(ns_api_v1, path=CURRENT_API_BASE_PATH)
 api.add_namespace(ns_api_v1_products, path=f"{CURRENT_API_BASE_PATH}/products")
+api.add_namespace(ns_api_v1_admin, path=f"{CURRENT_API_BASE_PATH}/admin")

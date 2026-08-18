@@ -39,6 +39,7 @@ class ApiV1Discovery(Resource):
                     "documentation": "/",
                     "openapi": "/swagger.json",
                     "products": f"{CURRENT_API_BASE_PATH}/products",
+                    "usageReport": f"{CURRENT_API_BASE_PATH}/admin/usage",
                 },
             }
         )

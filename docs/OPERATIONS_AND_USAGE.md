@@ -15,6 +15,8 @@ Related documents:
 - Python usage tutorial: [PYTHON_API_TUTORIAL.md](PYTHON_API_TUTORIAL.md)
 - Android usage tutorial: [ANDROID_KOTLIN_API_TUTORIAL.md](ANDROID_KOTLIN_API_TUTORIAL.md)
 - iOS usage tutorial: [IOS_SWIFT_API_TUTORIAL.md](IOS_SWIFT_API_TUTORIAL.md)
+- External consumer migration guide: [API_CONSUMER_GUIDE.md](API_CONSUMER_GUIDE.md)
+- API governance policy: [API_GOVERNANCE.md](API_GOVERNANCE.md)
 
 ## Technology Stack
 
@@ -204,14 +206,15 @@ Use a repeatable update workflow:
 
 ### API-key lifecycle foundation
 
-The application runtime now contains an `ApiKeyService` implementing request,
-issuance, validation, immediate rotation, and revocation. No existing HTTP route
-requires a key yet. This separation lets operators deploy and verify the schema
-before authentication changes affect clients.
+The application runtime contains an `ApiKeyService` implementing request,
+issuance, validation, immediate rotation, revocation, and attributed usage.
+Governed v1 forecast and time-series routes require scoped keys; legacy routes
+remain observation-only during migration.
 
 Operational rules:
 
 - apply `migrations/001_api_keys.sql` before using the service;
+- apply `migrations/002_api_usage_events.sql` before enabling v1 protected routes;
 - display issued or rotated plaintext credentials exactly once over an approved
   secure channel;
 - log only the non-secret `key_prefix`, never the full credential or hash;
@@ -224,11 +227,10 @@ The authoritative endpoint classification, scope catalogue, credential format,
 and future HTTP error contract are defined in
 [API_KEY_POLICY.md](API_KEY_POLICY.md).
 
-Legacy authentication is currently observation-only. Operators should aggregate
-`Legacy API-key observation` log records by non-secret prefix, route family, and
-outcome. An `invalid` or `unavailable` observation never blocks the request in
-this phase; alerting must therefore be informational rather than treated as a
-client outage.
+Legacy authentication remains observation-only. Valid keyed legacy and v1
+requests create usage events. Operators can query bounded aggregates through
+`GET /api/v1/admin/usage` with a `keys:admin` key. An invalid or unavailable
+legacy observation never blocks the request.
 
 ### Swagger / OpenAPI
 

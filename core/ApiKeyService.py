@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Iterable, Optional, Set
 
-from core.ApiKeyModels import ApiKey, ApiKeyAuditEvent, ApiKeyRequest, utcnow
+from core.ApiKeyModels import ApiKey, ApiKeyAuditEvent, ApiKeyRequest, ApiUsageEvent, utcnow
 from core.Models import db
 
 
@@ -306,6 +306,65 @@ class ApiKeyService:
             organization=api_key.organization,
             scopes=frozenset(granted),
         )
+
+    def record_usage(self, principal, method, route, api_version, status_code, duration_ms):
+        """Persist a consumer-attributed request event after response production."""
+        api_key = self.session.get(ApiKey, principal.api_key_id)
+        if api_key is None:
+            raise ApiKeyNotFound("API key not found")
+        now = utcnow()
+        api_key.last_used_at = now
+        event = ApiUsageEvent(
+            api_key_id=api_key.id,
+            key_prefix=api_key.key_prefix,
+            owner_email=api_key.owner_email,
+            organization=api_key.organization,
+            method=str(method).upper()[:12],
+            route=str(route)[:255],
+            api_version=str(api_version)[:16],
+            status_code=int(status_code),
+            duration_ms=max(0.0, float(duration_ms)),
+            occurred_at=now,
+        )
+        self.session.add(event)
+        self.session.commit()
+        return event
+
+    def usage_report(self, limit=100):
+        """Return bounded aggregate and recent usage data for administrators."""
+        bounded_limit = min(max(int(limit), 1), 1000)
+        events = (
+            self.session.query(ApiUsageEvent)
+            .order_by(ApiUsageEvent.occurred_at.desc())
+            .limit(bounded_limit)
+            .all()
+        )
+        consumers = {}
+        routes = {}
+        errors = 0
+        for event in events:
+            consumer = consumers.setdefault(
+                event.key_prefix,
+                {
+                    "keyPrefix": event.key_prefix,
+                    "ownerEmail": event.owner_email,
+                    "organization": event.organization,
+                    "requests": 0,
+                },
+            )
+            consumer["requests"] += 1
+            routes[event.route] = routes.get(event.route, 0) + 1
+            errors += int(event.status_code >= 400)
+        return {
+            "sampleSize": len(events),
+            "errors": errors,
+            "consumers": sorted(consumers.values(), key=lambda item: (-item["requests"], item["keyPrefix"])),
+            "routes": [
+                {"route": route, "requests": count}
+                for route, count in sorted(routes.items(), key=lambda item: (-item[1], item[0]))
+            ],
+            "recent": [event.to_dict() for event in events],
+        }
 
     def revoke(self, api_key_id, actor, reason):
         """Revoke an active credential without deleting its audit identity."""

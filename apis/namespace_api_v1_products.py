@@ -5,6 +5,12 @@ from flask_restx import Namespace, Resource
 
 from core.GetParams import get_params
 from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
+from apis.authentication import require_api_key
+from apis.namespace_products import (
+    ProductsForecastByProdAndPlace,
+    ProductsTimeseriesByProdAndPlace,
+    ProductsTimeSeriesByProdAndPlaceByCsv,
+)
 
 
 api = Namespace(
@@ -121,3 +127,36 @@ class ApiV1ProductAvailabilityCalendar(Resource):
             }
         )
         return jsonify(_meteo().getProductAvailCalendar(params))
+
+
+@api.route("/<string:prod>/forecast/<string:place>")
+class ApiV1ProductForecast(ProductsForecastByProdAndPlace):
+    """Expose structured forecasts under the governed v1 contract."""
+
+    @api.doc(summary="Get a structured forecast", security="apiKey")
+    @require_api_key("forecast:read")
+    def get(self, prod, place):
+        """Reuse the established cache and response contract with scoped access."""
+        return super().get(prod, place)
+
+
+@api.route("/<string:prod>/timeseries/<string:place>")
+class ApiV1ProductTimeseries(ProductsTimeseriesByProdAndPlace):
+    """Expose structured time series under the governed v1 contract."""
+
+    @api.doc(summary="Get a structured time series", security="apiKey")
+    @require_api_key("timeseries:read")
+    def get(self, prod, place):
+        """Reuse the established cache and response contract with scoped access."""
+        return super().get(prod, place)
+
+
+@api.route("/<string:prod>/timeseries/<string:place>/csv")
+class ApiV1ProductTimeseriesCsv(ProductsTimeSeriesByProdAndPlaceByCsv):
+    """Expose CSV time series under the governed v1 contract."""
+
+    @api.doc(summary="Download a time series as CSV", security="apiKey")
+    @require_api_key("timeseries:read")
+    def get(self, prod, place):
+        """Reuse the canonical structured cache before CSV serialization."""
+        return super().get(prod, place)

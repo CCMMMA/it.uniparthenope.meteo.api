@@ -22,7 +22,10 @@ services = current_app.extensions["meteo_api"]
 forecast = services.meteo.modelOutput(params)
 ```
 
-The module-level names such as `app.meteo_services` and `app.diskcache` remain temporarily available for legacy handlers. They form a compatibility bridge, not the preferred extension point. Migrate them resource-by-resource so each change can retain explicit endpoint contract tests.
+The former module-level service and cache aliases have been removed. The only
+supported dependency boundary is `current_app.extensions["meteo_api"]`.
+`app.application` remains solely as the WSGI entrypoint; it is not a service
+locator.
 
 ## Adding an endpoint
 
