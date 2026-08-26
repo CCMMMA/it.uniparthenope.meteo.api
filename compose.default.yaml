@@ -1,0 +1,37 @@
+ccmmmaapi-new:
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+  image: ccmmmaapi-v2
+  container_name: ccmmmaapi-v2
+
+  ports:
+    - "5001:5001"
+
+  volumes:
+    # OpenDAP data
+    - ./data/opendap:/data/opendap
+
+    # Application cache
+    - ./data/cache:/data/cache
+
+    # Generated images
+    - ./data/images:/project/images
+
+    # Skew-T cache
+    - ./data/skewt:/project/skewt
+
+    # JSON cache
+    - ./data/json:/project/json
+
+    # Disk cache
+    - ./data/diskcache:/project/diskcache
+
+    # Generated maps and plots
+    - ./data/plotmaps:/project/plotmaps
+
+  depends_on:
+    - db
+    - memcached
+
