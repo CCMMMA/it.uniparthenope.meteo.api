@@ -298,7 +298,10 @@ class Places(object):
             query = {"$and": [query, {"id": {'$regex': filter + '.*'}}]}
 
         # items = places.find(query, self.proj).limit(limit)
-        return self.mongo.get_query('places', query, self.proj, limit=limit)
+        # return self.mongo.get_query('places', query, self.proj, limit=limit)
+        items = self.mongo.get_query_find_one('places', query, self.proj)
+        return items
+ 
 
     def get_place_by_id(self, id, options=None):
         """Return place by id."""
@@ -355,6 +358,7 @@ class Places(object):
 
     def get_domain_by_product_and_ll(self, prod, lat, lon, options=None):
         """Return domain by product and ll."""
+        domain = ""
         place = self.get_places_by_ll(lon, lat)
         logger.info(f"place : {place}")
         domain_indeces = self.get_domain_and_indeces_by_product_and_place(prod, place['id'])
