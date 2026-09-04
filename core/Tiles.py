@@ -111,7 +111,7 @@ class Tiles(object):
             worker = partial(self.do_stuff, prod, params)
             # executor.map retains MongoDB result ordering, matching the former
             # future list while avoiding a temporary Future object list here.
-            features = list(self._executor.map(worker, items))
+            features = list(self._executor.map(worker, items))     
 
         result = FeatureCollection(features)
         return result
