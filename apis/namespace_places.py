@@ -29,28 +29,6 @@ class GetAllPlaces(Resource):
         for obj in res:
             obj.pop("_id")        
         return res
-        '''
-        services = _runtime_services()
-        res = get_resource(request, services.memory_cache, services.memory_cache_enabled)
-
-        if res is None:
-            res = services.disk_cache.get(
-                request, services.disk_cache_ttl, services.disk_cache_enabled
-            )
-            if res is None:
-                places = Places(current_app.config)
-                res = places.get_all_places("places")
-                for obj in res:
-                    obj.pop("_id")
-
-                services.disk_cache.set(request, res, 'json')
-                set_resource(
-                    request, res, services.memory_cache, services.memory_cache_enabled,
-                    current_app.config['TTL_MEMCACHED'],
-                )
-
-        return jsonify(load_cached_json(res, res))
-        '''
 
 
 @api.route('/search/byname/<string:name>')
