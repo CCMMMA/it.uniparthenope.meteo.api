@@ -27,6 +27,7 @@ import urllib.parse as urllib
 import urllib.request as urllib_request
 from flask import make_response
 import time
+import multiprocessing as mp
 
 from PIL import ImageDraw 
 from PIL import Image
@@ -38,7 +39,7 @@ from datetime import datetime, timedelta
 from core.Logger import logger
 from core.MakeArchivePaths import MakeArchivePaths
 from core.SkewTServices import SkewTServices
-
+from core.GetWorkers import _init_session, work_worker, dispatch
 
 #### Logging ####
 # logger = logging.getLogger('main_logger')
@@ -478,21 +479,6 @@ class MeteoServices:
         image_name = "jsn__" + place + "_" + prod + "_" + dateTime + ".json"
         return self.config['CACHE_JSON'] + os.path.sep + relative_path + os.path.sep + image_name
 
-    def _is_model_output_cache_valid(self, item):
-        """Return whether one time-series hourly slice already has a reusable disk-cache entry."""
-        cache_path = self._model_output_cache_path(item["prod"], item["place"], item["date"])
-        if os.path.isfile(cache_path) is False:
-            return False
-
-        path_archive = MakeArchivePaths.makePath(
-            item["prod"], item["place"], config=self.config
-        )
-
-        if os.path.isfile(path_archive) and os.path.getmtime(path_archive) > os.path.getmtime(cache_path):
-            return False
-
-        return (time.time() - os.path.getmtime(cache_path)) <= self.config['TTL_DISKCACHE']
-
     def _timeseries_parallel_mode(self):
         """Return the configured execution mode for multi-step time-series endpoints."""
         return str(self.config.get("TIMESERIES_PARALLEL_MODE", "processes")).lower()
@@ -505,41 +491,6 @@ class MeteoServices:
         if configured is None:
             configured = min(os.cpu_count() or 1, self.config.get("NUM_THREADS", 1))
         return max(1, min(int(configured), item_count))
-
-    def _timeseries_thread_workers(self, item_count):
-        """Return the number of thread workers to use for local fallback execution."""
-        if item_count < 1:
-            return 1
-        return max(1, min(self.config['NUM_THREADS'], item_count))
-
-    def _load_timeseries_cached_outputs(self, items):
-        """Load already-cached hourly model outputs in-process."""
-        if not items:
-            return []
-        max_workers = self._timeseries_thread_workers(len(items))
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            return list(executor.map(lambda item: self.modelOutput(item, use_disk_cached=True), items))
-
-    def _compute_timeseries_uncached_outputs(self, items):
-        """Compute uncached hourly model outputs using multiprocessing when configured."""
-        if not items:
-            return []
-
-        parallel_mode = self._timeseries_parallel_mode()
-        max_workers = self._timeseries_process_workers(len(items))
-
-        if parallel_mode == "processes" and max_workers > 1:
-            config_snapshot = dict(self.config)
-            with ProcessPoolExecutor(
-                max_workers=max_workers,
-                initializer=_init_timeseries_process_pool,
-                initargs=(config_snapshot,),
-            ) as executor:
-                return list(executor.map(_process_pool_model_output, items))
-
-        thread_workers = self._timeseries_thread_workers(len(items))
-        with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-            return list(executor.map(lambda item: self.modelOutput(item, use_disk_cached=True), items))
 
     def getMaps(self):
         """Implement get maps for meteo services."""
@@ -2480,27 +2431,21 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
 
-            cached_items = []
-            uncached_items = items
-            if use_step_cache and items:
-                cached_items = [item for item in items if self._is_model_output_cache_valid(item)]
-                uncached_items = [item for item in items if item not in cached_items]
+            api_calls = [
+                (
+                    "GET",
+                    f"http://193.205.230.7:5001/products/{prod}/forecast/{place}",
+                    {
+                        "params": {
+                            "date": item["date"]
+                        }
+                    }
+                )
+                for item in items
+            ]
 
-            model_outputs = []
-            if cached_items:
-                model_outputs.extend(self._load_timeseries_cached_outputs(cached_items))
-            if uncached_items:
-                if use_step_cache:
-                    model_outputs.extend(self._compute_timeseries_uncached_outputs(uncached_items))
-                else:
-                    thread_workers = self._timeseries_thread_workers(len(uncached_items))
-                    with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-                        model_outputs.extend(
-                            list(executor.map(
-                                lambda item: self.modelOutput(item, use_disk_cached=False),
-                                uncached_items
-                            ))
-                        )
+            with mp.Pool(self.config['NUM_THREADS'], initializer=_init_session) as p:
+                model_outputs = p.starmap(dispatch, api_calls)
 
             for model_output in model_outputs:
                 forecast[model_output["dateTime"]]=model_output

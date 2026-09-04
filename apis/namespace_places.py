@@ -24,6 +24,12 @@ class GetAllPlaces(Resource):
     @api.doc(summary="List all places", responses={200: "Places collection returned successfully"})
     def get(self):
         """Return the complete place collection available to the API."""
+        place = Places(current_app.config)
+        res = place.get_all_places("places")
+        for obj in res:
+            obj.pop("_id")        
+        return res
+        '''
         services = _runtime_services()
         res = get_resource(request, services.memory_cache, services.memory_cache_enabled)
 
@@ -44,6 +50,7 @@ class GetAllPlaces(Resource):
                 )
 
         return jsonify(load_cached_json(res, res))
+        '''
 
 
 @api.route('/search/byname/<string:name>')
@@ -102,7 +109,7 @@ class PlacesSearchByNameAutocomplete(Resource):
                 params = get_params({'term': None})
                 options = {
                     'filter': ['com', 'porti', 'prov', 'reg', 'ca', 'iim', 'med', 'UNI', 'VET', 'VEB', 'la'],
-                    'limit': 20,
+                    'limit': 30,
                 }
                 matches = places.get_places_by_name(params['term'], options)
                 res = [
