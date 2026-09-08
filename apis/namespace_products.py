@@ -406,7 +406,7 @@ class ProductsForecastByProdAndPlace(Resource):
 
             # Check Diskcache 
             if res is None:    
-                res = services.meteo.modelOutput(params)
+                res = services.meteo.modelOutput(params, use_disk_cached=services.disk_cache_enabled)
 
                 if 'result' in res and "ok" not in res['result']:
                     return jsonify(res)
@@ -748,7 +748,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 }
 
                 if 'data' in params['opt']:
-                    forecastData = services.meteo.modelOutput(params)
+                    forecastData = services.meteo.modelOutput(params, use_disk_cached=services.disk_cache_enabled)
                     if 'result' in forecastData and 'ok' in forecastData['result']:
                         res['forecast'] = forecastData['forecast']
                         if 'place' in params['opt']:

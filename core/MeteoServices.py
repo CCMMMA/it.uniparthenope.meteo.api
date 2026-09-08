@@ -1889,32 +1889,33 @@ class MeteoServices:
         
         retval['link'] = imageUrl
 
-        if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
-            os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
-        else:
-            path_archive = MakeArchivePaths.makePath(
-                params['prod'], params['place'], timeref, config=self.config
-            )
+        if use_disk_cached:
+            if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
+                os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
+            else:
+                path_archive = MakeArchivePaths.makePath(
+                    params['prod'], params['place'], timeref, config=self.config
+                )
 
-            if os.path.isfile(imagePath):
-                
-                logger.info("DISK 3 : Check if valid file !")
-                
-                if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
-                    logger.info(f"DISK 3 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
-                    os.remove(imagePath)
-                    logger.info(f"DISK 3 : File '{imagePath}' deleted !")
-                else:
-                    logger.info(f"DISK 3 : delta time expired {(time.time() - os.path.getmtime(imagePath))} !")
-                    if time.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
-                        logger.info(f"DISK 3 : File ( {imagePath} ) expired !")
+                if os.path.isfile(imagePath):
+                    
+                    logger.info("DISK 3 : Check if valid file !")
+                    
+                    if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
+                        logger.info(f"DISK 3 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
                         os.remove(imagePath)
-                        logger.info(f"DISK 3 : File ( {imagePath} ) deleted !")
-                    else: 
-                        with open(imagePath, 'rb') as content_file:
-                            retval = content_file.read()
-                            content_file.close()
-                        return retval, imageName
+                        logger.info(f"DISK 3 : File '{imagePath}' deleted !")
+                    else:
+                        logger.info(f"DISK 3 : delta time expired {(time.time() - os.path.getmtime(imagePath))} !")
+                        if time.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
+                            logger.info(f"DISK 3 : File ( {imagePath} ) expired !")
+                            os.remove(imagePath)
+                            logger.info(f"DISK 3 : File ( {imagePath} ) deleted !")
+                        else: 
+                            with open(imagePath, 'rb') as content_file:
+                                retval = content_file.read()
+                                content_file.close()
+                            return retval, imageName
 
         # if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
             # Creation image 
@@ -2136,27 +2137,28 @@ class MeteoServices:
             config=self.config,
         )
 
-        if os.path.exists(self.config['BASE_SKEWT'] + os.path.sep + relativePath) is False:
-            os.makedirs(self.config['BASE_SKEWT'] + os.path.sep + relativePath)
-        else:
-            if os.path.isfile(imagePath):
-                
-                if os.path.getmtime(path_archive) > os.path.getmtime(imagePath):
-                    logger.info(f"DISK 4 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
-                    os.remove(imagePath)
-                    logger.info(f"DISK 4 : File '{imagePath}' deleted !")
-                else:
-                    # logger.info(f"DISK 4 : delta time expired {(time.time() - os.path.getmtime(imagePath))} !")
-                    if time.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
-                        logger.info(f"DISK 4 : File ( {imagePath} ) expired !")
+        if use_disk_cached:
+            if os.path.exists(self.config['BASE_SKEWT'] + os.path.sep + relativePath) is False:
+                os.makedirs(self.config['BASE_SKEWT'] + os.path.sep + relativePath)
+            else:
+                if os.path.isfile(imagePath):
+                    
+                    if os.path.getmtime(path_archive) > os.path.getmtime(imagePath):
+                        logger.info(f"DISK 4 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
                         os.remove(imagePath)
-                        logger.info(f"DISK 4 : File ( {imagePath} ) deleted !")
-                    else: 
-                        logger.info("DISK 4 : Present !")
-                        with open(imagePath, 'rb') as content_file:
-                            retval = content_file.read()
-                            content_file.close()
-                        return retval, imageName
+                        logger.info(f"DISK 4 : File '{imagePath}' deleted !")
+                    else:
+                        # logger.info(f"DISK 4 : delta time expired {(time.time() - os.path.getmtime(imagePath))} !")
+                        if time.time() - os.path.getmtime(imagePath) > self.config['TTL_DISKCACHE']:
+                            logger.info(f"DISK 4 : File ( {imagePath} ) expired !")
+                            os.remove(imagePath)
+                            logger.info(f"DISK 4 : File ( {imagePath} ) deleted !")
+                        else: 
+                            logger.info("DISK 4 : Present !")
+                            with open(imagePath, 'rb') as content_file:
+                                retval = content_file.read()
+                                content_file.close()
+                            return retval, imageName
         
         SkewTServices(path_archive).SkewTPlot(imagePath, lat, lon)
 
