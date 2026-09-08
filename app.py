@@ -35,7 +35,8 @@ def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
         logger.error("[*]Memcached Error : %s", memcache_error)
         memory_cache_enabled = False
 
-    disk_cache_enabled = True
+    disk_cache_enabled = False
+    own_disk_cache_enabled = False 
     disk_cache_ttl = flask_application.config["TTL_DISKCACHE"]
     disk_cache = ManageDiskCache(flask_application.config["BASE_DISKCACHE"])
     meteo = MeteoServices(flask_application.config)
@@ -64,6 +65,7 @@ def _create_runtime_services(flask_application: Flask) -> RuntimeServices:
         tiles=tile_service,
         popularity=popularity,
         api_keys=api_keys,
+        own_disk_cache_enabled=own_disk_cache_enabled
     )
 
 

@@ -30,3 +30,4 @@ class RuntimeServices:
     tiles: Tiles
     popularity: RequestPopularityTracker
     api_keys: ApiKeyService
+    own_disk_cache_enabled: bool

@@ -174,7 +174,7 @@ def _warm_forecast_cache(prod, place, params):
     services = _runtime_services()
     cache_key = _forecast_cache_key(prod, place, params)
     response = services.meteo.modelOutput(
-        params, use_disk_cached=services.disk_cache_enabled
+        params, use_disk_cached=services.own_disk_cache_enabled
     )
     if 'result' in response and "ok" not in response['result']:
         return {"cache_key": cache_key, "status": "skipped", "details": response}
@@ -406,7 +406,7 @@ class ProductsForecastByProdAndPlace(Resource):
 
             # Check Diskcache 
             if res is None:    
-                res = services.meteo.modelOutput(params, use_disk_cached=services.disk_cache_enabled)
+                res = services.meteo.modelOutput(params, use_disk_cached=services.own_disk_cache_enabled)
 
                 if 'result' in res and "ok" not in res['result']:
                     return jsonify(res)
@@ -478,7 +478,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 })
                 
                 (mapData, imageName) = services.meteo.ModelPlotImage(
-                    services.disk_cache_enabled, params
+                    services.own_disk_cache_enabled, params
                 )
             
                 res = {
@@ -748,7 +748,7 @@ class ProductsForecastMapByProdAndPlace(Resource):
                 }
 
                 if 'data' in params['opt']:
-                    forecastData = services.meteo.modelOutput(params, use_disk_cached=services.disk_cache_enabled)
+                    forecastData = services.meteo.modelOutput(params, use_disk_cached=services.own_disk_cache_enabled)
                     if 'result' in forecastData and 'ok' in forecastData['result']:
                         res['forecast'] = forecastData['forecast']
                         if 'place' in params['opt']:
