@@ -16,7 +16,8 @@ import io
 import math
 import sys
 import calendar
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+import threading
 import netCDF4
 import numpy as np
 import requests
@@ -37,6 +38,7 @@ from core.Places import Places
 from core.Plotter import Plotter
 from datetime import datetime, timedelta
 from core.Logger import logger
+from core.atomic_io import write_atomic
 from core.MakeArchivePaths import MakeArchivePaths
 from core.SkewTServices import SkewTServices
 from core.GetWorkers import _init_session, work_worker, dispatch
@@ -57,36 +59,20 @@ WEATHER_TEXTS = [
 ]
 
 
-_TIMESERIES_PROCESS_SERVICE = None
+# Historical address of the forecast endpoint used by the time-series fan-out.
+# Deployments override it with TIMESERIES_FORECAST_BASE_URL.
+_DEFAULT_TIMESERIES_FORECAST_BASE_URL = "http://193.205.230.7:5001"
 
 
-def _build_timeseries_process_service(config):
-    """Create a lightweight service instance suitable for process workers."""
-    service = MeteoServices.__new__(MeteoServices)
-    service.config = config
-    service.maps = None
-    service.legal = None
-    service._numpy_method_cache = {}
-
-    with open(config["MAPS"]) as maps_file:
-        service.maps = simplejson.load(maps_file)
-
-    service.places = Places(config)
-    service.plotter = None
-    return service
+def _write_json_atomic(path, payload, **dump_kwargs):
+    """Publish a JSON cache entry without exposing a partially written file."""
+    write_atomic(path, lambda json_file: json.dump(payload, json_file, **dump_kwargs))
 
 
-def _init_timeseries_process_pool(config):
-    """Initialize one shared MeteoServices-like helper inside each worker process."""
-    global _TIMESERIES_PROCESS_SERVICE
-    _TIMESERIES_PROCESS_SERVICE = _build_timeseries_process_service(config)
+def _dispatch_call(call):
+    """Run one ``(method, url, kwargs)`` forecast call on a pool thread."""
+    return dispatch(*call)
 
-
-def _process_pool_model_output(item):
-    """Compute one time-series model output inside a worker process."""
-    if _TIMESERIES_PROCESS_SERVICE is None:
-        raise RuntimeError("Timeseries process pool was not initialized")
-    return _TIMESERIES_PROCESS_SERVICE.modelOutput(item, use_disk_cached=True)
 
 def statusByConc(args):
     """Map a concentration value to its configured status label."""
@@ -450,6 +436,8 @@ class MeteoServices:
 
     config = {}
     path = ""
+    _timeseries_executor = None
+    _timeseries_executor_lock = threading.Lock()
     __statusCode = {'200': {'code': '200', 'msg': 'OK'}, '205': {'code': '205', 'msg': 'No Content'},
                     '231': {'code': '231', 'msg': 'Info Not Available'}, '400': {'code': '400', 'msg': 'Bad Request'},
                     '401': {'code': '401', 'msg': 'Unauthorized'}, '404': {'code': '404', 'msg': 'Not Found'}}
@@ -480,17 +468,41 @@ class MeteoServices:
         return self.config['CACHE_JSON'] + os.path.sep + relative_path + os.path.sep + image_name
 
     def _timeseries_parallel_mode(self):
-        """Return the configured execution mode for multi-step time-series endpoints."""
+        """Return the configured execution mode for the time-series fan-out."""
         return str(self.config.get("TIMESERIES_PARALLEL_MODE", "processes")).lower()
 
-    def _timeseries_process_workers(self, item_count):
-        """Return the number of process workers to use for uncached multi-step items."""
-        if item_count < 2:
-            return 1
-        configured = self.config.get("NUM_PROCESSES")
-        if configured is None:
-            configured = min(os.cpu_count() or 1, self.config.get("NUM_THREADS", 1))
-        return max(1, min(int(configured), item_count))
+    def _timeseries_forecast_url(self, prod, place):
+        """Return the forecast endpoint that serves one hourly time-series slice."""
+        base_url = str(
+            self.config.get(
+                "TIMESERIES_FORECAST_BASE_URL", _DEFAULT_TIMESERIES_FORECAST_BASE_URL
+            )
+        ).rstrip("/")
+        return f"{base_url}/products/{prod}/forecast/{place}"
+
+    def _timeseries_thread_pool(self):
+        """Return the long-lived pool shared by every thread-mode time series."""
+        with self._timeseries_executor_lock:
+            if self._timeseries_executor is None:
+                self._timeseries_executor = ThreadPoolExecutor(
+                    max_workers=max(1, int(self.config['NUM_THREADS'])),
+                    thread_name_prefix="timeseries-slice",
+                )
+            return self._timeseries_executor
+
+    def _fetch_timeseries_outputs(self, api_calls):
+        """Fetch every hourly slice in order, using the configured fan-out mode."""
+        if not api_calls:
+            return []
+
+        if self._timeseries_parallel_mode() == "threads":
+            # The slices are HTTP round trips, so threads avoid forking the
+            # whole worker (and its loaded datasets) on every request.
+            return list(self._timeseries_thread_pool().map(_dispatch_call, api_calls))
+
+        workers = max(1, min(int(self.config['NUM_THREADS']), len(api_calls)))
+        with mp.Pool(workers, initializer=_init_session) as p:
+            return p.starmap(dispatch, api_calls)
 
     def getMaps(self):
         """Implement get maps for meteo services."""
@@ -601,7 +613,11 @@ class MeteoServices:
             if default_midnight:
                 return datetime(now.year, now.month, now.day, 0, 0)
             if round_to_hour:
-                return datetime(now.year, now.month, now.day, int(round(now.hour + now.minute / 60.0)), 0)
+                # Rounding can yield hour 24 after 23:30, so roll over through
+                # a timedelta instead of passing the hour to datetime().
+                return datetime(now.year, now.month, now.day) + timedelta(
+                    hours=int(round(now.hour + now.minute / 60.0))
+                )
             return datetime(now.year, now.month, now.day, now.hour, now.minute)
 
         minute = int(timeref[11:13]) if len(timeref) == 13 else 0
@@ -758,77 +774,12 @@ class MeteoServices:
         }
 
         try:
-            response = requests.get(signalk_meteo, headers=headers)
+            response = requests.get(signalk_meteo, headers=headers, timeout=(5, 30))
             data = response.json()
             return data
-        except requests.exceptions.RequestException as e:
+        except (requests.exceptions.RequestException, ValueError) as e:
             logger.error("Errore nella richiesta: %s", e)
             return None
-
-    '''
-    def getInstruments(self):
-        client = InfluxDBClient(url="http://193.205.230.7:8086", token="__jNBfyWPRNHEau33ebp2PzZSqoaHN5WkCqqZcELncYRpuF13LS-kV-cYmoq7zI3so3rtiFd2Kou6-md06PBdw==", org="Parthenope")
-        query_api = client.query_api()
-        
-        query = f"""from(bucket: "ws") |> range(start: -3h) |> last()"""
-        tables = query_api.query(query, org="Parthenope")
-        instruments = Instrument.query.all()
-        instruments_data = []
-        
-        for instrument in instruments:
-            relevant_variables = instrument.variables.split(", ") if instrument.variables else []
-
-            instrument_data = {
-                'id': instrument.id,
-                'name': instrument.name,
-                'airlinkID': instrument.airlinkID,
-                'latitude': instrument.latitude,
-                'longitude': instrument.longitude,
-                'type': instrument.instrument_type,
-                'organization': instrument.organization,
-                'image': f'static/uploads/{instrument.image}' if instrument.image else None
-            }
-
-            influx_data = {}
-            for table in tables:
-                for record in table.records:
-                    if record.values.get("topic") == instrument.id:
-                        if record.get_field() in relevant_variables:
-                            influx_data[record.get_field()] = record.get_value()
-
-            instrument_data['variables'] = influx_data
-            if 'TempOut' in instrument_data['variables']:
-                instrument_data['variables']['TempOut'] = self.convert_f_to_c(instrument_data['variables']['TempOut'])
-
-            instruments_data.append(instrument_data)
-
-        geojson_data = {
-            "type": "FeatureCollection",
-            "features": []
-        }
-
-        for station in instruments_data:
-            feature = {
-                "type": "Feature",
-                "properties": {
-                    "airlinkID": station["airlinkID"],
-                    "id": station["id"],
-                    "image": station["image"],
-                    "name": station["name"],
-                    "organization": station["organization"],
-                    "type": station["type"],
-                    "variables": station["variables"]
-                },
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [station["longitude"], station["latitude"], 0]
-                }
-            }
-            
-            geojson_data["features"].append(feature)
-
-        return geojson_data
-    '''
 
 
     def getProductAvailCalendar(self, params):
@@ -960,6 +911,14 @@ class MeteoServices:
 
 
     
+    def _add_model_output_options(self, retval, prod, place, params):
+        """Attach the place and field metadata requested through ``opt``."""
+        opt = (params or {}).get("opt") or ""
+        if "place" in opt:
+            retval['place'] = self.places.get_place_by_id(place, params)
+        if "fields" in opt:
+            retval['fields'] = self.maps["products"][prod]['fields']
+
     def modelOutput(self, params=None, use_disk_cached=True,):
         """Implement model output for meteo services."""
         import time as t
@@ -992,7 +951,8 @@ class MeteoServices:
         cache_dir = self.config['CACHE_JSON'] + os.path.sep + relativePath
         if use_disk_cached:
             if os.path.exists(cache_dir) is False:
-                os.makedirs(cache_dir)
+                # Concurrent slices of one time series create the same directory.
+                os.makedirs(cache_dir, exist_ok=True)
             elif os.path.isfile(imagePath):
 
                 path_archive = MakeArchivePaths.makePath(
@@ -1010,9 +970,15 @@ class MeteoServices:
                         os.remove(imagePath)
                         logger.info(f"DISK 2 : File ( {imagePath} ) deleted !")
                     else:
-                        with open(imagePath, "r") as json_file:
-                            retval = json.load(json_file)
-                        return retval
+                        try:
+                            with open(imagePath, "r") as json_file:
+                                retval = json.load(json_file)
+                            if retval.get("result") == "ok":
+                                self._add_model_output_options(retval, prod, place, params)
+                            return retval
+                        except (OSError, ValueError, AttributeError) as cache_error:
+                            # Unreadable entries are rebuilt below like a miss.
+                            logger.warning("DISK 2 : unreadable cache file '%s': %s", imagePath, cache_error)
 
         
         # if use_disk_cached is False or os.path.isfile(imagePath) is False:
@@ -1045,6 +1011,9 @@ class MeteoServices:
                 dataset = netCDF4.Dataset(url)
             except Exception as e:
                 logger.error("[*] netCDF4 error : %s", e)
+                # Without the file no field can be read; answer like any
+                # other unavailable forecast instead of failing further down.
+                return {"result": "error", "details": "Data not available"}
 
             # Check if the product is available and if the filds are defined
             if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
@@ -1249,20 +1218,13 @@ class MeteoServices:
                 # Set the result status
                 retval['result'] = "ok"
 
-                # Check if the opt parameter is set
-                if "opt" in params:
+                # The cache file is keyed by place, product, and hour only, so
+                # it stores the option-independent payload; errors are not
+                # stored because the data may simply not have arrived yet.
+                if use_disk_cached:
+                    _write_json_atomic(imagePath, retval, indent=4)
 
-                    # Check if the place info have to be added
-                    if "place" in params['opt']:
-
-                        # Add the place info
-                        retval['place'] = self.places.get_place_by_id(place, params)
-
-                    # Check if the fields info have to be added
-                    if "fields" in params['opt']:
-
-                        # Add the fields info
-                        retval['fields'] = self.maps["products"][prod]['fields']
+                self._add_model_output_options(retval, prod, place, params)
             else:
                 # Set the result status
                 retval['result'] = "error"
@@ -1276,11 +1238,6 @@ class MeteoServices:
             # Add details to the result status
             retval['details'] = "Place not indexed"
         
-        # Save retval as .json file into cache_jsn
-        if use_disk_cached:
-            with open(imagePath, "w") as json_file:
-                json.dump(retval, json_file, indent=4)
-                
         # Return the result
         return retval
         
@@ -1290,352 +1247,7 @@ class MeteoServices:
         #return retval
     
     
-    '''
-    # DISK-CACHE LOGIC IMPLEMENTED  -- NEW VERSION 
-    def modelOutput(self, params=None):
 
-        retval = {}
-
-        prod = self.default_prod
-        place = self.default_place
-
-        timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
-
-
-        if params:
-            if 'prod' in params and params['prod'] is not None:
-                prod = params['prod']
-
-            if 'place' in params and params['place'] is not None:
-                place = params['place']
-
-            if 'date' in params and params['date'] is not None:
-                timeref = params['date']
-
-        if timeref is None:
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(round(date.hour + date.minute / 60.0))
-            minute = 0
-        else:
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        date = datetime(year, month, day, hour, minute)
-
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-        
-       
-        
-        #relativePath = "json" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
-       
-        #if os.path.exists(self.config['CACHE_JSON'] + os.path.sep + relativePath) is False:
-        #    os.makedirs(self.config['CACHE_JSON'] + os.path.sep + relativePath)
-
-        #imageName = "jsn__" + place + "_" + prod + "_" + dateTime + ".json" 
-        #imagePath = self.config['CACHE_JSON'] + os.path.sep + relativePath + os.path.sep + imageName
-        
-
-        # imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
-
- 
-        # if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
-        
-        # Check into disk cache 
-        #if use_disk_cached is False or os.path.isfile(imagePath) is False:
-
-            # da qui era indentato di 1 
-            # Data not present
-           
-        # Get the domain and the indeces of the place
-        domain_indeces = self.places.get_domain_and_indeces_by_product_and_place(prod, place, date.strftime("%Y%m%dZ%H00"))
-
-
-        # Check if domain and indeces are correct
-        if domain_indeces is not None:
-
-            # Retrieve domain and indeces
-            (domain, Jmin, Jmax, Imin, Imax) = domain_indeces
-
-
-            # Set the dateTime
-            dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-
-            dateTimePath = format(date.year, '04') + "/" + format(date.month, '02') + "/" + format(date.day, '02')
-
-            url = self.config['BASE_PATH'] + "/" + prod + "/" + domain + "/" + self.config['HISTORY'] + "/" + dateTimePath + "/" + prod + "_" + domain + "_" + dateTime + ".nc"
-
-            retval = {}
-
-            # Check if the file exists
-            dataset = None
-        
-
-            try:
-                # Open the data file
-                dataset = netCDF4.Dataset(url)
-            except Exception as e:
-                logger.error("[*] netCDF4 error : %s", e)
-
-            # Check if the product is available and if the filds are defined
-            if prod in self.maps["products"] and "fields" in self.maps["products"][prod]:
-
-                # For each field in fields
-                for field, item in self.maps["products"][prod]["fields"].items():
-
-                    # Set default method
-                    # method = "nanmean"
-                    method = "mean"
-
-                    # Check if method is defined in item
-                    if "method" in item:
-
-                        # Set the method
-                        method = item["method"]
-
-
-                    # Set the method
-                    method = getattr(sys.modules["numpy"],method)
-
-                    # Set time to None
-                    time = None
-
-                    # Check if time is defined in item
-                    if "time" in item:
-
-                        # Set time
-                        time = item["time"]
-
-                    # Set level to None
-                    level = None
-
-                    # Check if level is in item
-                    if "level" in item:
-
-                        # Set level
-                        level = item["level"]
-
-                    # Check func to none
-                    func = None
-
-                    # Check if func is defined in item
-                    if "func" in item:
-
-                        # Get the module and the string module.function
-                        parts = item["func"].split(".")
-
-                        # Check if no module is set
-                        if len(parts) == 1:
-
-                            # Use the current module as default
-                            parts = [ sys.modules[__name__], item["func"]]
-
-                        # Check if the module name is set
-                        elif len(parts) == 2:
-
-                            # Use the specified module
-                            parts = [ sys.modules[parts[0]], item["func"]]
-
-                        # Try to set the function
-                        try:
-
-                            # Set the function pointer
-                            func = getattr(parts[0], parts[1])
-
-                        # If inconsistent module/function rise an exception
-                        except Exception as e:
-                            pass
-
-                    a = 1
-                    if "a" in item:
-                        a = item["a"]
-
-                    b = 0
-                    if "b" in item:
-                        b = item["b"]
-
-                    round_digits = None
-                    if "round" in item:
-                        round_digits = item["round"]
-
-
-                    zero_if_negative = False
-                    if "zero_if_negative" in item:
-                        zero_if_negative = item["zero_if_negative"]
-
-                    zero_if_positive = False
-                    if "zero_if_positive" in item:
-                        zero_if_positive = item["zero_if_positive"]
-
-
-                    # Check if var1 is defined
-                    if "var" in item:
-
-                        # Get the var1 value
-                        var_list = item["var"]
-
-                        # Check if var is a string
-                        if type(var_list) == str:
-
-                            # Convert var in a single element list
-                            var_list = [ var_list ]
-                        
-
-                        # Set the values list
-                        values = []
-
-                        # For each variable in the list
-                        for var in var_list:
-
-
-                            # Check if it is a link
-                            if "__link__" in var:
-
-                                # Set the field value
-                                values.append("prod=" + prod + "&place=" + place + "&date=" + dateTime)
-
-                            # Check if it is a datetime
-                            elif "__dateTime__" in var:
-
-                                # Set the field value
-                                values.append(dateTime)
-
-                            # Check if it is a iDate
-                            elif "__iDate__" in var:
-                                try:
-                                    # Set the value
-                                    values.append(dataset.IDATE)
-                                except Exception as e:
-                                    pass
-
-                            else:
-                                # Get the variable float value
-                                
-                                # Check if both time and level are none (2D variable)
-                                if time is None and level is None: 
-                                    # Get the value and append it to the values list
-                                    values.append(float(method(dataset.variables[var][Jmin:Jmax, Imin:Imax])))
-
-                                # Check if time is none and level is not (3D variable, not depending by the time)
-                                elif time is None and level is not None:
-
-                                    # Get the value and append it to the values list
-
-                                    values.append(float(method(dataset.variables[var][level, Jmin:Jmax, Imin:Imax])))
-
-                                # Check if level is none and time is not (3D variable, not depending by the level)
-                                elif time is not None and level is None:
-                                    values.append(float(method(dataset.variables[var][time, Jmin:Jmax, Imin:Imax])))
-
-                                
-                                # If both time and level are not note, it is a 4D variable
-                                else:
-                                    # Get the value and append it to the values list
-                                    values.append(float(method(dataset.variables[var][time, level, Jmin:Jmax, Imin:Imax])))
-
-
-                        # Check if at least one value is avaliable 
-                        if len(values)>0:
-                            # Initialize the value
-                            value = None
-
-                            # Check if a function have to be applied
-                            if func is not None:
-                                # Invoke the function
-                                value = func(values)
-                            else:
-                                # Only one value
-                                value = values[0]
-
-
-                            # Check if value is integer of float and not nan
-                            if (type(value) == int or type(value) == float) and not math.isnan(value):
-
-                                # Apply the correction
-                                value = value * a + b
-
-                                # If needed, set the value as zero if negative
-                                if zero_if_negative is True:
-                                    if value < 0:
-                                        value = 0
-
-                                # If needed, set the value as zero if positive
-                                if zero_if_positive is True:
-                                    if value > 0:
-                                        value = 0
-
-                                # Check if the number have be rounded
-                                if round_digits is not None and type(value) == float:
-
-                                    # Round the value
-                                    value = round(value, round_digits)
-                                
-                            # Check if value is valued
-                            if (type(value) == float and not math.isnan(value)) or type(value) != float:
-
-                                # Set the value
-                                retval[field] = value
-                            
-                # Close the datase
-                dataset.close()
-
-                # Set the result status
-                retval['result'] = "ok"
-
-                # Check if the opt parameter is set
-                if "opt" in params:
-
-                    # Check if the place info have to be added
-                    if "place" in params['opt']:
-
-                        # Add the place info
-                        retval['place'] = self.places.get_place_by_id(place, params)
-
-                    # Check if the fields info have to be added
-                    if "fields" in params['opt']:
-
-                        # Add the fields info
-                        retval['fields'] = self.maps["products"][prod]['fields']
-            else:
-                # Set the result status
-                retval['result'] = "error"
-
-                # Add details to the result status
-                retval['details'] = "Data not available"
-        else:
-            # Set the result status
-            retval['result'] = "error"
-
-            # Add details to the result status
-            retval['details'] = "Place not indexed"
-        
-
-        #TODO call set to disk-cache manage 
-        # Save retval as .json file into cache_jsn
-        #with open(imagePath, "w") as json_file:
-        #    json.dump(retval, json_file, indent=4)
-        
-        # Return the result
-        return retval
-
-        #with open(imagePath, "r") as json_file:
-        #    print(f"\n\njson presente in cache e considerato\n\n")
-        #    retval = json.load(json_file)
-        #return retval
-    '''
-
-    
     def ModelPlotUrl(self, use_disk_cached=True, params=None):
         """Implement model plot url for meteo services."""
 
@@ -1708,100 +1320,21 @@ class MeteoServices:
 
         relativePath, imageName = self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
 
+        # The plotter answers with the placeholder's filesystem path when the
+        # place cannot be plotted; that path is not below PUB_URL.
+        if relativePath == self.config['NOIMAGE_PATH']:
+            retval['link'] = self.config['NOIMAGE_URL']
+            return retval, imageName
+
         imagePath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + imageName
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
 
         retval['link'] = imageUrl
 
         return retval, imageName
-    
 
-    '''
-    # DISK-CACHE LOGIC IMPLEMENTED  -- NEW VERSION 
-    def ModelPlotUrl(self, result_file, params=None):
-        months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-        retval = {}
 
-        prod = self.default_prod
-        output = self.default_output
-        place = self.default_place
-        width = self.default_xdim
-        height = self.default_ydim
-        lang = self.default_lang
 
-        timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
-
-        bars = False
-        if params:
-            if 'lang' in params and params['lang'] is not None:
-                lang = params['lang']
-
-            if 'opt' in params and params['opt'] is not None:
-                if "bars" in params['opt'] and 'true' in params['opt']['bars']:
-                    bars = True
-
-            if 'width' in params and params['width'] is not None:
-                width = int(params['width'])
-
-            if 'height' in params and params['height'] is not None:
-                height = int(params['height'])
-
-            if 'prod' in params and params['prod'] is not None:
-                prod = params['prod']
-
-            if 'output' in params and params['output'] is not None:
-                output = params['output']
-
-            if 'place' in params and params['place'] is not None:
-                place = params['place']
-
-            if 'date' in params and params['date'] is not None:
-                timeref = params['date']
-
-        if timeref is None:
-            # print "get current utc"
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(round(date.hour + date.minute / 60.0))
-            minute = 0
-        else:
-            # print "Date is provided"
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        dry = str(params['dry'])
-
-        # date = datetime(year, month, day, hour, minute)
-        # Set the dateTime
-        # dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + "00"
-                
-        # relativePath, imageName = self.plotter.render(place, prod, output, dateTime, result_file, language=lang, draw_colorbars=bars)
-
-        imageName = self.plotter.render(place, prod, output, dateTime, result_file, language=lang, draw_colorbars=bars)
-        logger.debug("imageName: %s", imageName)
-
-        if imageName is not None:
-            #imagePath = self.config['BASE_PRODUCTS'] + "/" + relativePath + "/" + imageName
-            # imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
-            # retval['link'] = imageUrl
-            # print(f"\n\nModelPlotUrl -- retval : {retval}\n\n\n")
-            return imageName  
-        #return retval, imageName
-    '''
-
-    
     def ModelPlotImage(self, use_disk_cached=True, params=None):
         """Implement model plot image for meteo services."""
 
@@ -1850,7 +1383,7 @@ class MeteoServices:
 
             if 'date' in params and params['date'] is not None:
                 timeref = params['date']
-        
+
 
         if timeref is None:
             # print "get current utc"
@@ -1877,16 +1410,16 @@ class MeteoServices:
         dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
 
         # Assemble the relative path
-        relativePath = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
+        relativePath = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02')
 
         #if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
         #    os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
 
         # Assemble the image name
-        imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png" 
+        imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png"
         imagePath = self.config['BASE_PRODUCTS'] + os.path.sep + relativePath + os.path.sep + imageName
         imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
-        
+
         retval['link'] = imageUrl
 
         if use_disk_cached:
@@ -1898,11 +1431,11 @@ class MeteoServices:
                 )
 
                 if os.path.isfile(imagePath):
-                    
+
                     logger.info("DISK 3 : Check if valid file !")
-                    
+
                     if (os.path.isfile(path_archive) is True) and (os.path.getmtime(path_archive) > os.path.getmtime(imagePath)):
-                        logger.info(f"DISK 3 : File '{imagePath}' not consistent respect to ARCHIVE file !")  
+                        logger.info(f"DISK 3 : File '{imagePath}' not consistent respect to ARCHIVE file !")
                         os.remove(imagePath)
                         logger.info(f"DISK 3 : File '{imagePath}' deleted !")
                     else:
@@ -1911,156 +1444,39 @@ class MeteoServices:
                             logger.info(f"DISK 3 : File ( {imagePath} ) expired !")
                             os.remove(imagePath)
                             logger.info(f"DISK 3 : File ( {imagePath} ) deleted !")
-                        else: 
+                        else:
                             with open(imagePath, 'rb') as content_file:
                                 retval = content_file.read()
                                 content_file.close()
                             return retval, imageName
 
         # if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
-            # Creation image 
+            # Creation image
         #    self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
 
         self.plotter.render(place, prod, output, dateTime, language=lang, draw_colorbars=bars)
 
         # retval['link'] = imageUrl
-        
+
         try:
             with open(imagePath, 'rb') as content_file:
             #with open(imagePath, 'r') as content_file:
                 retval = content_file.read()
                 content_file.close()
         except Exception:
-            
+
             imagePath = self.config['NOIMAGE_PATH']
             imageUrl = self.config['NOIMAGE_URL']
 
             with open(imagePath, 'rb') as content_file:
                 retval = content_file.read()
                 content_file.close()
-                
+
             # retval['link'] = imagePath
-            
+
         return retval, imageName
-    
 
-    '''
-    # DISK-CACHE LOGIC IMPLEMENTED  -- NEW VERSION 
-    def ModelPlotImage(self, result_path, params=None):
-    # def ModelPlotImage(self, use_disk_cached=True, params=None):
 
-        months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-        retval = {}
-
-        prod = self.default_prod
-        output = self.default_output
-        place = self.default_place
-        width = self.default_xdim
-        height = self.default_ydim
-        lang = self.default_lang
-
-        timeref = None
-        year = 0
-        month = 0
-        day = 0
-        hour = 0
-        minute = 0
-
-        bars = False
-
-        if params:
-            if 'lang' in params and params['lang'] is not None:
-                lang = params['lang']
-
-            if 'opt' in params and params['opt'] is not None:
-                #if "bars" in params['opt'] and 'true' in params['opt']['bars']:
-                if "bars" in params['opt']:
-                    bars = True
-
-            if 'width' in params and params['width'] is not None:
-                width = int(params['width'])
-
-            if 'height' in params and params['height'] is not None:
-                height = int(params['height'])
-
-            if 'prod' in params and params['prod'] is not None:
-                prod = params['prod']
-
-            if 'output' in params and params['output'] is not None:
-                output = params['output']
-
-            if 'place' in params and params['place'] is not None:
-                place = params['place']
-
-            if 'date' in params and params['date'] is not None:
-                timeref = params['date']
-        
-        
-        if timeref is None:
-            # print "get current utc"
-            date = datetime.utcnow()
-            year = date.year
-            month = date.month
-            day = date.day
-            hour = int(round(date.hour + date.minute / 60.0))
-            minute = 0
-        else:
-            # print "Date is provided"
-            year = int(timeref[:4])
-            month = int(timeref[4:6])
-            day = int(timeref[6:8])
-            hour = int(timeref[9:11])
-            if len(timeref) == 13:
-                minute = int(timeref[11:13])
-
-        dry = str(params['dry'])
-
-        date = datetime(year, month, day, hour, minute)
-
-        # Set the dateTime
-        dateTime = format(date.year, '04') + format(date.month, '02') + format(date.day, '02') + "Z" + format(date.hour, '02') + format(date.minute, '02')
-        
-        
-        
-        # Assemble the relative path
-        #relativePath = "plt" + os.path.sep + place + os.path.sep + prod + os.path.sep  + format(date.year, '04') + os.path.sep  + format(date.month, '02') + os.path.sep  + format(date.day, '02') 
-
-        #if os.path.exists(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath) is False:
-        #    os.makedirs(self.config['BASE_PRODUCTS'] + os.path.sep + relativePath)
-
-        # Assemble the image name
-        #imageName = "plt_" + place + "_" + prod + "_" + dateTime + "_" + output + "_1024x768.png" 
-
-        #imagePath = self.config['BASE_PRODUCTS'] + os.path.sep + relativePath + os.path.sep + imageName
-        #imageUrl = self.config['PUB_URL'] + "/" + relativePath + "/" + imageName
-                
-        #if use_disk_cached is False or os.path.isfile(imagePath) is False or (os.path.isfile(imagePath) is True or (time.time() - os.path.getmtime(imagePath)) > self.config['CACHE_TIMEOUT']):
-            # Creation image 
-        
-
-        self.plotter.render(place, prod, output, dateTime, result_path, language=lang, draw_colorbars=bars)
-
-        
-        #retval['link'] = imageUrl
-        # 
-        #try:
-        #    with open(imagePath, 'rb') as content_file:
-        #    #with open(imagePath, 'r') as content_file:
-        #        retval = content_file.read()
-        #        content_file.close()
-        #except Exception as e:
-            
-        #    imagePath = self.config['NOIMAGE_PATH']
-        #    imageUrl = self.config['NOIMAGE_URL']
-
-        #    with open(imagePath, 'rb') as content_file:
-        #        retval = content_file.read()
-        #        content_file.close()
-                
-            # retval['link'] = imagePath
-        
-        #return retval, imageName
-    '''   
 
     def ModelPlotSkewT(self, use_disk_cached=True, params=None):
         """Implement model plot skew t for meteo services."""
@@ -2433,24 +1849,17 @@ class MeteoServices:
                 date = date + timedelta(hours=1)
                 count = count + 1
 
+            forecast_url = self._timeseries_forecast_url(prod, place)
             api_calls = [
-                (
-                    "GET",
-                    f"http://193.205.230.7:5001/products/{prod}/forecast/{place}",
-                    {
-                        "params": {
-                            "date": item["date"]
-                        }
-                    }
-                )
+                ("GET", forecast_url, {"params": {"date": item["date"]}})
                 for item in items
             ]
 
-            with mp.Pool(self.config['NUM_THREADS'], initializer=_init_session) as p:
-                model_outputs = p.starmap(dispatch, api_calls)
-
-            for model_output in model_outputs:
-                forecast[model_output["dateTime"]]=model_output
+            for model_output in self._fetch_timeseries_outputs(api_calls):
+                # The forecast endpoint answers 200 with an error payload when
+                # a slice is unavailable; such a slice carries no dateTime.
+                if isinstance(model_output, dict) and "dateTime" in model_output:
+                    forecast[model_output["dateTime"]] = model_output
 
             keys = sorted(forecast)
             if hours == 0:
@@ -2962,366 +2371,3 @@ class MeteoServices:
         out = self.maps["alt"][lang].replace("%H", hour).replace("%M",minute).replace("%d", day).replace("%m", month).replace("%Y", year).replace("__place__", place).replace("__model__", model_name).replace("__output__", output_name)
 
         return out
-
-
-    ''' 
-    # funzione aggiunta dalle vecchie API 
-    def modelploturl_or_image(self, use_disk_cached=True, params = None):
-        months=[ "jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]
-        retval = {}
-
-        # places = self.Places(self.config)
-        prod = self.default_prod
-        output = self.default_output
-        place = self.default_place
-        width = self.default_xdim
-        height = self.default_ydim
-
-        timeref = None
-        year=0
-        month=0
-        day=0
-        hour=0
-        minute=0
-
-        bars='false'
-
-        if params:
-            if 'opt' in params and params['opt'] is not None:
-                if "bars" in params['opt']:
-                    bars='true'
-            if 'width' in params and params['width'] is not None:
-                width = int(params['width'])
-
-            if 'height' in params and params['height'] is not None:
-                height = int(params['height'])
-
-            if 'prod' in params and params['prod'] is not None:
-                prod = params['prod']
-
-            if 'output' in params and params['output'] is not None:
-                output = params['output']
-
-            if 'place' in params and params['place'] is not None:
-                place = params['place']
-
-            if 'date' in params and params['date'] is not None:
-                timeref = params['date']
-
-        if timeref is None:
-            #print "get current utc"
-            date=datetime.utcnow()
-            year=date.year
-            month=date.month
-            day=date.day
-            hour=int(round(date.hour+date.minute/60.0))
-            minute=0
-        else:
-            #print "Date is provided"
-            year=int(timeref[:4])
-            month=int(timeref[4:6])
-            day=int(timeref[6:8])
-            hour=int(timeref[9:11])
-            if len(timeref)==13:
-                minute=int(timeref[11:13])
-
-        # Get dry
-        dry = str(params['dry'])
-
-        #print "hour:"+str(hour)
-        #print "Place:"+str(place) 
-        date=datetime(year, month, day, hour, minute)
-        #print "date:"+str(date)
-
-        # Get place data
-        params1 = {'id':place,'filter':None, 'prod':prod}
-
-        # Set the dateTime
-        dateTime=format(date.year,'04')+format(date.month,'02')+format(date.day,'02')+"Z"+format(date.hour,'02')+format(date.minute,'02')
-        dateTimePath=format(date.year,'04')+"/"+format(date.month,'02')+"/"+format(date.day,'02')
-
-        imageName="plt_"+place+"_"+prod+"_"+dateTime+"_"+output+"_"+str(width)+"x"+str(height)+".png"
-        relativePath="plt/"+place+"/"+prod+"/"+dateTimePath
-
-        # Check if the directory exists
-        if os.path.exists(self.config['BASE_PRODUCTS']+"/"+relativePath) is False:
-
-            # Create the directory
-            os.makedirs(self.config['BASE_PRODUCTS']+"/"+relativePath)
-        
-        
-        imagePath=self.config['BASE_PRODUCTS']+"/"+relativePath+"/"+imageName
-        imageUrl=self.config['PUB_URL']+"/"+relativePath+"/"+imageName
-
-        # Check if the file already exists and it is valid
-        if use_diskcached is False or os.path.isfile(imagePath) is False or ( os.path.isfile(imagePath) is True and (time.time()-os.path.getmtime(imagePath))>86400):
-
-            #imagePath=self.cfg['NOIMAGE_PATH']
-            # placeData = places.get_place_by_id(place,params)
-            placeData = self.places.get_place_by_id(place,params)
-            if placeData is not None:
-
-                # Get the domain and the indeces of the place
-                domain_indeces=self.places.get_domain_and_indeces_by_product_and_place(prod, place)
-
-
-                # Check if domain and indeces are correct
-                if domain_indeces is not None:
-
-                    # Retrieve domain and indeces
-                    (domain,Jmin,Jmax,Imin,Imax)=domain_indeces
-
-
-                    minLon=placeData["minLon"]
-                    minLat=placeData["minLat"]
-                    maxLon=placeData["maxLon"]
-                    maxLat=placeData["maxLat"]
-
-                    # Set the local path of the data file
-                    url=self.config['BASE_PATH']+"/"+prod+"/"+domain+"/"+self.config['HISTORY']+"/"+dateTimePath+"/"+prod+"_"+domain+"_"+dateTime+".nc"
-                
-                    dataset=None
-                    try:
-                        # Open the data file
-                        dataset = netCDF4.Dataset(url)
-                    except:
-                        imagePath=self.config['NOIMAGE_PATH']
-                        imageUrl=self.config['NOIMAGE_URL']
-
-                    if dataset is not None:
-
-                        controlFile="""
-dset """+url+"""
-dtype netcdf"""
-                        if "rdr1" in prod or "rdr2" in prod:
-                            XLONG=dataset.variables["lon"][::]
-                            XLAT=dataset.variables["lat"][::]
-                            south_north_dim=len(XLAT)
-                            west_east_dim=len(XLONG[0])
-
-                            (lon_min,lat_min,lon_max,lat_max,dxll,dyll)=self.calc_boundaries(west_east_dim,south_north_dim,XLONG,XLAT)
-
-                            controlFile=controlFile+"""
-undef -999000000
-TITLE Weather Radar Output Grid: Time, bottom_top, south_north, west_east
-xdef  """+str(west_east_dim)+""" linear   """+str(lon_min)+"""   """+str(dxll)+"""
-ydef  """+str(south_north_dim)+""" linear   """+str(lat_min)+"""   """+str(dyll)+"""
-zdef  30 linear 1 1
-tdef   1 linear """+format(date.hour,'02')+""":"""+format(date.minute,'02')+"""Z"""+format(date.day,'02')+months[date.month-1]+format(date.year,'04')+""" 1hr
-vars 3
-reflectivity=>reflectivity  0  t,y,x  Reflectivity
-rain=>rain                  0  t,y,x  Rain
-mask=>mask                  0  y,x    Mask
-endvars
-"""
-                            #print str(controlFile)
-
-                        if "wcm3" in prod:
-                            ipoints=len(dataset.dimensions['longitude'])
-                            jpoints=len(dataset.dimensions['latitude'])
-                            lon0=dataset.variables["longitude"][0]
-                            lat0=dataset.variables["latitude"][0]
-                            lon1=dataset.variables["longitude"][-1]
-                            lat1=dataset.variables["latitude"][-1]
-
-                            dxll=(lon1-lon0)/ipoints
-                            dyll=(lat1-lat0)/jpoints
-
-                            controlFile=controlFile+"""
-undef 1.0e+37f
-TITLE WACOMM Output Grid: Time, bottom_top, south_north, west_east
-xdef """+str(ipoints)+""" linear  """+str(lon0)+"""   """+str(dxll)+"""
-ydef """+str(jpoints)+""" linear  """+str(lat0)+"""   """+str(dyll)+"""
-zdef  11 linear 1 1
-tdef   1 linear """+format(date.hour,'02')+""":"""+format(date.minute,'02')+"""Z"""+format(date.day,'02')+months[date.month-1]+format(date.year,'04')+""" 1hr
-vars 1
-conc=>conc 11 t,z,y,x  Tracer concentration
-endvars
-"""
-                            #print str(controlFile)
-                        if "aiq3" in prod:
-                            ipoints=len(dataset.dimensions['longitude'])
-                            jpoints=len(dataset.dimensions['latitude'])
-                            lon0=dataset.variables["longitude"][0]
-                            lat0=dataset.variables["latitude"][0]
-                            lon1=dataset.variables["longitude"][-1]
-                            lat1=dataset.variables["latitude"][-1]
-
-                            dxll=(lon1-lon0)/ipoints
-                            dyll=(lat1-lat0)/jpoints
-
-                            controlFile=controlFile+"""
-undef 1.0e+37f
-TITLE AIQUAM Output Grid: Time, bottom_top, south_north, west_east
-xdef """+str(ipoints)+""" linear  """+str(lon0)+"""   """+str(dxll)+"""
-ydef """+str(jpoints)+""" linear  """+str(lat0)+"""   """+str(dyll)+"""
-zdef  11 linear 1 1
-tdef   1 linear """+format(date.hour,'02')+""":"""+format(date.minute,'02')+"""Z"""+format(date.day,'02')+months[date.month-1]+format(date.year,'04')+""" 1hr
-vars 1
-class_predict=>class_predict 0 t,y,x  Predicted class
-endvars
-"""
-                            #print str(controlFile)
-                        if "rms3" in prod:
-
-                            ipoints=len(dataset.dimensions['longitude'])
-                            jpoints=len(dataset.dimensions['latitude'])
-                            lon0=dataset.variables["longitude"][0]
-                            lat0=dataset.variables["latitude"][0]
-                            lon1=dataset.variables["longitude"][-1]
-                            lat1=dataset.variables["latitude"][-1]
-
-                            dxll=(lon1-lon0)/ipoints
-                            dyll=(lat1-lat0)/jpoints
-
-                            controlFile=controlFile+"""
-undef 1.e+37
-TITLE ROMS Output Grid: Time, bottom_top, south_north, west_east
-xdef """+str(ipoints)+""" linear  """+str(lon0)+"""   """+str(dxll)+"""
-ydef """+str(jpoints)+""" linear  """+str(lat0)+"""   """+str(dyll)+"""
-zdef  11 linear 1 1
-tdef   1 linear """+format(date.hour,'02')+""":"""+format(date.minute,'02')+"""Z"""+format(date.day,'02')+months[date.month-1]+format(date.year,'04')+""" 1hr
-vars 7
-zeta=>zeta  0  t,y,x   free-surface
-u=>u       11  t,z,y,x u-momentum component
-v=>v       11  t,z,y,x v-momentum component
-ubar=>ubar  0  t,y,x   vertically integrated u-momentum component
-vbar=>vbar  0  t,y,x   vertically integrated v-momentum component
-salt=>salt 11  t,z,y,x salinity
-temp=>temp 11  t,z,y,x potential temperature
-endvars
-"""
-                            #print str(controlFile)
-                        if "ww33" in prod:
-
-                            ipoints=len(dataset.dimensions['longitude'])
-                            jpoints=len(dataset.dimensions['latitude'])
-                            lon0=dataset.variables["longitude"][0]
-                            lat0=dataset.variables["latitude"][0]
-                            lon1=dataset.variables["longitude"][-1]
-                            lat1=dataset.variables["latitude"][-1]
-
-                            dxll=(lon1-lon0)/ipoints
-                            dyll=(lat1-lat0)/jpoints
-
-                            controlFile=controlFile+"""
-undef 1.e+37
-TITLE WWatch3 Output Grid: Time, bottom_top, south_north, west_east
-xdef """+str(ipoints)+""" linear  """+str(lon0)+"""   """+str(dxll)+"""
-ydef """+str(jpoints)+""" linear  """+str(lat0)+"""   """+str(dyll)+"""
-zdef   1 linear 1 1
-tdef   1 linear """+format(date.hour,'02')+""":"""+format(date.minute,'02')+"""Z"""+format(date.day,'02')+months[date.month-1]+format(date.year,'04')+""" 1hr
-vars 5
-hs=>hs  0  t,y,x   Significant wave height
-lm=>lm  0  t,y,x   Wave length
-fp=>fp  0  t,y,x   Peak frequency
-dir=>dir  0  t,y,x  Wave direction
-period=>period  0  t,y,x  Wave period
-endvars
-"""
-                            #print str(controlFile)
-
-                        if "wrf5" in prod:
-                            ipoints=len(dataset.dimensions['longitude'])
-                            jpoints=len(dataset.dimensions['latitude'])
-                            lon0=dataset.variables["longitude"][0] 
-                            lat0=dataset.variables["latitude"][0]
-                            lon1=dataset.variables["longitude"][-1]    
-                            lat1=dataset.variables["latitude"][-1]
-                            dxll=(lon1-lon0)/ipoints
-                            dyll=(lat1-lat0)/jpoints
-                            controlFile=controlFile+"""
-undef 1.e30
-title  OUTPUT FROM WRF V3.9.1 MODEL
-xdef """+str(ipoints)+""" linear  """+str(lon0)+"""   """+str(dxll)+"""
-ydef """+str(jpoints)+""" linear  """+str(lat0)+"""   """+str(dyll)+"""
-zdef  27 linear 1 1
-tdef   1 linear """+format(date.hour,'02')+""":"""+format(date.minute,'02')+"""Z"""+format(date.day,'02')+months[date.month-1]+format(date.year,'04')+""" 1hr
-vars 48
-U10M=>u10m               0  t,y,x    wind u component at 10m
-V10M=>v10m               0  t,y,x    wind v component at 10m
-WSPD10=>ws10             0  t,y,x    wind speed at 10m
-WDIR10=>wd10             0  t,y,x    wind direction at 10m
-DELTA_WSPD10=>delta_ws10 0  t,y,x    difference of wind speed at 10m
-DELTA_WDIR10=>delta_wd10 0  t,y,x    difference of wind direction at 10m
-CLDFRA_TOTAL=>clf_total  0  t,y,x    total cloud fraction
-SLP=>slp                 0  t,y,x    pressure at sea level
-UH=>uh                   0  t,y,x    updraft helicity
-RH2=>rh2                 0  t,y,x    relative humidity at 2m
-T2C=>t2c                 0  t,y,x    temperature at 2m
-DELTA_RAIN=>delta_rain   0  t,y,x    hourly cumulated rain mm
-GPH500=>gph500           0  t,y,x    geopotential height at 500 hPa
-GPH850=>gph850           0  t,y,x    geopotential height at 850 hPa
-HOURLY_SWE=>hourly_swe   0  t,y,x    equivalent snow water kg m-2
-DAILY_RAIN=>daily_rain   0  t,y,x    daily cumulated rain mm
-U300=>u300               0  t,y,x    wind u component at 300 Hpa
-V300=>v300               0  t,y,x    wind v component at 300 Hpa
-RH300=>rh300             0  t,y,x    relative humidity at 300 Hpa
-TC300=>tc300             0  t,y,x    temperature in celsius at 300 Hpa
-U500=>u500               0  t,y,x    wind u component at 500 Hpa
-V500=>v500               0  t,y,x    wind v component at 500 Hpa
-RH500=>rh500             0  t,y,x    relative humidity at 500 Hpa
-TC500=>tc500             0  t,y,x    temperature in celsius at 500 Hpa
-U700=>u700               0  t,y,x    wind u component at 700 Hpa
-V700=>v700               0  t,y,x    wind v component at 700 Hpa
-RH700=>rh700             0  t,y,x    relative humidity at 700 Hpa
-TC700=>tc700             0  t,y,x    temperature in celsius at 700 Hpa
-U850=>u850               0  t,y,x    wind u component at 850 Hpa
-V850=>v850               0  t,y,x    wind v component at 850 Hpa
-RH850=>rh850             0  t,y,x    relative humidity at 850 Hpa
-TC850=>tc850             0  t,y,x    temperature in celsius at 850 Hpa
-U925=>u925               0  t,y,x    wind u component at 925 Hpa
-V925=>v925               0  t,y,x    wind v component at 925 Hpa
-RH925=>rh925             0  t,y,x    relative humidity at 925 Hpa
-TC925=>tc925             0  t,y,x    temperature in celsius at 925 Hpa
-U950=>u950               0  t,y,x    wind u component at 950 Hpa
-V950=>v950               0  t,y,x    wind v component at 950 Hpa
-RH950=>rh950             0  t,y,x    relative humidity at 950 Hpa
-TC950=>tc950             0  t,y,x    temperature in celsius at 950 Hpa
-U975=>u975               0  t,y,x    wind u component at 975 Hpa
-V975=>v975               0  t,y,x    wind v component at 975 Hpa
-RH975=>rh975             0  t,y,x    relative humidity at 975 Hpa
-TC975=>tc975             0  t,y,x    temperature in celsius at 975 Hpa
-U1000=>u1000             0  t,y,x    wind u component at 1000 Hpa
-V1000=>v1000             0  t,y,x    wind v component at 1000 Hpa
-RH1000=>rh1000           0  t,y,x    relative humidity at 1000 Hpa
-TC1000=>tc1000           0  t,y,x    temperature in celsius at 1000 Hpa
-endvars
-"""
-                        dataset.close()
-                        tempdir="/tmp/grads_"+prod+"_"+str(uuid.uuid4())
-                        os.makedirs(tempdir)
-
-                        controlFileName=tempdir+"/controlfile.ctl"
-
-                        file = open(controlFileName,"w") 
-                        file.write(controlFile)
-                        file.close() 
-                        
-                        //script=self.config['GRADS_SCRIPT']
-
-                        # environment="/home/ccmmma/prometeo/opt/ccmmmaapi/sourceme-grads-2.2.1"
-                        # label=placeData["long_name"]["it"]
-                        # command='grads -lbc "'+script+" "+controlFileName+" "+str(minLon)+" "+str(minLat)+" "+str(maxLon)+" "+str(maxLat)+" "+place+" "+domain+" "+prod+" "+output+" "+str(width)+" "+str(height)+" "+imagePath+" "+tempdir+" "+bars+" "+label+'"'
-                        # os.system(". "+environment+";"+command)
-                        #shutil.rmtree(tempdir)
-                        
-
-
-            else:
-                # The place is not available
-                imagePath=self.config['NOIMAGE_PATH']
-                imageUrl=self.config['NOIMAGE_URL']
-
-        retval['link']=imageUrl
-        if dry.lower() == "false":
-            try:
-                with open(imagePath, 'r') as content_file:
-                    retval = content_file.read()
-            except:
-                imagePath=self.config['NOIMAGE_PATH']
-                imageUrl=self.config['NOIMAGE_URL']
-
-        return (retval,imageName)
-        '''
-    

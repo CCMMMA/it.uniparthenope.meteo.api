@@ -2,14 +2,28 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import threading
 import time
 from pathlib import Path
 
+from core.atomic_io import write_atomic
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - non-POSIX development hosts
+    fcntl = None
+
 
 class RequestPopularityTracker:
-    """Track and persist the most frequently requested forecast and time-series signatures."""
+    """Track and persist the most frequently requested forecast and time-series signatures.
+
+    Every worker process owns one tracker but all of them share one file. A
+    process therefore keeps only the increments it has not persisted yet and
+    adds them to the file's current contents on flush, so the persisted counts
+    are the totals across workers rather than those of the last writer.
+    """
 
     def __init__(
         self,
@@ -24,7 +38,12 @@ class RequestPopularityTracker:
         self.flush_every = max(1, int(flush_every))
         self.flush_interval_seconds = float(flush_interval_seconds)
         self._lock = threading.RLock()
+        # Merged view: the last state read from disk plus this process's
+        # pending increments.
         self._records = {}
+        # Increments recorded since the last flush, keyed like _records.
+        self._pending = {}
+        self._loaded_mtime_ns = None
         self._dirty_count = 0
         self._last_flush = time.time()
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,37 +65,89 @@ class RequestPopularityTracker:
             ]
         )
 
-    def _load(self):
-        """Load persisted popularity counters from disk when available."""
-        if not self.path.exists():
+    @contextlib.contextmanager
+    def _file_lock(self):
+        """Serialize the read-merge-write cycle across worker processes."""
+        if fcntl is None:
+            yield
             return
+        with open(self.path.with_name(self.path.name + ".lock"), "a") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file, fcntl.LOCK_UN)
 
+    def _read_disk(self):
+        """Return the persisted records keyed by signature, tolerating a bad file."""
         try:
+            self._loaded_mtime_ns = self.path.stat().st_mtime_ns
             payload = json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return
+            records = payload.get("records", [])
+        except FileNotFoundError:
+            self._loaded_mtime_ns = None
+            return {}
+        except (OSError, ValueError, AttributeError):
+            return {}
 
-        records = payload.get("records", [])
+        loaded = {}
         for record in records:
-            key = self._signature_key(
-                record["endpoint"],
-                record["prod"],
-                record["place"],
-                record["params"],
-            )
-            self._records[key] = record
+            try:
+                key = self._signature_key(
+                    record["endpoint"],
+                    record["prod"],
+                    record["place"],
+                    record["params"],
+                )
+                record["count"] = int(record["count"])
+            except (KeyError, TypeError, ValueError, AttributeError):
+                continue
+            loaded[key] = record
+        return loaded
+
+    def _with_pending(self, records):
+        """Add this process's unpersisted increments to a set of disk records."""
+        for key, delta in self._pending.items():
+            record = records.get(key)
+            if record is None:
+                records[key] = dict(delta)
+                continue
+            record["count"] += delta["count"]
+            record["first_seen"] = min(record.get("first_seen", delta["first_seen"]), delta["first_seen"])
+            record["last_seen"] = max(record.get("last_seen", delta["last_seen"]), delta["last_seen"])
+        return records
+
+    def _load(self):
+        """Replace the merged view with the persisted state plus pending increments."""
+        self._records = self._with_pending(self._read_disk())
+
+    def _refresh_unlocked(self):
+        """Pick up counters flushed by other worker processes since the last read."""
+        try:
+            current_mtime_ns = self.path.stat().st_mtime_ns
+        except OSError:
+            current_mtime_ns = None
+        if current_mtime_ns != self._loaded_mtime_ns:
+            self._load()
 
     def _flush_unlocked(self):
-        """Persist the current counters atomically."""
-        payload = {
-            "records": sorted(
-                self._records.values(),
-                key=lambda item: (-item["count"], -item["last_seen"]),
-            )
-        }
-        temp_path = self.path.with_suffix(self.path.suffix + ".tmp")
-        temp_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
-        temp_path.replace(self.path)
+        """Merge pending increments into the shared file and publish it atomically."""
+        with self._file_lock():
+            merged = self._with_pending(self._read_disk())
+            payload = {
+                "records": sorted(
+                    merged.values(),
+                    key=lambda item: (-item["count"], -item["last_seen"]),
+                )
+            }
+            serialized = json.dumps(payload, sort_keys=True)
+            write_atomic(self.path, lambda file: file.write(serialized))
+            try:
+                self._loaded_mtime_ns = self.path.stat().st_mtime_ns
+            except OSError:
+                self._loaded_mtime_ns = None
+        self._records = merged
+        self._pending = {}
         self._dirty_count = 0
         self._last_flush = time.time()
 
@@ -92,21 +163,22 @@ class RequestPopularityTracker:
         now = time.time()
 
         with self._lock:
-            record = self._records.get(key)
-            if record is None:
-                record = {
-                    "endpoint": endpoint,
-                    "prod": prod,
-                    "place": place,
-                    "params": dict(normalized_params),
-                    "count": 0,
-                    "first_seen": now,
-                    "last_seen": now,
-                }
-                self._records[key] = record
+            for store in (self._records, self._pending):
+                record = store.get(key)
+                if record is None:
+                    record = {
+                        "endpoint": endpoint,
+                        "prod": prod,
+                        "place": place,
+                        "params": dict(normalized_params),
+                        "count": 0,
+                        "first_seen": now,
+                        "last_seen": now,
+                    }
+                    store[key] = record
 
-            record["count"] += 1
-            record["last_seen"] = now
+                record["count"] += 1
+                record["last_seen"] = now
 
             self._dirty_count += 1
             if (
@@ -118,6 +190,7 @@ class RequestPopularityTracker:
     def top_requests(self, prod=None, endpoint=None, place=None, limit=None):
         """Return the most popular normalized request signatures."""
         with self._lock:
+            self._refresh_unlocked()
             items = [
                 dict(record)
                 for record in self._records.values()
@@ -132,6 +205,7 @@ class RequestPopularityTracker:
     def matching_requests(self, prod=None, endpoint=None, place=None):
         """Return all normalized request signatures matching the provided filters."""
         with self._lock:
+            self._refresh_unlocked()
             return [
                 dict(record)
                 for record in self._records.values()

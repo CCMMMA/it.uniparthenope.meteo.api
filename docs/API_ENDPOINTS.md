@@ -27,9 +27,12 @@ Related documents:
 
 API-key lifecycle services and persistence are implemented; public key-management
 HTTP endpoints are intentionally not published. V1 forecast and time-series
-resources enforce scoped `X-API-Key` credentials. Legacy routes remain
-observation-only: validation never blocks a legacy request, and a presented key
-receives an `API-Key-Observation` diagnostic header.
+resources enforce scoped `X-API-Key` credentials, and so do the cache
+maintenance routes (`/products/<prod>/invalidate/...` and
+`/products/<prod>/rebuild/`), which require the `operations:cache` scope. The
+other legacy routes remain observation-only: validation never blocks the
+request, and a presented key receives an `API-Key-Observation` diagnostic
+header.
 
 ## Common Notes
 
@@ -381,12 +384,14 @@ Purpose:
 Path parameters:
 
 - `prod`: product code such as `wrf5`
-- `placeprefix`: prefix used to filter the dataset, such as `prov`
-- `z`, `x`, `y`: tile coordinates
+- `placeprefix`: one or more place-id prefixes joined by `-`, such as `prov` or `prov-euro`; each part may contain letters, digits, and `_` only
+- `z`, `x`, `y`: slippy-map tile coordinates, with `z` between `0` and `22` and `x`, `y` inside the grid of that zoom level
 
 Typical response:
 
-- JSON or GeoJSON-like payload representing weather features for the requested tile.
+- GeoJSON `FeatureCollection` with one `Point` feature per place that has a forecast for the requested hour. Places without data are omitted.
+- `400` with a `message` when the tile coordinates or the place prefix are invalid.
+- The optional `date` query parameter selects the forecast hour (`YYYYMMDDZHHMM`); it defaults to the current UTC hour.
 
 Example:
 
@@ -771,6 +776,11 @@ Purpose:
 
 - Invalidates forecast and time-series caches for one product/place time window.
 
+Authentication:
+
+- requires `X-API-Key` with the `operations:cache` scope
+- answers `401` without a valid key and `403` when the key lacks the scope
+
 Defaults:
 
 - `date`: current UTC day at `00:00`
@@ -781,11 +791,13 @@ Behavior:
 - removes cached hourly `modelOutput(...)` slices
 - removes matching top-level forecast and time-series cache entries
 - leaves unrelated products and places untouched
+- answers `400` with `{"result": "error", "details": ...}` when `date` is malformed or `hours` is not an integer between `0` and `744`
 
 Example:
 
 ```http
 GET /products/wrf5/invalidate/com63049/?date=20260413Z0000&hours=24
+X-API-Key: <operator key with operations:cache>
 ```
 
 ### `GET /products/<prod>/rebuild/?date=YYYYMMDDZhhmm&hours=n`
@@ -793,6 +805,11 @@ GET /products/wrf5/invalidate/com63049/?date=20260413Z0000&hours=24
 Purpose:
 
 - Rebuilds forecast and time-series caches for the most popular request signatures of one product.
+
+Authentication:
+
+- requires `X-API-Key` with the `operations:cache` scope
+- answers `401` without a valid key and `403` when the key lacks the scope
 
 Defaults:
 
@@ -804,11 +821,13 @@ Behavior:
 - selects the most popular forecast and time-series signatures recorded for the product
 - rebuilds forecast caches for every hour in the requested window
 - rebuilds time-series caches for the requested window using the recorded step and option profile
+- answers `400` with `{"result": "error", "details": ...}` when `date` is malformed, `hours` is not an integer between `0` and `744`, or `limit` is not a non-negative integer
 
 Example:
 
 ```http
 GET /products/wrf5/rebuild/?date=20260413Z0000&hours=24
+X-API-Key: <operator key with operations:cache>
 ```
 
 ### `GET /products/<prod>/forecast/<place>/map/image`

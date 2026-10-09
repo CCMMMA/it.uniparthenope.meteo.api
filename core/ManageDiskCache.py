@@ -12,11 +12,10 @@
 
 from datetime import datetime
 import json
-import os
 from pathlib import Path
-import tempfile
 import time
 
+from core.atomic_io import write_atomic
 from core.cache_keys import make_cache_key
 from core.Logger import logger
 
@@ -115,23 +114,10 @@ class ManageDiskCache:
     @staticmethod
     def _write_atomic(cache_file, payload, *, binary):
         """Write a complete cache entry before atomically publishing its path."""
-        mode = "wb" if binary else "w"
-        kwargs = {} if binary else {"encoding": "utf-8"}
-        descriptor, temporary_name = tempfile.mkstemp(
-            dir=cache_file.parent,
-            prefix=f".{cache_file.name}.",
-            suffix=".tmp",
-        )
-        try:
-            with os.fdopen(descriptor, mode, **kwargs) as file:
-                if binary:
-                    file.write(payload)
-                else:
-                    json.dump(payload, file)
-            os.replace(temporary_name, cache_file)
-        except BaseException:
-            Path(temporary_name).unlink(missing_ok=True)
-            raise
+        if binary:
+            write_atomic(cache_file, lambda file: file.write(payload), binary=True)
+        else:
+            write_atomic(cache_file, lambda file: json.dump(payload, file))
 
     # type --> plot - json - csv
     def set(self, request, res, type_file='plot', flag_diskcache=True, cache_key_source=None): 

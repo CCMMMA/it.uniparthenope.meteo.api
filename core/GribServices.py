@@ -3,12 +3,13 @@
 import csv
 import simplejson
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import os.path
 import netCDF4
 import numpy as np
 from scipy.interpolate import griddata
+from core.atomic_io import write_atomic
 from core.Logger import logger
 
 try:
@@ -56,8 +57,10 @@ class GribServices:
         """Internal helper for resolve datetime."""
         if timeref is None:
             now = datetime.utcnow()
+            # Rounding can yield hour 24 after 23:30, so roll over through a
+            # timedelta instead of passing the hour to datetime().
             hour = int(round(now.hour + now.minute / 60.0))
-            return datetime(now.year, now.month, now.day, hour, 0)
+            return datetime(now.year, now.month, now.day) + timedelta(hours=hour)
 
         year = int(timeref[:4])
         month = int(timeref[4:6])
@@ -145,7 +148,7 @@ class GribServices:
                     fields = {name: np.asarray(ncfile.variables[name][0]) for name in field_names}
                     nLats, nLons = fields["T2C"].shape
 
-                    with open(csvPath, 'w', newline='', encoding='utf-8') as f:
+                    def write_rows(f):
                         writer = csv.writer(f, delimiter=';')
                         writer.writerow(["j", "i"] + field_names)
                         for j in range(nLats):
@@ -153,6 +156,11 @@ class GribServices:
                                 row = [j, i]
                                 row.extend(self._replace_invalid(fields[name][j, i]) for name in field_names)
                                 writer.writerow(row)
+
+                    # Published atomically: this export takes long enough to
+                    # write that concurrent requests would otherwise read and
+                    # serve a truncated CSV.
+                    write_atomic(csvPath, write_rows)
         except Exception as e:
             logger.error(str(e))
 
@@ -328,8 +336,7 @@ class GribServices:
                         "data": np.round(V10i[::-1].ravel(), 1).tolist()
                     }
                     ]
-                with open(jsonPath, 'w') as f:
-                    simplejson.dump(result, f)
+                write_atomic(jsonPath, lambda f: simplejson.dump(result, f))
                 return result
         except Exception as e:
             logger.error(str(e))

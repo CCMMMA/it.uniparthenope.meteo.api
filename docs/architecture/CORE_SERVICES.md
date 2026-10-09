@@ -30,6 +30,13 @@ existing MD5 key format and canonical-key overrides.
 within each read operation, and publishes writes with an atomic rename. A
 malformed, expired, or concurrently deleted entry is an ordinary cache miss.
 
+`core/atomic_io.py` holds the shared write-then-rename helper. Every on-disk
+cache writer (`ManageDiskCache`, the per-hour forecast JSON, the GRIB exports,
+and the popularity tracker) publishes through it.
+
+`MongoDbHandlers` keeps one `MongoClient` per process and connection URI. Do
+not create or close clients per query; the client owns the connection pool.
+
 ## Archive Paths
 
 `MakeArchivePaths` owns parsing of `YYYYMMDDZHHMM` timestamps and construction

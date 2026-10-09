@@ -10,17 +10,20 @@
 #
 #################################################
 
+import threading
+
 from requests import Session
 from core.Logger import logger
 
-_session = None
+# One session per thread: worker processes use only their main thread, while
+# thread-pool workers must not share a Session, which is not thread-safe.
+_local = threading.local()
 
 def _init_session():
-    """Initialize a reusable HTTP session for worker processes."""
-    global _session
-    _session = Session()
+    """Initialize a reusable HTTP session for the calling worker."""
+    session = Session()
 
-    _session.verify = False
+    session.verify = False
 
     from urllib3.util.retry import Retry
     from requests.adapters import HTTPAdapter
@@ -38,28 +41,23 @@ def _init_session():
         max_retries=retry        # strategia di retry definita sopra
     )
 
-    _session.mount("http://", adapter)
-    _session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
 
-    return _session
+    _local.session = session
+    return session
 
 
 def work_worker(method: str, url: str, *, json=None, params=None, headers=None, timeout=(5, 60)):
     """Execute one worker task and return its processed result."""
-    global _session
-    if not _session:
-        _session = _init_session()
-    
-    response = _session.request(method, url, json=json, params=params, headers=headers, timeout=timeout)
-    logger.info(f"response.url : {response.url}")
-    response.raise_for_status()
+    session = getattr(_local, "session", None)
+    if session is None:
+        session = _init_session()
 
-    # try:
-        #return response.status_code, response.json()
+    response = session.request(method, url, json=json, params=params, headers=headers, timeout=timeout)
+    logger.info("response.url : %s", response.url)
+    response.raise_for_status()
     return response.json()
-    # except ValueError:
-        # return response.status_code, response.text
-        #return response.text
 
 def dispatch(m, u, kw):
     """Dispatch work items across the configured worker pool."""

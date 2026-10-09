@@ -8,6 +8,7 @@ from flask_restx import Namespace, Resource
 from core.GetParams import get_params
 from core.MemcachedMethodHandlers import get_resource, set_resource
 from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
+from core.Tiles import InvalidTileError
 
 
 api = Namespace('apps', description='Application-facing integration endpoints and tiled payload services.')
@@ -44,9 +45,16 @@ class AppsOwmWeatherProdPlacePrefix(Resource):
             )
             if res is None:
                 params = get_params({'date': None})
-                res = services.tiles.get_weather_ex(
-                    prod, placeprefix, params, z, x, y
-                )
+                try:
+                    res, cacheable = services.tiles.get_weather_tile(
+                        prod, placeprefix, params, z, x, y
+                    )
+                except InvalidTileError as error:
+                    return {'message': str(error)}, 400
+                # A tile whose places still wait for their forecast file is
+                # served but not cached, so it fills in as soon as data lands.
+                if not cacheable:
+                    return jsonify(res)
                 services.disk_cache.set(
                     request, res, 'json', services.disk_cache_enabled
                 )

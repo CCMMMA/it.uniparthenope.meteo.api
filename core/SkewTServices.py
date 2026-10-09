@@ -123,7 +123,7 @@ class SkewTServices:
             skew.ax.set_xlim(-60, 40)
             skew.shade_cape(p, T, prof, alpha=0.2, label='SBCAPE')
             skew.shade_cin(p, T, prof, alpha=0.2, label='SBCIN')
-            skew.ax.set_xlabel('Temperature ($^\circ$C)')
+            skew.ax.set_xlabel(r'Temperature ($^\circ$C)')
             skew.ax.set_ylabel('Pressure (hPa)')
             skew.ax.legend(loc='upper left')
 

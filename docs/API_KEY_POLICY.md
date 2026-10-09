@@ -39,7 +39,7 @@ verification. Issuance is never public.
 | `forecast:read` | Structured forecast resources. |
 | `timeseries:read` | Structured and downloadable time-series resources. |
 | `imagery:read` | Plot, legend, Skew-T, tile, and other rendered resources. |
-| `operations:cache` | Cache invalidation and rebuild, only when operator authentication also succeeds. |
+| `operations:cache` | Cache invalidation and rebuild. Enforced by the application on the legacy maintenance routes; deployments should still restrict them to the operator network. |
 | `keys:admin` | Key administration, only when operator authentication also succeeds. |
 
 Services enforce least privilege: requested scopes are normalized and checked
@@ -92,6 +92,9 @@ is published. Enforcement and deprecation require a separately announced,
 tested migration step.
 
 ### Current observation-only phase
+
+The cache maintenance routes are the exception: they are operator-protected and
+already reject requests without a key holding `operations:cache`.
 
 Legacy routes currently accept an optional `X-API-Key` header. When present,
 middleware validates identity and the future route scope, records a structured

@@ -24,12 +24,26 @@ The `.github/workflows/ci-cd.yml` workflow runs for pull requests targeting
 It installs the complete application dependency set on Python 3.8, validates
 Python syntax, and runs the full offline suite with `pytest`. The JUnit report
 is retained as a workflow artifact for 14 days, including on failed runs.
+Pull requests and manual runs also build the Docker image without publishing it,
+which catches Dockerfile and native-dependency failures before merge.
 
 After the test job succeeds, pushes to `main` and version tags publish the
 Docker image to GitHub Container Registry at
 `ghcr.io/<repository-owner>/<repository-name>`. Main-branch images receive
 `latest` and commit-SHA tags; version tags also produce a matching image tag.
-Pull requests and manual runs never publish an image.
+Published images include a GitHub artifact provenance attestation. Pull requests
+and manual runs never publish an image.
+
+The separate `.github/workflows/security.yml` workflow runs CodeQL analysis on
+changes and weekly, and performs a dependency review on pull requests.
+Dependabot checks GitHub Actions, Python packages, and the Docker base image
+weekly. CodeQL and dependency review require GitHub code-security support for
+the repository visibility and plan.
+
+GHCR publication is the portable CD boundary. A production platform should
+deploy an immutable `sha-<commit>` image by digest from a protected GitHub
+Environment; target-specific credentials and rollout commands do not belong in
+the repository until the deployment platform and rollback contract are defined.
 
 Live endpoint tests remain opt-in because they require network access and may
 exercise a deployed service. They are not part of the default CI gate.
@@ -359,15 +373,16 @@ python3 -m pytest -q --live-base-url https://api.meteo.uniparthenope.it --compar
 6. update documentation if the public contract changed
 7. commit only after the suite is passing
 
-## CI / Automation Recommendation
+## CI / Automation
 
-If this repository is connected to a CI system, the recommended minimal automated check is:
+The local equivalent of the required automated test gate is:
 
 ```bash
 pytest
 ```
 
-If a future CI pipeline is added, this command should be part of the default validation job for pull requests and branch updates.
+Before changing automation, also run `git diff --check` and validate the Docker
+build when Docker inputs or runtime dependencies changed.
 
 ## Maintenance Rules
 

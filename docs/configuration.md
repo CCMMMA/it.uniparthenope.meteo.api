@@ -51,9 +51,13 @@ pass `config=` when invoking `MakeArchivePaths.makePath` directly.
 | `TTL_MEMCACHED` | Hot-cache lifetime in seconds. |
 | `TTL_DISKCACHE` | Disk-cache lifetime in seconds. |
 | `CACHE_TIMEOUT` | Legacy plot/GRIB cache lifetime; normally set to `TTL_DISKCACHE`. |
-| `NUM_THREADS` | Maximum local thread fan-out. |
-| `NUM_PROCESSES` | Maximum process fan-out for cold time-series slices. |
-| `TIMESERIES_PARALLEL_MODE` | Multi-slice execution mode; the current production example uses `processes`. |
+| `DISKCACHE_ENABLED` | Enables the `BASE_DISKCACHE` response cache (second level behind memcached). Defaults to `True`. |
+| `SERVICE_DISKCACHE_ENABLED` | Enables the service-owned caches: per-hour forecast JSON under `CACHE_JSON` and rendered plot images. Defaults to `True`. |
+| `NUM_THREADS` | Maximum concurrent workers for tile generation and for the time-series fan-out. |
+| `TIMESERIES_PARALLEL_MODE` | Time-series fan-out mode: `processes` (default, one process pool per request) or `threads` (one shared thread pool). |
+| `TIMESERIES_FORECAST_BASE_URL` | Base URL of the forecast endpoint that serves hourly time-series slices; defaults to `http://193.205.230.7:5001`. |
+| `NUM_PROCESSES` | Unused since the time-series fan-out returned to HTTP requests; kept in the example file for compatibility. |
+| `MONGODB_URI` | MongoDB connection URI for place lookups; defaults to `mongodb://db:27017/`. |
 | `POPULAR_REQUESTS_LIMIT` | Maximum hot request signatures selected for rebuild. |
 | `REQUEST_POPULARITY_FLUSH_EVERY` | Event count that triggers popularity persistence. |
 | `API_KEY_ENVIRONMENT` | Non-secret environment label embedded in issued key prefixes; defaults to `ENV`. |

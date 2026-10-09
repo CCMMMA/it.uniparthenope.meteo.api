@@ -18,6 +18,7 @@ from flask_restx import Namespace, Resource
 from flask import current_app, jsonify, Response, make_response, request, send_from_directory
 from datetime import datetime, timedelta, timezone
 
+from apis.authentication import require_api_key
 from core.Logger import logger
 from core.GetParams import get_params
 from core.MemcachedMethodHandlers import delete_resource, get_resource, set_resource, load_cached_json
@@ -25,6 +26,14 @@ from core.MeteoServices import csvfy
 from core.Places import Places
 from core.MakeArchivePaths import MakeArchivePaths
 from core.RuntimeServices import RUNTIME_SERVICES_EXTENSION
+
+# Both maintenance endpoints loop once per requested hour, so the window is
+# bounded to keep a single request from scanning or rebuilding without limit.
+MAX_MAINTENANCE_WINDOW_HOURS = 31 * 24
+
+# Unlike the other legacy routes, which only observe credentials, the
+# maintenance endpoints delete and regenerate caches and therefore enforce one.
+CACHE_OPERATIONS_SCOPE = "operations:cache"
 
 api = Namespace('products', description='Forecast products, plots, time series, GRIB exports, legends, and static product assets.')
 
@@ -77,13 +86,36 @@ def _effective_timeseries_date(timeref=None):
     )
 
 
+def _maintenance_hours(raw_hours):
+    """Return the validated window length requested from a maintenance endpoint."""
+    try:
+        hours = int(raw_hours if raw_hours is not None else 168)
+    except (TypeError, ValueError):
+        raise ValueError("hours must be an integer") from None
+    if not 0 <= hours <= MAX_MAINTENANCE_WINDOW_HOURS:
+        raise ValueError(
+            f"hours must be between 0 and {MAX_MAINTENANCE_WINDOW_HOURS}"
+        )
+    return hours
+
+
 def _request_window(date_value=None, hours=None):
     """Return the inclusive start/exclusive end window for maintenance endpoints."""
-    start = _runtime_services().meteo._parse_datetime_ref(
-        date_value, default_midnight=(date_value is None)
-    )
-    duration_hours = int(hours if hours is not None else 168)
+    duration_hours = _maintenance_hours(hours)
+    try:
+        start = _runtime_services().meteo._parse_datetime_ref(
+            date_value, default_midnight=(date_value is None)
+        )
+    except (TypeError, ValueError):
+        raise ValueError("date must use the YYYYMMDDZhhmm format") from None
     return start, start + timedelta(hours=duration_hours)
+
+
+def _maintenance_bad_request(error):
+    """Return the 400 payload for a rejected maintenance request."""
+    response = jsonify({"result": "error", "details": str(error)})
+    response.status_code = 400
+    return response
 
 
 def _forecast_cache_key(prod, place, params=None):
@@ -414,7 +446,11 @@ class ProductsForecastByProdAndPlace(Resource):
                 
                 # Save on Diskcache
                 services.disk_cache.set(
-                    request, res, 'json', cache_key_source=cache_key
+                    request,
+                    res,
+                    'json',
+                    flag_diskcache=services.disk_cache_enabled,
+                    cache_key_source=cache_key,
                 )
 
                 # Save on Memcache
@@ -987,7 +1023,11 @@ class ProductsTimeseriesByProdAndPlace(Resource):
 
                 # Save on Diskcache
                 services.disk_cache.set(
-                    request, res, 'json', cache_key_source=cache_key
+                    request,
+                    res,
+                    'json',
+                    flag_diskcache=services.disk_cache_enabled,
+                    cache_key_source=cache_key,
                 )
 
                 # Save on Memcache
@@ -1071,7 +1111,11 @@ class ProductsTimeSeriesByProdAndPlaceByCsv(Resource):
 
                 # Save on Diskcache
                 services.disk_cache.set(
-                    request, res, 'json', cache_key_source=cache_key
+                    request,
+                    res,
+                    'json',
+                    flag_diskcache=services.disk_cache_enabled,
+                    cache_key_source=cache_key,
                 )
 
                 # Save on Memcache
@@ -1109,13 +1153,23 @@ class ProductsInvalidateByProdAndPlace(Resource):
             "date": "Optional window start as YYYYMMDDZhhmm, defaults to current UTC day at 00:00",
             "hours": "Window length in hours, defaults to 168",
         },
-        responses={200: "Cache entries invalidated successfully"},
+        responses={
+            200: "Cache entries invalidated successfully",
+            400: "Malformed date or hours",
+            401: "Missing or invalid X-API-Key",
+            403: "API key lacks the operations:cache scope",
+        },
+        security="apiKey",
     )
+    @require_api_key(CACHE_OPERATIONS_SCOPE)
     def get(self, prod, place):
         """Invalidate per-hour, forecast, and time-series caches for one product/place window."""
         services = _runtime_services()
-        start, end = _request_window(request.args.get("date"), request.args.get("hours"))
-        hours = int(request.args.get("hours", 168))
+        try:
+            hours = _maintenance_hours(request.args.get("hours"))
+            start, end = _request_window(request.args.get("date"), hours)
+        except ValueError as error:
+            return _maintenance_bad_request(error)
 
         deleted_model_output = 0
         current = start
@@ -1123,9 +1177,12 @@ class ProductsInvalidateByProdAndPlace(Resource):
             cache_path = services.meteo._model_output_cache_path(
                 prod, place, current.strftime("%Y%m%dZ%H%M")
             )
-            if os.path.isfile(cache_path):
+            try:
                 os.remove(cache_path)
                 deleted_model_output += 1
+            except FileNotFoundError:
+                # Never cached, or already removed by a concurrent invalidation.
+                pass
             current += timedelta(hours=1)
 
         deleted_top_level_disk = 0
@@ -1175,18 +1232,33 @@ class ProductsRebuildByProd(Resource):
             "hours": "Window length in hours, defaults to 168",
             "limit": "Optional popularity cap, defaults to POPULAR_REQUESTS_LIMIT",
         },
-        responses={200: "Popular caches rebuilt successfully"},
+        responses={
+            200: "Popular caches rebuilt successfully",
+            400: "Malformed date, hours, or limit",
+            401: "Missing or invalid X-API-Key",
+            403: "API key lacks the operations:cache scope",
+        },
+        security="apiKey",
     )
+    @require_api_key(CACHE_OPERATIONS_SCOPE)
     def get(self, prod):
         """Rebuild caches for the most popular forecast and time-series signatures of one product."""
         services = _runtime_services()
-        start, _ = _request_window(request.args.get("date"), request.args.get("hours"))
-        hours = int(request.args.get("hours", 168))
-        limit = int(
-            request.args.get(
-                "limit", current_app.config.get("POPULAR_REQUESTS_LIMIT", 25)
-            )
-        )
+        try:
+            hours = _maintenance_hours(request.args.get("hours"))
+            start, _ = _request_window(request.args.get("date"), hours)
+            try:
+                limit = int(
+                    request.args.get(
+                        "limit", current_app.config.get("POPULAR_REQUESTS_LIMIT", 25)
+                    )
+                )
+            except (TypeError, ValueError):
+                raise ValueError("limit must be an integer") from None
+            if limit < 0:
+                raise ValueError("limit must not be negative")
+        except ValueError as error:
+            return _maintenance_bad_request(error)
         start_ref = start.strftime("%Y%m%dZ%H%M")
 
         forecast_records = services.popularity.top_requests(

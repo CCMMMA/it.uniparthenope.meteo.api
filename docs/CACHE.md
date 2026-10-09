@@ -172,6 +172,31 @@ instead of failing because the cache itself is damaged.
 
 This behavior is important because plot endpoints should not be written in text mode, while structured payloads should be written in a stable text representation.
 
+### Weather Tiles
+
+`/apps/owm/...` tiles use memcached first and the disk cache second, and a
+disk hit is promoted back into memcached. A freshly built tile is stored in
+both layers only when it is complete: if a place in the tile is still waiting
+for its forecast file, the tile is returned without being cached, so the
+missing places appear as soon as the data lands instead of after the TTL.
+
+### Plot Rendering Cache
+
+`core/Plotter.py` keeps its own working files under the `cache_path` of
+`etc/maps.json`, separate from the response cache above:
+
+- `<place>.pkl`: the pickled map projection of a place
+- `<place>.<shapefile>.shp.pkl`: the parts of a shapefile that intersect the
+  place, already projected
+
+Both are written atomically and validated when read: an unreadable entry, a
+place whose bounds changed, or a shapefile whose size or modification time
+changed is rebuilt. The files can be deleted at any time. Each worker also
+keeps the most recently used places in memory.
+
+Rendered images are published under `result_path` with the same
+write-then-rename step.
+
 ## How The Two Layers Work Together
 
 The two cache layers are not identical.
@@ -221,38 +246,22 @@ This means:
 
 The CSV route now reuses the structured cached payload and only performs the lightweight CSV rendering step on top of it.
 
-### 2. Per-time-step reuse inside `MeteoServices.timeseries(...)`
+### 2. Per-time-step fan-out inside `MeteoServices.timeseries(...)`
 
-The `timeseries(...)` builder internally fans out across multiple forecast hours and calls `modelOutput(...)` for each one. That path now honors the existing `use_disk_cached` flag instead of forcing `modelOutput(...)` to bypass its on-disk JSON cache.
+The `timeseries(...)` builder lists the hourly archive files available for the requested window and fetches each hour from the forecast endpoint (`GET /products/<prod>/forecast/<place>?date=...`) over HTTP. Every slice therefore goes through the forecast route's own cache chain (memcached, disk cache, per-hour `modelOutput(...)` JSON), so hot hours are answered without touching NetCDF.
 
-This reduces repeated work for hot time-series requests because:
-
-- already-generated per-hour `modelOutput(...)` JSON files can be reused
-- repeated NetCDF reads for the same hourly slices are avoided
-- the thread pool focuses on cache hits instead of recomputation when the hourly slices are already present
-
-In production, this is the main performance improvement for repeated requests against the same place and product over many forecast steps.
-
-### 3. Multiprocessing for cache misses
-
-After partitioning the hourly items into cache hits and cache misses, the service now uses a hybrid execution strategy:
-
-- cached hourly slices are loaded in-process with threads
-- uncached hourly slices can be computed with a process pool
-
-This is useful because the expensive part of a cold request is the NetCDF-backed extraction work, not the cache lookup itself.
+A slice that the forecast endpoint answers with an error payload is skipped; the remaining hours are still returned.
 
 The relevant configuration keys are:
 
-- `NUM_THREADS` for local cache-load concurrency and thread fallback
-- `NUM_PROCESSES` for cold-slice multiprocessing fan-out
-- `TIMESERIES_PARALLEL_MODE` to choose the execution mode
+- `TIMESERIES_FORECAST_BASE_URL`: base URL of the forecast endpoint used for the fan-out. It should point at this same service through an address reachable from inside the container. When unset, the historical address `http://193.205.230.7:5001` is used.
+- `TIMESERIES_PARALLEL_MODE`: `processes` (default) forks a `multiprocessing.Pool` for each time-series request; `threads` reuses one long-lived thread pool shared by all requests.
+- `NUM_THREADS`: upper bound on concurrent slice requests in either mode. A process pool is never larger than the number of slices to fetch.
+- `NUM_PROCESSES`: no longer read by the service; it belonged to the retired in-process computation path.
 
-Recommended production setting:
+Because the slices are HTTP round trips rather than CPU work, `threads` avoids forking the worker on every request and is the cheaper mode. Validate it on the target host before switching production away from `processes`.
 
-- keep `TIMESERIES_PARALLEL_MODE="processes"` for multi-core hosts
-- size `NUM_PROCESSES` conservatively to the number of physical or effective cores available to the API container
-- avoid setting `NUM_PROCESSES` so high that multiple large requests oversubscribe CPU and disk bandwidth
+The fan-out calls back into the same service, so the uWSGI worker count must leave room for those nested requests: if every worker is busy serving a time-series request, their forecast sub-requests queue until the 60-second read timeout.
 
 ## Important Configuration Keys
 
@@ -364,6 +373,22 @@ The products namespace now exposes two cache-maintenance endpoints:
 
 - `GET /products/<prod>/invalidate/<place>/?date=YYYYMMDDZhhmm&hours=n`
 - `GET /products/<prod>/rebuild/?date=YYYYMMDDZhhmm&hours=n`
+
+Both require an `X-API-Key` holding the `operations:cache` scope (`401` without
+a valid key, `403` without the scope) and reject a malformed `date` or an
+`hours` value outside `0`-`744` with `400`.
+
+Popularity counters are shared by all worker processes: each worker keeps only
+its unflushed increments and adds them to `REQUEST_POPULARITY_PATH` under a
+file lock (`<path>.lock`), so the persisted counts are totals across workers
+and a worker reloads the file when another one has flushed. Counts recorded by
+a worker since its last flush are visible to the other workers only after that
+flush (`REQUEST_POPULARITY_FLUSH_EVERY`, `REQUEST_POPULARITY_FLUSH_INTERVAL`).
+
+The per-hour `modelOutput(...)` JSON files under `CACHE_JSON` hold the
+option-independent payload of successful computations only. `opt=place` and
+`opt=fields` metadata is attached after a cache hit, and error results are
+never written, so data that arrives late is picked up on the next request.
 
 The invalidate endpoint:
 

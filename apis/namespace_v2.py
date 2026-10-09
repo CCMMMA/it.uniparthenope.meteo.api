@@ -9,10 +9,21 @@ from core.DataStructuresV2 import maps, baseMaps, layers
 api = Namespace('v2', description='Version 2 map metadata and Slurm endpoints.')
 
 
+def _not_found(field_name):
+    """Build a 404 response object.
+
+    Flask-RESTX only passes ``Response`` instances through untouched; a
+    ``(Response, status)`` tuple is re-serialized and fails with a 500.
+    """
+    response = jsonify({"errMsg": f"{field_name} not found.", "statusCode": 404})
+    response.status_code = 404
+    return response
+
+
 def _resolve_mapping_detail(data, name, field_name):
     """Resolve one entry from a static mapping and return a 404 payload when missing."""
     if name not in data:
-        return jsonify({"errMsg": f"{field_name} not found.", "statusCode": 404}), 404
+        return _not_found(field_name)
     return jsonify(data[name])
 
 
@@ -96,7 +107,7 @@ class BaseMapDetail(Resource):
         """Handle GET requests for the legacy basemap detail alias."""
         name = request.args.get("name") or request.args.get("id")
         if not name:
-            return jsonify({"errMsg": "Basemap not found.", "statusCode": 404}), 404
+            return _not_found("Basemap")
         return _resolve_mapping_detail(baseMaps, name, "Basemap")
 
 

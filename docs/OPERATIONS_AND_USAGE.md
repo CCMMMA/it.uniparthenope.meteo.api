@@ -64,9 +64,11 @@ Important configuration keys include:
 - `BASE_DISKCACHE`: on-disk cache root
 - `TTL_MEMCACHED`: memcached time-to-live in seconds
 - `TTL_DISKCACHE`: disk cache time-to-live in seconds
-- `NUM_THREADS`: thread fan-out for local parallel work
-- `NUM_PROCESSES`: process fan-out for cold multi-time-step computations
-- `TIMESERIES_PARALLEL_MODE`: execution mode for multi-time-step endpoints
+- `DISKCACHE_ENABLED`, `SERVICE_DISKCACHE_ENABLED`: switches for the response disk cache and the service-owned disk caches (both default to `True`)
+- `NUM_THREADS`: upper bound on tile-generation and time-series fan-out workers
+- `TIMESERIES_PARALLEL_MODE`: `processes` or `threads` fan-out for multi-time-step endpoints
+- `TIMESERIES_FORECAST_BASE_URL`: forecast endpoint used to fetch hourly time-series slices
+- `MONGODB_URI`: MongoDB connection URI for place lookups
 - `POPULAR_REQUESTS_LIMIT`: number of hottest forecast and time-series signatures to consider during rebuild
 - `REQUEST_POPULARITY_PATH`: persisted popularity-counter file
 - `REQUEST_POPULARITY_FLUSH_EVERY`, `REQUEST_POPULARITY_FLUSH_INTERVAL`: batching controls for tracker persistence
@@ -295,6 +297,10 @@ GET /products/<prod>/invalidate/<place>/?date=YYYYMMDDZhhmm&hours=n
 ```text
 GET /products/<prod>/rebuild/?date=YYYYMMDDZhhmm&hours=n
 ```
+
+Both calls must carry `X-API-Key: <key>` for a credential issued with the
+`operations:cache` scope; anonymous calls receive `401`. The key store is the
+PostgreSQL credential database, so these operations need it reachable.
 
 Recommended sequence after a targeted data refresh:
 

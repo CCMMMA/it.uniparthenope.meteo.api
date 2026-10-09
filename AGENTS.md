@@ -35,6 +35,27 @@ When editing this project:
 11. Prefer comments that explain intent, invariants, or non-obvious tradeoffs.
     Avoid line-by-line narration of code that is already clear from its names.
 
+## CI/CD Contract
+
+- `.github/workflows/ci-cd.yml` is the required build gate. It compiles the
+  Python sources, runs the complete offline `pytest` suite, validates container
+  builds for pull requests and manual runs, and publishes successful `main` and
+  `v*` builds to GitHub Container Registry.
+- `.github/workflows/security.yml` runs CodeQL for Python and reviews dependency
+  changes in pull requests. Keep workflow permissions minimal and explicit.
+- `.github/dependabot.yml` maintains GitHub Actions, Python, and Docker
+  dependencies. Review scientific-package upgrades carefully because Python
+  3.8 and native NetCDF/WRF dependencies constrain compatible versions.
+- The deployable artifact is the immutable GHCR `sha-<commit>` image. `latest`
+  is a convenience tag for `main`; release tags use the matching `v*` tag.
+- Do not add environment-specific deployment credentials, hostnames, or SSH
+  commands to the repository. A deployment target should consume the published
+  image by digest and keep its credentials in a protected GitHub Environment.
+- When changing dependencies, Docker build inputs, test commands, or release
+  behavior, update the workflows and `docs/TESTING.md` together.
+- Validate workflow YAML and run `git diff --check` in addition to Python syntax
+  and tests before pushing CI/CD changes.
+
 ## Optimization Priorities
 
 The most likely performance-sensitive areas are:
