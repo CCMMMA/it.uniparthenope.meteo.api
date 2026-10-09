@@ -10,7 +10,7 @@ pymemcache == 4.0.0
 pymongo == 4.4.0
 requests == 2.31.0
 simplejson == 3.19.1
-xmltodict == 0.13.0
+xmltodict == 1.0.4
 numpy
 uwsgi
 wrf-python
